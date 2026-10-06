@@ -40,12 +40,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      animation: pageEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       -webkit-font-smoothing: antialiased;
-    }
-    @keyframes pageEnter {
-      0% { opacity: 0; transform: translateY(6px); }
-      100% { opacity: 1; transform: translateY(0); }
     }
     .container {
       max-width: 68rem;
@@ -124,17 +119,17 @@
       align-items: center;
       gap: 0.4rem;
       padding: 0.45rem 0.85rem;
-      background: #0f3b73;
+      background: transparent;
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 700;
       color: #ffffff;
       text-decoration: none;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: background-color 0.15s ease, border-color 0.15s ease;
     }
     .btn-home:hover {
-      background: #174a8b;
+      background: rgba(255, 255, 255, 0.14);
       border-color: rgba(255, 255, 255, 0.4);
     }
     .nav-tabs {
@@ -159,7 +154,7 @@
       text-decoration: none;
       border-bottom: 2px solid transparent;
       white-space: nowrap;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: color 0.15s ease, border-bottom-color 0.15s ease;
     }
     .tab-link:hover {
       color: #0a2e5c;
@@ -220,22 +215,17 @@
       box-shadow: 0 4px 12px rgba(10, 46, 92, 0.08);
     }
     .portal-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 6px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      background: #eff4fa;
+      justify-content: flex-start;
+      background: transparent;
       color: #0a2e5c;
-      border: 1px solid #cbd5e1;
-      margin-bottom: 1rem;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+      margin-bottom: 0.75rem;
+      transition: color 0.15s ease;
     }
     .portal-card:hover .portal-icon {
-      background: #0a2e5c;
-      color: #ffffff;
-      border-color: #0a2e5c;
+      color: #174a8b;
     }
     .portal-title {
       font-size: 0.95rem;

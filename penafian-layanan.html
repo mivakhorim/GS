@@ -30,12 +30,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      animation: pageEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       -webkit-font-smoothing: antialiased;
-    }
-    @keyframes pageEnter {
-      0% { opacity: 0; transform: translateY(6px); }
-      100% { opacity: 1; transform: translateY(0); }
     }
     .container {
       max-width: 68rem;
@@ -114,17 +109,17 @@
       align-items: center;
       gap: 0.4rem;
       padding: 0.45rem 0.85rem;
-      background: #0f3b73;
+      background: transparent;
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 700;
       color: #ffffff;
       text-decoration: none;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: background-color 0.15s ease, border-color 0.15s ease;
     }
     .btn-home:hover {
-      background: #174a8b;
+      background: rgba(255, 255, 255, 0.14);
       border-color: rgba(255, 255, 255, 0.4);
     }
     .nav-tabs {
@@ -149,7 +144,7 @@
       text-decoration: none;
       border-bottom: 2px solid transparent;
       white-space: nowrap;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: color 0.15s ease, border-bottom-color 0.15s ease;
     }
     .tab-link:hover {
       color: #0a2e5c;
@@ -181,16 +176,13 @@
       margin-bottom: 1.75rem;
     }
     .doc-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 6px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      background: #fffbeb;
-      color: #d97706;
-      border: 1px solid #fde68a;
+      color: #0a2e5c;
+      background: transparent;
+      border: none;
     }
     .doc-title h1 {
       font-size: 1.25rem;
