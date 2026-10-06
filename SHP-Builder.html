@@ -4,21 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Duta GeoSpasi : Sistem Digitalisasi Geospasial Indonesia</title>
-  <meta name="description" content="Duta GeoSpasi : Sistem digitalisasi geospasial kadaster resmi ATR BPN, visualisasi peta bidang tanah bhumi WMS, pin koordinat, digitasi patok batas presisi, dan ekspor Shapefile ESRI SHP ZIP standar OSS RBA AMDALNET.">
-  <meta name="keywords" content="peta bidang tanah, atr bpn bhumi, kadaster indonesia, web gis bpn, cek sertifikat tanah, shapefile bpn, ekspor shp oss rba, amdalnet ukl upl, duta geospasi, duta digital agensi, dutamik id">
+  <meta name="description" content="Duta GeoSpasi : Sistem digitalisasi geospasial kadaster resmi, visualisasi peta bidang tanah WMS, pin koordinat, digitasi patok batas presisi, dan ekspor Shapefile ESRI SHP ZIP standar OSS RBA AMDALNET.">
+  <meta name="keywords" content="peta bidang tanah, kadaster pertanahan, web gis kadaster, cek batas bidang tanah, shapefile kadaster, ekspor shp oss rba, amdalnet ukl upl, duta geospasi, duta digital agensi, dutamik id">
   <meta name="author" content="Duta Digital Agensi (dutamik.id)">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://geospasi.dutamik.id/SHP-Builder">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Duta GeoSpasi : Kadaster & Peta Bidang ATR BPN Terintegrasi">
-  <meta property="og:description" content="Visualisasi kadaster resmi ATR BPN, inspeksi legalitas dan luas bidang tanah, digitasi patok batas CAD, serta ekspor Shapefile ZIP standar OSS RBA dan AMDALNET.">
+  <meta property="og:title" content="Duta GeoSpasi : Kadaster & Peta Bidang Terpadu">
+  <meta property="og:description" content="Visualisasi peta bidang kadaster terpadu, inspeksi legalitas dan luas bidang tanah, digitasi patok batas CAD, serta ekspor Shapefile ZIP standar OSS RBA dan AMDALNET.">
   <meta property="og:url" content="https://geospasi.dutamik.id/SHP-Builder">
   <meta property="og:image" content="https://geospasi.dutamik.id/SHP-Builder/assets/img/logo.png">
   <meta property="og:site_name" content="Duta GeoSpasi">
   <meta property="og:locale" content="id_ID">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Duta GeoSpasi : Kadaster ATR BPN & Ekspor SHP OSS">
-  <meta name="twitter:description" content="Aplikasi Web GIS kadaster terpadu untuk membaca peta bidang tanah ATR BPN dan unduh paket Shapefile resmi OSS RBA.">
+  <meta name="twitter:title" content="Duta GeoSpasi : Kadaster Terpadu & Ekspor SHP OSS">
+  <meta name="twitter:description" content="Aplikasi Web GIS kadaster terpadu untuk pemetaan bidang tanah resmi dan unduh paket Shapefile standar OSS RBA.">
   <meta name="generator" content="Duta Digital Agensi Engine v1.0">
   <meta name="application-name" content="Duta GeoSpasi">
   <meta name="googlebot" content="index, follow, noai, noimageai">
@@ -62,7 +62,7 @@
         "@type": "WebPage",
         "@id": "https://geospasi.dutamik.id/SHP-Builder#webpage",
         "url": "https://geospasi.dutamik.id/SHP-Builder",
-        "name": "Peta Kadaster & Bidang ATR BPN Terintegrasi",
+        "name": "Peta Kadaster & Bidang Terpadu",
         "isPartOf": {
           "@id": "https://geospasi.dutamik.id/SHP-Builder#website"
         },
@@ -125,6 +125,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="assets/js/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1997,6 +1999,41 @@
       margin-bottom: 0.35rem;
       text-transform: uppercase;
     }
+    .notice-clean-box {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .notice-clean-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .notice-clean-title svg {
+      color: var(--amber);
+      flex-shrink: 0;
+    }
+    .notice-clean-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin: 0;
+    }
+    .print-sheet-scale-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      transition: height 0.2s ease;
+    }
     .export-type-badge.map-badge {
       background-color: #ecfdf5;
       color: #065f46;
@@ -2754,7 +2791,15 @@
         justify-content: center !important;
       }
       .print-preview-scroll {
-        padding: 0.75rem 0.5rem !important;
+        padding: 0.5rem 0.25rem !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+      }
+      .print-sheet-paper {
+        margin: 0 auto !important;
       }
     }
   </style>
@@ -2844,7 +2889,7 @@
               Panduan Seleksi Bidang
             </div>
             <p style="font-size: 0.74rem; color: var(--text-sub); line-height: 1.45;">
-              Klik pada batas poligon oranye peta bidang tanah untuk melihat identifikasi bidang, luas ukur BPN, hak kepemilikan, dan mengaktifkan digitasi patok CAD.
+              Klik pada batas poligon oranye peta bidang tanah untuk melihat identifikasi bidang, luas ukur resmi, hak kepemilikan, dan mengaktifkan digitasi patok CAD.
             </p>
           </div>
 
@@ -2861,7 +2906,7 @@
 
               <div class="card-equal-grid" style="margin-bottom: 0.65rem;">
                 <div class="stat-card">
-                  <span class="stat-label">Luas Data BPN</span>
+                  <span class="stat-label">Luas Data Terdaftar</span>
                   <span id="pinLuasBpnText" class="stat-value emerald">-</span>
                 </div>
                 <div class="stat-card">
@@ -2885,13 +2930,13 @@
                 </div>
                 <div class="spec-item">
                   <span class="spec-label">Status Validasi</span>
-                  <span class="spec-value emerald" id="pinStatusValidasiText">Terdaftar Resmi BPN</span>
+                  <span class="spec-value emerald" id="pinStatusValidasiText">Terdaftar di Basis Data</span>
                 </div>
               </div>
 
               <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                 <div style="display: flex; gap: 0.35rem;">
-                  <button class="btn btn-primary" onclick="autoScaleToBpnArea()" style="flex: 1; font-weight: 700; justify-content: center;" title="Menyesuaikan luas bidang di gambar ke luas BPN secara presisi">
+                  <button class="btn btn-primary" onclick="autoScaleToBpnArea()" style="flex: 1; font-weight: 700; justify-content: center;" title="Menyesuaikan luas bidang di gambar ke luas resmi secara presisi">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                     <span>Sesuaikan Bidang</span>
                   </button>
@@ -3004,56 +3049,21 @@
                 </div>
 
                 <div class="btn-group">
-                  <a id="btnLinkBhumi" href="#" target="_blank" class="btn btn-outline" style="flex:1; justify-content: center; text-decoration: none;" onclick="if(this.getAttribute('href')==='#' || !activeVertices || activeVertices.length < 3){ event.preventDefault(); showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn'); }">Peta Bhumi</a>
+                  <a id="btnLinkBhumi" href="#" target="_blank" class="btn btn-outline" style="flex:1; justify-content: center; text-decoration: none;" onclick="if(this.getAttribute('href')==='#' || !activeVertices || activeVertices.length < 3){ event.preventDefault(); showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn'); }">Peta Nasional</a>
                   <a id="btnLinkGoogleMaps" href="#" target="_blank" class="btn btn-outline" style="flex:1; justify-content: center; text-decoration: none;" onclick="if(this.getAttribute('href')==='#' || !activeVertices || activeVertices.length < 3){ event.preventDefault(); showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn'); }">Google Maps</a>
                 </div>
               </div>
             </div>
           </div>
 
-          <div id="persilNotFoundBox" style="display: none; background-color: var(--amber-soft); border: 1px solid #fde68a; border-radius: 2px; padding: 0.75rem; flex-direction: column; gap: 0.6rem;">
-            <div class="box-title" style="color: var(--amber);">
-              Di Luar Bidang / Pergeseran Spasial ATR/BPN
+          <div id="persilNotFoundBox" class="notice-clean-box" style="display: none;">
+            <div class="notice-clean-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>Di Luar Batas Bidang Terdaftar</span>
             </div>
-            <p style="font-size: 0.74rem; color: var(--text-sub); line-height: 1.45; margin: 0;">
-              Titik klik berada di luar poligon bidang resmi ATR/BPN atau berada di luar toleransi batas kavling.
+            <p class="notice-clean-desc">
+              Titik koordinat berada di luar poligon bidang tanah terdaftar atau di luar toleransi batas kavling. Klik tepat di dalam area batas bidang atau gunakan menu Digitasi untuk memetakan bidang secara mandiri.
             </p>
-            <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 2px; padding: 0.55rem; display: flex; flex-direction: column; gap: 0.45rem;">
-              <div style="font-size: 0.72rem; font-weight: 700; color: #0a2e5c; display: flex; align-items: center; gap: 0.35rem;">
-                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--emerald);"></span>
-                Saran Posisi Klik &amp; Penyesuaian Pergeseran
-              </div>
-              <p style="font-size: 0.71rem; color: #475569; line-height: 1.4; margin: 0;">
-                Bila citra satelit bergeser dari data BPN, <strong>klik area dalam kavling mendekati patok posisi paling atas (sudut utara)</strong> untuk membaca data bidang secara akurat.
-              </p>
-              <div style="width: 100%; border: 1px solid #cbd5e1; border-radius: 2px; background-color: #f8fafc; padding: 6px; display: flex; justify-content: center;">
-                <svg viewBox="0 0 280 135" style="width: 100%; max-width: 270px; height: auto; display: block;" xmlns="http://www.w3.org/2000/svg">
-                  <polygon points="40,110 160,92 122,28 20,44" fill="#ffffff" stroke="#0a2e5c" stroke-width="2"/>
-                  <circle cx="20" cy="44" r="3.5" fill="#0a2e5c"/>
-                  <text x="14" y="42" font-size="8" font-weight="700" fill="#0a2e5c" text-anchor="end">P4</text>
-                  <circle cx="122" cy="28" r="3.5" fill="#0a2e5c"/>
-                  <text x="126" y="24" font-size="8" font-weight="700" fill="#0a2e5c">P3</text>
-                  <circle cx="160" cy="92" r="3.5" fill="#0a2e5c"/>
-                  <text x="166" y="95" font-size="8" font-weight="700" fill="#0a2e5c">P2</text>
-                  <circle cx="40" cy="110" r="3.5" fill="#0a2e5c"/>
-                  <text x="36" y="122" font-size="8" font-weight="700" fill="#0a2e5c">P1</text>
-                  
-                  <circle cx="122" cy="10" r="6" fill="#dc2626"/>
-                  <line x1="118" y1="6" x2="126" y2="14" stroke="#ffffff" stroke-width="1.8"/>
-                  <line x1="126" y1="6" x2="118" y2="14" stroke="#ffffff" stroke-width="1.8"/>
-                  <text x="134" y="13" font-size="8.5" font-weight="600" fill="#dc2626">Luar / Jalan (Ditolak)</text>
-                  
-                  <circle cx="106" cy="38" r="6.5" fill="#16a34a"/>
-                  <circle cx="106" cy="38" r="3" fill="#ffffff"/>
-                  <text x="100" y="55" font-size="8.5" font-weight="700" fill="#16a34a" text-anchor="end">Klik Ideal</text>
-                  <text x="100" y="65" font-size="7.5" fill="#475569" text-anchor="end">(Dalam Dekat Patok Atas)</text>
-                  
-                  <circle cx="75" cy="70" r="5" fill="#d97706"/>
-                  <circle cx="75" cy="70" r="2" fill="#ffffff"/>
-                  <text x="83" y="73" font-size="8" fill="#d97706">Tengah (Bisa Meleset)</text>
-                </svg>
-              </div>
-            </div>
           </div>
 
         </section>
@@ -3069,7 +3079,7 @@
             </div>
 
             <div id="coordsEmptyAlert" style="background-color: var(--accent-soft); border: 1px solid #bfdbfe; border-radius: 2px; padding: 0.75rem; font-size: 0.74rem; color: var(--text-sub); line-height: 1.45;">
-              Belum ada bidang tanah poligon yang aktif. Klik pada peta untuk memilih bidang ATR/BPN atau gunakan menu digitasi gambar patok.
+              Belum ada bidang tanah poligon yang aktif. Klik pada peta untuk memilih bidang terdaftar atau gunakan menu digitasi gambar patok.
             </div>
 
             <div id="coordsTableContent" style="display: none;">
@@ -3156,12 +3166,12 @@
 
           <div class="content-box">
             <div class="box-header">
-              <div class="box-title">Bidang ATR/BPN</div>
+              <div class="box-title">Bidang Kadastral</div>
               <span id="badgeStatusBidang" class="badge-pill green">Aktif</span>
             </div>
             <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; cursor: pointer;">
               <input type="checkbox" id="chkPersil" checked onchange="togglePersilLayer(this.checked)" style="accent-color: var(--accent);">
-              Tampilkan Garis Batas Persil BPN
+              Tampilkan Garis Batas Persil Kadastral
             </label>
             <div class="form-group" style="margin-top: 0.4rem;">
               <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted);">
@@ -3177,7 +3187,7 @@
               <span>Perbarui Peta</span>
             </button>
             <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.35;">
-              Sumber: GeoServer ATR/BPN Live Database (otomatis memuat mutasi, pemecahan, dan pendaftaran bidang terbaru).
+              Sumber: Basis Data Kadastral Geospasial Nasional (memuat mutasi, pemecahan, dan pendaftaran bidang terbaru).
             </div>
           </div>
 
@@ -3187,7 +3197,6 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Peta Tematik &amp; Batas Kawasan
               </div>
-              
             </div>
             <div style="font-size: 0.72rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 0.5rem;">
               Lapisan tematik resmi nasional untuk ceking batas bidang tanah terhadap tata ruang, kawasan lindung, perizinan, dan batas administrasi:
@@ -3222,7 +3231,7 @@
                     <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span>
                     <div class="ceking-text-col">
                       <span class="ceking-title">Lahan Sawah Dilindungi (LSD Terkini)</span>
-                      <span class="ceking-source">Kementerian ATR/BPN - Geoserver LSD</span>
+                      <span class="ceking-source">Basis Data Peta Tematik LSD Nasional</span>
                     </div>
                   </label>
                   <span id="badgeCekingLsd" class="badge-pill" style="font-size: 0.64rem;">Off</span>
@@ -3243,7 +3252,7 @@
                     <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>
                     <div class="ceking-text-col">
                       <span class="ceking-title">Lahan Baku Sawah (LBS Nasional)</span>
-                      <span class="ceking-source">Kementan &amp; ATR/BPN Atlas WMS</span>
+                      <span class="ceking-source">Basis Data Pertanian &amp; Pangan Nasional</span>
                     </div>
                   </label>
                   <span id="badgeCekingLbs" class="badge-pill" style="font-size: 0.64rem;">Off</span>
@@ -3254,6 +3263,111 @@
                     <span id="opacityLabelLbs">75%</span>
                   </div>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lbs', this.value)" class="range-input">
+                </div>
+              </div>
+
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingPeruntukan" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingPeruntukan" onchange="toggleCekingLayer('peruntukan', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Peta Peruntukan Ruang (RTRWN)</span>
+                      <span class="ceking-source">Rencana Tata Ruang Wilayah Nasional</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingPeruntukan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="range-wrap" style="margin-top: 0.25rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
+                    <span>Transparansi</span>
+                    <span id="opacityLabelPeruntukan">75%</span>
+                  </div>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('peruntukan', this.value)" class="range-input">
+                </div>
+              </div>
+
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingRtrw" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingRtrw" onchange="toggleCekingLayer('rtrw', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Rencana Pola Ruang (RTRW Kab/Kot)</span>
+                      <span class="ceking-source">Sistem Rencana Tata Ruang Daerah</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingRtrw" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="range-wrap" style="margin-top: 0.25rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
+                    <span>Transparansi</span>
+                    <span id="opacityLabelRtrw">75%</span>
+                  </div>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rtrw', this.value)" class="range-input">
+                </div>
+              </div>
+
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingBatasDesa" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingBatasDesa" onchange="toggleCekingLayer('batas_desa', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Batas Kelurahan / Desa (BIG RBI)</span>
+                      <span class="ceking-source">Badan Informasi Geospasial</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingBatasDesa" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="range-wrap" style="margin-top: 0.25rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
+                    <span>Transparansi</span>
+                    <span id="opacityLabelBatasDesa">85%</span>
+                  </div>
+                  <input type="range" min="10" max="100" value="85" oninput="changeCekingOpacity('batas_desa', this.value)" class="range-input">
+                </div>
+              </div>
+
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingJalan" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingJalan" onchange="toggleCekingLayer('jalan', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M12 12h8"/><path d="M4 12h8"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Jaringan Ruas Jalan &amp; Akses</span>
+                      <span class="ceking-source">Sistem Transportasi Geospasial</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingJalan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="range-wrap" style="margin-top: 0.25rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
+                    <span>Transparansi</span>
+                    <span id="opacityLabelJalan">85%</span>
+                  </div>
+                  <input type="range" min="10" max="100" value="85" oninput="changeCekingOpacity('jalan', this.value)" class="range-input">
+                </div>
+              </div>
+
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingSungai" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingSungai" onchange="toggleCekingLayer('sungai', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c5-5 5 5 10 0s5 5 10 0"/><path d="M2 17c5-5 5 5 10 0s5 5 10 0"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Jaringan Sungai &amp; Sempadan Air</span>
+                      <span class="ceking-source">Rupabumi Hidrografi Nasional</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingSungai" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="range-wrap" style="margin-top: 0.25rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
+                    <span>Transparansi</span>
+                    <span id="opacityLabelSungai">75%</span>
+                  </div>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('sungai', this.value)" class="range-input">
                 </div>
               </div>
 
@@ -3475,7 +3589,7 @@
               </div>
             </div>
             <p style="font-size: 0.75rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 0.65rem;">
-              Duta GeoSpasi menghubungkan visualisasi web secara langsung dengan layanan peta persil kadaster nasional Kementerian Agraria dan Tata Ruang / Badan Pertanahan Nasional (ATR/BPN).
+              Duta GeoSpasi menghubungkan visualisasi web secara langsung dengan layanan peta persil kadaster nasional dan basis data geospasial terpadu.
             </p>
             <div class="spec-list">
               <div class="spec-item">
@@ -3536,7 +3650,7 @@
           <span style="color: rgba(255, 255, 255, 0.25);">|</span>
           <a href="syarat-ketentuan.html" target="_blank" style="color: #93c5fd; text-decoration: none;">Syarat Ketentuan</a>
           <span style="color: rgba(255, 255, 255, 0.25);">|</span>
-          <a href="penafian-layanan.html" target="_blank" style="color: #93c5fd; text-decoration: none;">Disclaimer BPN</a>
+          <a href="penafian-layanan.html" target="_blank" style="color: #93c5fd; text-decoration: none;">Penafian Layanan</a>
           <span style="color: rgba(255, 255, 255, 0.25);">|</span>
           <a href="panduan-fitur.html" target="_blank" style="color: #93c5fd; text-decoration: none;">Panduan</a>
           <span style="color: rgba(255, 255, 255, 0.25);">|</span>
@@ -3560,7 +3674,7 @@
           <strong>Mode Tambah Bidang (Gabung) Aktif</strong>: Klik bidang tanah tetangga di peta.
         </div>
         <div style="display: flex; gap: 0.4rem; align-items: center;">
-          <button class="btn btn-outline" id="btnMergePrecisionBpn" onclick="autoScaleToBpnArea()" style="padding: 4px 10px; font-size: 0.72rem; border-color: var(--emerald); color: var(--emerald); font-weight: 700;" title="Sesuaikan ukuran seluruh bidang terpilih dengan batas antar bidang tetap 1 garis">Presisi BPN</button>
+          <button class="btn btn-outline" id="btnMergePrecisionBpn" onclick="autoScaleToBpnArea()" style="padding: 4px 10px; font-size: 0.72rem; border-color: var(--emerald); color: var(--emerald); font-weight: 700;" title="Sesuaikan ukuran seluruh bidang terpilih dengan batas antar bidang tetap 1 garis">Presisi Batas</button>
           <button class="btn btn-primary" onclick="finishMergeParcels()" style="padding: 4px 12px; font-size: 0.75rem; background-color: var(--accent); color: #ffffff; border: 1px solid var(--accent); font-weight: 700;">Selesai (<span id="mergeCountBadge">1</span>)</button>
           <button class="btn btn-outline" onclick="cancelMergeMode()" style="padding: 3px 9px; font-size: 0.72rem;">Batal</button>
         </div>
@@ -3568,7 +3682,7 @@
 
       <div id="zoomAlert" class="zoom-warning">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span id="zoomAlertText">Perbesar peta (Zoom <span id="currentZoomText">13</span>/14) untuk melihat batas persil BPN.</span>
+        <span id="zoomAlertText">Perbesar peta (Zoom <span id="currentZoomText">13</span>/14) untuk melihat batas bidang kadastral.</span>
         <button class="btn btn-outline" onclick="map.setZoom(16)" style="padding: 2px 8px; font-size: 0.7rem; border-color: var(--amber);">Perbesar</button>
       </div>
 
@@ -3618,7 +3732,7 @@
       <div id="map"></div>
 
       <div id="mapFloatingQuickControls" class="map-floating-quick-controls">
-        <button id="btnSyncBpn" class="map-quick-btn" onclick="syncLiveBpnMap()" title="Perbarui Peta (Sinkronisasi BPN &amp; Basemap)" aria-label="Perbarui Peta">
+        <button id="btnSyncBpn" class="map-quick-btn" onclick="syncLiveBpnMap()" title="Perbarui Peta (Sinkronisasi Kadaster &amp; Basemap)" aria-label="Perbarui Peta">
           <svg id="syncIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.6s ease;"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
         </button>
         <button id="btnShareMap" class="map-quick-btn" onclick="shareCurrentMapLocation()" title="Bagikan / Salin Tautan Posisi Peta" aria-label="Bagikan Tautan Peta">
@@ -3645,7 +3759,7 @@
         </div>
         <div id="legendBody" class="legend-body">
           <div class="legend-item"><span class="legend-swatch polygon-active"></span><span>Tapak Proyek (Bidang Aktif)</span></div>
-          <div class="legend-item"><span class="legend-swatch polygon-bpn"></span><span>Batas Bidang ATR/BPN</span></div>
+          <div class="legend-item"><span class="legend-swatch polygon-bpn"></span><span>Batas Bidang Kadastral</span></div>
           <div class="legend-item"><span class="legend-swatch node-patok"></span><span>Titik Patok Batas (Drag 4 Arah)</span></div>
           <div class="legend-item"><span class="legend-swatch dist-label">12m</span><span>Dimensi Jarak Batas (Meter)</span></div>
           <div class="legend-item"><span class="legend-swatch layer-klhk"></span><span>Kawasan Hutan Lindung (KLHK)</span></div>
@@ -3719,7 +3833,7 @@
             </thead>
             <tbody>
               <tr>
-                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Inspeksi Bidang BPN &amp; Ukur Luas</td>
+                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Inspeksi Bidang Kadastral &amp; Ukur Luas</td>
                 <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
                 <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
               </tr>
@@ -3760,7 +3874,17 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
-          <button type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 0.45rem; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-size: 0.78rem; padding: 0.55rem 0.85rem;">
+          <div id="proMemberThankYouCard" style="display: none; background-color: var(--accent); color: #ffffff; padding: 0.85rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--accent); font-size: 0.78rem; line-height: 1.5; text-align: center;">
+            <div style="font-weight: 700; font-size: 0.84rem; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+              <span>Terima Kasih atas Kepercayaan Anda</span>
+            </div>
+            <div style="font-size: 0.73rem; opacity: 0.95;">
+              Akun Anda telah berstatus PRO Lifetime. Seluruh hak akses fitur ekspor SHP, CAD, GeoJSON, dan analisis spasial aktif sepenuhnya.
+            </div>
+          </div>
+
+          <button id="btnUpgradeQris" type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 0.45rem; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-size: 0.78rem; padding: 0.55rem 0.85rem;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
             <span>Bayar QRIS &amp; Upgrade ke PRO (Kode Unik 3 Digit)</span>
           </button>
@@ -3775,7 +3899,7 @@
         <div style="display: flex; gap: 0.65rem; font-size: 0.7rem; flex-wrap: wrap;">
           <a href="jaminan-privasi.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Kebijakan Privasi</a>
           <a href="syarat-ketentuan.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Syarat &amp; Ketentuan</a>
-          <a href="penafian-layanan.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Disclaimer BPN</a>
+          <a href="penafian-layanan.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Penafian Layanan</a>
           <a href="hubungi-kami.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Bantuan</a>
         </div>
         <button class="btn btn-outline btn-sm" onclick="closeMemberModal()" style="padding: 5px 14px; font-size: 0.74rem; font-weight: 600;">Tutup</button>
@@ -3828,7 +3952,7 @@
         </div>
 
         <div style="background-color: var(--bg-subtle); padding: 0.55rem 0.75rem; border-radius: 2px; font-size: 0.68rem; color: var(--text-muted); line-height: 1.4; border: 1px solid var(--border-light);">
-          Keterangan: Biaya lisensi member adalah untuk membuka hak ekspor file Shapefile ESRI resmi dan tool digitasi spasial. Lapisan peta persil BPN merupakan integrasi publik pihak ketiga di luar layanan aplikasi dan dapat berubah sewaktu-waktu sesuai kebijakan BPN.
+          Keterangan: Biaya lisensi member adalah untuk membuka hak ekspor file Shapefile ESRI resmi dan tool digitasi spasial. Lapisan peta persil kadastral merupakan integrasi basis data geospasial publik pihak ketiga di luar kendali langsung aplikasi dan dapat diperbarui sewaktu-waktu oleh pengelola data terkait.
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.45rem;">
@@ -3859,14 +3983,14 @@
   <div id="serverModal" class="modal-backdrop" onclick="if(event.target===this) closeServerModal()">
     <div class="modal-card">
       <div class="modal-head">
-        <h3>Server Proxy BPN & API Gateway</h3>
+        <h3>Konfigurasi Gateway &amp; Proxy Geospasial</h3>
         <button class="modal-close-btn" onclick="closeServerModal()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="modal-body">
         <p>
-          Aplikasi ini memerlukan server proxy lokal untuk menjembatani komunikasi ke server geospasial ATR BPN dan mengatasi pembatasan Cross-Origin Resource Sharing (CORS).
+          Aplikasi ini dapat memanfaatkan server proxy lokal atau gateway kustom untuk mengoptimalkan caching dan transfer data geospasial.
         </p>
         <div>
           <span style="font-weight: 600; font-size: 0.76rem;">Perintah Menjalankan Server Proxy:</span>
@@ -3886,9 +4010,9 @@
           </div>
         </div>
         <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
-          <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Gateway Proxy Server BPN (Online / GitHub Pages / Ponsel):</span>
+          <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Gateway Proxy Geospasial Kustom (Opsional):</span>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 6px;">
-            Bila diakses dari hosting publik atau perangkat ponsel, masukkan URL server proxy Anda (contoh: https://bpn.domainanda.com atau IP WiFi http://192.168.1.10:8085).
+            Bila ingin menghubungkan server proxy mandiri berkecepatan tinggi, masukkan URL proxy (contoh: https://proxy.domainanda.com atau IP WiFi http://192.168.1.10:8085). Tanpa gateway, sistem otomatis menggunakan direct fallback resmi.
           </div>
           <div style="display: flex; gap: 0.4rem;">
             <input type="text" id="inputBpnGatewayUrl" class="form-input" placeholder="https://proxy.domainanda.com" style="flex: 1; font-size: 0.72rem; font-family: monospace;">
@@ -3936,13 +4060,18 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             Cetak / Simpan PDF
           </button>
+          <button class="btn btn-outline" onclick="generateExportPdfDirect()" style="padding: 5px 12px; font-size: 0.74rem; font-weight: 600; color: var(--accent); border-color: var(--accent); display: inline-flex; align-items: center; gap: 0.35rem;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Unduh PDF Langsung</span>
+          </button>
           <button class="btn btn-outline" onclick="closeMapPrintModal()" style="padding: 5px 10px; font-size: 0.74rem;">
             Tutup
           </button>
         </div>
       </div>
-      <div class="print-preview-scroll">
-        <div id="printMapSheet" class="print-sheet-paper">
+      <div class="print-preview-scroll" id="printPreviewScroll">
+        <div id="printSheetScaleWrapper" class="print-sheet-scale-wrapper">
+          <div id="printMapSheet" class="print-sheet-paper">
           <div class="print-sheet-frame">
             <div class="print-graticule-bar" id="printGraticuleTop">
               <span id="gratNw">106°49'48"E, 6°11'18"S</span>
@@ -4055,7 +4184,7 @@
                     <div style="font-weight: 700; color: #0a2e5c; text-transform: uppercase; font-size: 7.5px;">Sumber Data &amp; Penerbit</div>
                     <span id="kopProBadgePublisher" style="font-size: 6.5px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 1px 4px; border-radius: 2px;">PRO CUSTOM</span>
                   </div>
-                  <div style="color: #475569; margin-bottom: 4px; font-size: 7px;">Peta ATR/BPN, Geoportal KLHK 2026, Badan Informasi Geospasial</div>
+                  <div style="color: #475569; margin-bottom: 4px; font-size: 7px;">Peta Kadaster Pertanahan, Geoportal Lingkungan Hidup, Badan Informasi Geospasial</div>
                   <div style="display: flex; align-items: center; gap: 8px; border-top: 1px dashed #cbd5e1; padding-top: 4px;">
                     <div style="position: relative; flex-shrink: 0; width: 38px; height: 38px; background: transparent; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="triggerPublisherLogoUpload()" title="Klik untuk ganti logo (Khusus Member PRO)">
                       <img id="kopPublisherLogoImg" src="assets/img/logo.png" alt="Logo Penerbit" style="max-width: 100%; max-height: 100%; object-fit: contain;">
@@ -4075,6 +4204,7 @@
               <span id="gratSe">106°50'12"E, 6°11'32"S</span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -4104,7 +4234,7 @@
               <span class="export-type-badge map-badge">WGS84 &amp; UTM</span>
               <div class="export-type-name">Koordinat Peta</div>
               <div class="export-type-desc">
-                Format geodetik geografis standar ATR/BPN berupa Latitude &amp; Longitude (Desimal Derajat) serta Proyeksi UTM Nasional. Cocok untuk GPS Geodetik, Handheld GPS, GIS, dan laporan ukur resmi.
+                Format geodetik geografis standar kadastral nasional berupa Latitude &amp; Longitude (Desimal Derajat) serta Proyeksi UTM Nasional. Cocok untuk GPS Geodetik, Handheld GPS, GIS, dan laporan ukur resmi.
               </div>
             </div>
             <div class="export-type-meta">
@@ -4649,6 +4779,27 @@
       switchTab('tab-bidang');
     }
 
+    const ArcGisExportLayer = L.TileLayer.extend({
+      getTileUrl: function(coords) {
+        if (!this._map) return '';
+        const nwPoint = coords.scaleBy(this.getTileSize());
+        const sePoint = nwPoint.add(this.getTileSize());
+        const crs = this._map.options.crs;
+        const nw = crs.project(this._map.unproject(nwPoint, coords.z));
+        const se = crs.project(this._map.unproject(sePoint, coords.z));
+        const minX = Math.min(nw.x, se.x);
+        const maxX = Math.max(nw.x, se.x);
+        const minY = Math.min(nw.y, se.y);
+        const maxY = Math.max(nw.y, se.y);
+        const bbox = `${minX},${minY},${maxX},${maxY}`;
+        let url = `${this._url}?bbox=${bbox}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&f=image`;
+        if (this.options.layers) {
+          url += `&layers=${encodeURIComponent(this.options.layers)}`;
+        }
+        return url;
+      }
+    });
+
     function initMap() {
       map = L.map('map', {
         center: [DEFAULT_LAT, DEFAULT_LON],
@@ -4805,32 +4956,51 @@
       const val = input.value.trim();
       if (val) {
         localStorage.setItem('custom_bpn_gateway_url', val);
-        showToast('URL Gateway BPN disimpan: ' + val, 'success');
+        showToast('URL Gateway Geospasial disimpan: ' + val, 'success');
       } else {
         localStorage.removeItem('custom_bpn_gateway_url');
-        showToast('URL Gateway BPN dikembalikan ke bawaan.', 'info');
+        showToast('URL Gateway dikembalikan ke bawaan.', 'info');
       }
       checkProxyHealth();
-      if (persilLayer) refreshPersilTiles();
+      if (persilLayer && map.hasLayer(persilLayer)) {
+        map.removeLayer(persilLayer);
+        setupPersilLayer();
+      }
+      Object.keys(cekingLayers).forEach(k => {
+        const isActive = cekingLayers[k] && map.hasLayer(cekingLayers[k]);
+        if (isActive) map.removeLayer(cekingLayers[k]);
+        cekingLayers[k] = createThematicLayer(k);
+        if (isActive && cekingLayers[k]) map.addLayer(cekingLayers[k]);
+      });
     }
 
     function setupPersilLayer() {
       const persilBase = getBpnGatewayBase();
-      const proxyTileUrl = persilBase ? `${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}` : '';
-
-      persilLayer = L.tileLayer(proxyTileUrl || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', {
-        minZoom: 15,
-        maxZoom: 26,
-        maxNativeZoom: 19,
-        opacity: 0.9,
-        zIndex: 500,
-        updateWhenZooming: false,
-        updateInterval: 100
-      });
-
-      if (proxyTileUrl) {
-        persilLayer.addTo(map);
+      if (persilBase) {
+        persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`, {
+          minZoom: 15,
+          maxZoom: 26,
+          maxNativeZoom: 19,
+          opacity: 0.9,
+          zIndex: 500,
+          updateWhenZooming: false,
+          updateInterval: 100
+        });
+      } else {
+        persilLayer = L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
+          layers: 'bhumi:Persil',
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
+          minZoom: 15,
+          maxZoom: 26,
+          opacity: 0.9,
+          zIndex: 500,
+          updateWhenZooming: false,
+          updateInterval: 100
+        });
       }
+      persilLayer.addTo(map);
     }
 
     async function refreshPersilTiles() {
@@ -4839,30 +5009,135 @@
         try {
           await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
         } catch (e) {}
-      }
-      if (persilLayer) {
-        if (persilBase) {
+        if (persilLayer) {
           persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
           if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
+          persilLayer.redraw();
         }
-        persilLayer.redraw();
-        showToast('Peta bidang persil diperbarui.', 'success');
+      } else {
+        if (persilLayer) {
+          if (persilLayer.setParams) {
+            persilLayer.setParams({ _t: Date.now() });
+          }
+          if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
+          persilLayer.redraw();
+        }
       }
+      showToast('Peta bidang persil diperbarui.', 'success');
     }
 
     const cekingLayers = {
       hutan: null,
-      batas_desa: null,
-      jalan: null,
-      sungai: null,
       lsd: null,
       lbs: null,
-      rtrw_pola: null,
-      kesesuaian: null
+      peruntukan: null,
+      rtrw: null,
+      batas_desa: null,
+      jalan: null,
+      sungai: null
     };
 
     function getLayerCapKey(layerKey) {
       return layerKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+    }
+
+    function createThematicLayer(layerKey) {
+      const persilBase = getBpnGatewayBase();
+      if (persilBase) {
+        return L.tileLayer(`${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`, {
+          pane: 'thematicPane',
+          maxZoom: 26,
+          maxNativeZoom: 19,
+          opacity: (layerKey === 'batas_desa' || layerKey === 'jalan') ? 0.85 : 0.75,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'hutan') {
+        return new ArcGisExportLayer('https://geoportal.planologi.kehutanan.go.id/server/rest/services/Peta_Interaktif_2026/KWSHUTAN_AR_250K/MapServer/export', {
+          pane: 'thematicPane',
+          maxZoom: 26,
+          opacity: 0.75,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'lsd') {
+        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
+          layers: 'LSD',
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
+          pane: 'thematicPane',
+          minZoom: 5,
+          maxZoom: 26,
+          opacity: 0.75,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'lbs') {
+        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
+          layers: 'geonode:lbs_parsial',
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
+          pane: 'thematicPane',
+          minZoom: 5,
+          maxZoom: 26,
+          opacity: 0.75,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'peruntukan') {
+        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
+          layers: 'petabpn:rtrwn_2025',
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
+          pane: 'thematicPane',
+          minZoom: 5,
+          maxZoom: 26,
+          opacity: 0.75,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'rtrw') {
+        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
+          layers: 'rtr-online:rtrw_kabkot',
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
+          pane: 'thematicPane',
+          minZoom: 5,
+          maxZoom: 26,
+          opacity: 0.75,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'batas_desa') {
+        return new ArcGisExportLayer('https://geoservices.big.go.id/rbi/rest/services/BATASWILAYAH/BATAS_DESAKEL_AR/MapServer/export', {
+          pane: 'thematicPane',
+          maxZoom: 26,
+          opacity: 0.85,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'jalan') {
+        return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+          pane: 'thematicPane',
+          maxZoom: 26,
+          opacity: 0.85,
+          zIndex: 450
+        });
+      }
+      if (layerKey === 'sungai') {
+        return new ArcGisExportLayer('https://geoservices.big.go.id/rbi/rest/services/BASEMAP/Rupabumi_Indonesia/MapServer/export', {
+          pane: 'thematicPane',
+          maxZoom: 26,
+          opacity: 0.75,
+          zIndex: 450,
+          layers: 'show:670,671,672,673,698,702,707,709,748,749,750,756,757,760,762,796,797,798,809,811,812,814,818,838,839,840,844,845,846,847,848,868,869,870,875,876,877,879,882'
+        });
+      }
+      return null;
     }
 
     function initCekingLayers() {
@@ -4871,17 +5146,9 @@
         tp.style.zIndex = 450;
         tp.style.pointerEvents = 'none';
       }
-      const persilBase = getBpnGatewayBase();
       const keys = Object.keys(cekingLayers);
       keys.forEach(k => {
-        const url = persilBase ? `${persilBase}/api/layer-ceking/${k}/{z}/{x}/{y}.webp` : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-        cekingLayers[k] = L.tileLayer(url, {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          opacity: k === 'inarisk' ? 0.70 : 0.75,
-          zIndex: 450
-        });
+        cekingLayers[k] = createThematicLayer(k);
       });
     }
 
@@ -5155,7 +5422,7 @@
         lat: lat,
         lng: lng,
         fid: persilData.fid || '-',
-        tipe_hak: persilData.tipe_hak || 'Terdaftar BPN',
+        tipe_hak: persilData.tipe_hak || 'Terdaftar Resmi',
         luas_m2: persilData.luas_m2 || 0,
         fid: persilData.fid || '-',
         desa: geoData.desa !== '-' ? geoData.desa : (persilData.desa || '-'),
@@ -5163,7 +5430,7 @@
         kabkot: geoData.kabkot !== '-' ? geoData.kabkot : (persilData.kabkot || '-'),
         provinsi: geoData.provinsi !== '-' ? geoData.provinsi : (persilData.provinsi || '-'),
         kodepos: geoData.kodepos !== '-' ? geoData.kodepos : '-',
-        kantah: geoData.kantah !== '-' ? geoData.kantah : (persilData.kantah || 'Kantah ATR/BPN'),
+        kantah: geoData.kantah !== '-' ? geoData.kantah : (persilData.kantah || 'Kantor Pertanahan'),
         alamat: geoData.jalan || '-'
       };
 
@@ -5179,14 +5446,14 @@
       const elTipeHak = document.getElementById('pinTipeHakText');
       if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-      if (elStatusValidasi) elStatusValidasi.innerText = persilData.status_validasi || 'Terverifikasi BPN';
+      if (elStatusValidasi) elStatusValidasi.innerText = persilData.status_validasi || 'Terverifikasi Resmi';
 
       const badgeEl = document.getElementById('badgeTipeHak');
       if (badgeEl) badgeEl.innerText = activePinData.tipe_hak;
 
       const elLegalitas = document.getElementById('legalitasSummaryText');
       if (elLegalitas) {
-        elLegalitas.innerText = `Terverifikasi BPN : Status ${activePinData.tipe_hak || 'Hak Milik'}`;
+        elLegalitas.innerText = `Terverifikasi Resmi : Status ${activePinData.tipe_hak || 'Hak Milik'}`;
       }
 
       const elAlamatGmaps = document.getElementById('pinAlamatGmapsText');
@@ -5240,7 +5507,7 @@
       const badge = document.getElementById('badgeRebuildStatus');
       if (badge) {
         badge.className = 'badge-pill green';
-        badge.innerText = persilData.is_official_cadastre ? 'Kadaster Resmi ATR/BPN Presisi' : 'Batas ATR/BPN Terdeteksi';
+        badge.innerText = persilData.is_official_cadastre ? 'Kadaster Resmi Presisi' : 'Batas Kadaster Terdeteksi';
       }
     }
 
@@ -5295,7 +5562,7 @@
       const kodepos = addr.postcode || '-';
       const jalan = data?.alamat_lengkap || addr.road || addr.amenity || data?.display_name || '-';
       const cleanKab = kabkot !== '-' ? kabkot.replace(/^Kabupaten\s*/i, '').replace(/^Kota\s*/i, '') : '';
-      const kantah = data?.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : 'Kantah ATR/BPN');
+      const kantah = data?.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : 'Kantor Pertanahan');
 
       return { desa, kecamatan: kec, kabkot, provinsi: prov, kodepos, kantah, jalan };
     }
@@ -5337,10 +5604,10 @@
         showToast('Pilih bidang tanah pada peta terlebih dahulu.', 'warn');
         return;
       }
-      const summary = `DATA RESMI BIDANG TANAH ATR BPN
+      const summary = `DATA RESMI BIDANG TANAH KADASTRAL
 
 Tipe Hak: ${activePinData.tipe_hak}
-Luas BPN: ${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²
+Luas Terdaftar: ${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²
 Desa: ${activePinData.desa}
 Kecamatan: ${activePinData.kecamatan}
 Kabupaten: ${activePinData.kabkot}
@@ -5951,7 +6218,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         }
 
         renderCanvasPolygon(true);
-        showToast(`Presisi BPN berhasil: Seluruh ${mergeParcelsList.length} bidang terseleksi telah disesuaikan ukurannya dengan batas persekutuan terkunci presisi tanpa saling menimpa.`, 'success');
+        showToast(`Presisi Batas berhasil: Seluruh ${mergeParcelsList.length} bidang terseleksi telah disesuaikan ukurannya dengan batas persekutuan terkunci presisi tanpa saling menimpa.`, 'success');
         return;
       }
 
@@ -5961,7 +6228,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
         let targetArea = activePinData?.luas_m2 || 0;
         if (!targetArea || targetArea <= 0) {
-          const ask = prompt('Masukkan target luas bidang resmi BPN (m²):', Math.round(curTotalArea));
+          const ask = prompt('Masukkan target luas bidang resmi (m²):', Math.round(curTotalArea));
           if (ask && !isNaN(parseFloat(ask)) && parseFloat(ask) > 0) {
             targetArea = parseFloat(ask);
             if (!activePinData) activePinData = {};
@@ -5988,7 +6255,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
         activeVertices = activeMultiParts[0];
         renderCanvasPolygon(true);
-        showToast(`Presisi BPN berhasil: Seluruh ${activeMultiParts.length} bagian bidang poligon disesuaikan ukurannya ke ${Math.round(targetArea).toLocaleString('id-ID')} m².`, 'success');
+        showToast(`Presisi Batas berhasil: Seluruh ${activeMultiParts.length} bagian bidang poligon disesuaikan ukurannya ke ${Math.round(targetArea).toLocaleString('id-ID')} m².`, 'success');
         return;
       }
 
@@ -5997,7 +6264,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
       let targetArea = activePinData?.luas_m2 || 0;
       if (!targetArea || targetArea <= 0) {
-        const ask = prompt('Masukkan target luas bidang resmi BPN (m²):', Math.round(curArea));
+        const ask = prompt('Masukkan target luas bidang resmi (m²):', Math.round(curArea));
         if (ask && !isNaN(parseFloat(ask)) && parseFloat(ask) > 0) {
           targetArea = parseFloat(ask);
           if (!activePinData) activePinData = {};
@@ -6020,7 +6287,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       }));
 
       renderCanvasPolygon(true);
-      showToast(`Presisi BPN berhasil: Ukuran poligon disesuaikan ke ${Math.round(targetArea).toLocaleString('id-ID')} m² sesuai catatan resmi BPN.`, 'success');
+      showToast(`Presisi Batas berhasil: Ukuran poligon disesuaikan ke ${Math.round(targetArea).toLocaleString('id-ID')} m² sesuai catatan luas resmi.`, 'success');
     }
     function toDMS(lat, lng) {
       function conv(val, posChar, negChar) {
@@ -6065,7 +6332,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
           if (res.ok) {
             isProxyActive = true;
             if (badge) badge.className = 'status-pill';
-            if (text) text.innerText = 'Proxy BPN: Aktif';
+            if (text) text.innerText = 'Proxy Server: Aktif';
             return;
           }
         } catch (err) {}
@@ -6080,7 +6347,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         }
       }
       if (text) {
-        text.innerText = isGithub ? 'GitHub Pages (Mandiri)' : 'Proxy BPN: Mode Mandiri';
+        text.innerText = isGithub ? 'GitHub Pages (Mandiri)' : 'Sistem: Mode Mandiri';
       }
     }
 
@@ -6669,7 +6936,7 @@ function latLngToUtm(lat, lon) {
       if (tableContent) tableContent.style.display = 'block';
       if (emptyAlert) emptyAlert.style.display = 'none';
       if (badgeCount) badgeCount.innerText = `${activeVertices.length} Patok`;
-      if (nibBadge) nibBadge.innerText = `Terdaftar BPN`;
+      if (nibBadge) nibBadge.innerText = `Terdaftar Resmi`;
 
       const numPts = activeVertices.length;
       let totalPerimeter = 0;
@@ -6751,7 +7018,7 @@ function latLngToUtm(lat, lon) {
       const luasM2 = Math.round(calculatePolygonArea(activeVertices));
 
       let lines = [];
-      lines.push('DAFTAR TITIK KOORDINAT PATOK BIDANG TANAH ATR/BPN');
+      lines.push('DAFTAR TITIK KOORDINAT PATOK BIDANG TANAH KADASTRAL');
       lines.push('====================================================');
       
       lines.push(`Desa / Kelurahan         : ${desa}`);
@@ -6927,7 +7194,7 @@ function latLngToUtm(lat, lon) {
       const persilApiBase = getBpnGatewayBase();
       const statusBanner = document.getElementById('mergeBannerText');
       if (statusBanner) {
-        statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Sedang membaca bidang tetangga ATR/BPN...';
+        statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Sedang membaca bidang tetangga kadastral...';
       }
       try {
         let persilData = null;
@@ -7724,7 +7991,7 @@ function latLngToUtm(lat, lon) {
   </table>
   <br>
   <div style="font-size: 8pt; color: #64748b;">
-    Berkas dihasilkan otomatis oleh sistem DutaGeoSpasi (dutamik.id). Standar Datum WGS 84 dan Proyeksi UTM Nasional ATR/BPN.
+    Berkas dihasilkan otomatis oleh sistem DutaGeoSpasi (dutamik.id). Standar Datum WGS 84 dan Proyeksi UTM Nasional Kadastral.
   </div>
 </body>
 </html>`;
@@ -9095,6 +9362,8 @@ function latLngToUtm(lat, lon) {
         const badgeEl = document.getElementById('memberProfileBadge');
         const alertEl = document.getElementById('memberStatusAlert');
         const upgradeBtn = document.getElementById('btnUpgradeWa');
+        const qrisBtn = document.getElementById('btnUpgradeQris');
+        const thankYouCard = document.getElementById('proMemberThankYouCard');
 
         if (nameEl) nameEl.textContent = currentMemberProfile.name || 'Member Duta GeoSpasi';
         if (emailEl) emailEl.textContent = currentMemberProfile.email || '-';
@@ -9106,8 +9375,10 @@ function latLngToUtm(lat, lon) {
             badgeEl.textContent = 'PRO MEMBER RESMI';
           }
           if (alertEl) {
-            alertEl.innerHTML = 'Status Akun: <strong>PRO MEMBER AKTIF</strong>. Hak akses ekspor Shapefile ESRI SHP, CAD Script, GeoJSON, dan Excel terbuka penuh tanpa batasan.';
+            alertEl.style.display = 'none';
           }
+          if (thankYouCard) thankYouCard.style.display = 'block';
+          if (qrisBtn) qrisBtn.style.display = 'none';
           if (upgradeBtn) upgradeBtn.style.display = 'none';
         } else {
           if (badgeEl) {
@@ -9115,8 +9386,11 @@ function latLngToUtm(lat, lon) {
             badgeEl.textContent = 'FREE TIER';
           }
           if (alertEl) {
+            alertEl.style.display = 'block';
             alertEl.innerHTML = 'Akun Anda saat ini berstatus <strong>FREE TIER</strong>. Hak akses ekspor Shapefile dan CAD dikunci. Lakukan pembayaran via QRIS untuk aktivasi status PRO Lifetime.';
           }
+          if (thankYouCard) thankYouCard.style.display = 'none';
+          if (qrisBtn) qrisBtn.style.display = 'flex';
           if (upgradeBtn) upgradeBtn.style.display = 'flex';
         }
       } else {
@@ -9498,9 +9772,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
       updatePrintKopContent();
       initPublisherKop();
+      adjustMobilePrintScale();
 
       setTimeout(() => {
         initOrUpdatePrintMaps();
+        adjustMobilePrintScale();
       }, 250);
     }
 
@@ -9527,6 +9803,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const bounds = printMapInstance ? printMapInstance.getBounds() : null;
           initOrUpdatePrintInset(bounds);
         }
+        adjustMobilePrintScale();
       }, 200);
     }
 
@@ -9678,7 +9955,7 @@ window.addEventListener('DOMContentLoaded', () => {
             <div class="print-legend-symbol">
               <div class="print-legend-line" style="background-color: #ea580c; height: 2px;"></div>
             </div>
-            <span>Peta Bidang Kadaster (ATR/BPN)</span>
+            <span>Peta Bidang Kadastral</span>
           </div>
         `);
       }
@@ -9700,7 +9977,7 @@ window.addEventListener('DOMContentLoaded', () => {
             <div class="print-legend-symbol">
               <div class="print-legend-swatch" style="background-color: rgba(16, 185, 129, 0.35); border: 1px solid #059669;"></div>
             </div>
-            <span>Lahan Sawah Dilindungi (LSD BPN)</span>
+            <span>Lahan Sawah Dilindungi (LSD Nasional)</span>
           </div>
         `);
       }
@@ -9712,6 +9989,28 @@ window.addEventListener('DOMContentLoaded', () => {
               <div class="print-legend-swatch" style="background-color: rgba(2, 132, 199, 0.35); border: 1px solid #0284c7;"></div>
             </div>
             <span>Lahan Baku Sawah (LBS Nasional)</span>
+          </div>
+        `);
+      }
+
+      if (cekingLayers.peruntukan && map.hasLayer(cekingLayers.peruntukan)) {
+        items.push(`
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: rgba(217, 119, 6, 0.35); border: 1px solid #d97706;"></div>
+            </div>
+            <span>Peta Peruntukan Lahan</span>
+          </div>
+        `);
+      }
+
+      if (cekingLayers.rtrw && map.hasLayer(cekingLayers.rtrw)) {
+        items.push(`
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: rgba(147, 51, 234, 0.35); border: 1px solid #9333ea;"></div>
+            </div>
+            <span>Rencana Tata Ruang Wilayah (RTRW)</span>
           </div>
         `);
       }
@@ -10064,8 +10363,100 @@ window.addEventListener('DOMContentLoaded', () => {
       printInsetInstance.invalidateSize();
     }
 
+    function isMobileDevice() {
+      return (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (window.innerWidth <= 768)
+      );
+    }
+
+    function adjustMobilePrintScale() {
+      const scroll = document.getElementById('printPreviewScroll');
+      const sheet = document.getElementById('printMapSheet');
+      const wrapper = document.getElementById('printSheetScaleWrapper');
+      if (!scroll || !sheet) return;
+      const isA3 = sheet.classList.contains('a3');
+      const sheetW = isA3 ? 1340 : 1120;
+      const sheetH = isA3 ? 940 : 790;
+      const containerW = scroll.clientWidth || window.innerWidth;
+      if (containerW < sheetW + 24) {
+        const scale = Math.max(0.24, Math.min((containerW - 16) / sheetW, 0.98));
+        sheet.style.transform = `scale(${scale})`;
+        sheet.style.transformOrigin = 'top center';
+        if (wrapper) {
+          wrapper.style.height = `${Math.ceil(sheetH * scale + 24)}px`;
+          wrapper.style.overflow = 'hidden';
+        }
+      } else {
+        sheet.style.transform = 'none';
+        sheet.style.transformOrigin = 'unset';
+        if (wrapper) {
+          wrapper.style.height = 'auto';
+          wrapper.style.overflow = 'visible';
+        }
+      }
+    }
+
+    window.addEventListener('resize', function() {
+      const modal = document.getElementById('modalPrintMap');
+      if (modal && modal.style.display !== 'none') {
+        adjustMobilePrintScale();
+      }
+    });
+
+    async function generateExportPdfDirect() {
+      const sheet = document.getElementById('printMapSheet');
+      if (!sheet) return;
+      showToast('Menyiapkan dokumen PDF peta...', 'info');
+
+      if (typeof html2pdf === 'undefined') {
+        window.print();
+        return;
+      }
+
+      const isA3 = sheet.classList.contains('a3');
+      const docTitle = (document.getElementById('printTitleInput')?.value || 'PETA_KADASTRAL').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `${docTitle}_${Date.now()}.pdf`;
+
+      const prevTransform = sheet.style.transform;
+      const prevOrigin = sheet.style.transformOrigin;
+      sheet.style.transform = 'none';
+
+      const opt = {
+        margin: 0,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: isA3 ? [420, 297] : [297, 210],
+          orientation: 'landscape'
+        }
+      };
+
+      try {
+        await html2pdf().set(opt).from(sheet).save();
+        showToast('PDF peta berhasil diunduh.', 'success');
+      } catch (err) {
+        window.print();
+      } finally {
+        sheet.style.transform = prevTransform;
+        sheet.style.transformOrigin = prevOrigin;
+        adjustMobilePrintScale();
+      }
+    }
+
     function executeMapPrint() {
-      window.print();
+      if (isMobileDevice()) {
+        generateExportPdfDirect();
+      } else {
+        window.print();
+      }
     }
 
   </script>
