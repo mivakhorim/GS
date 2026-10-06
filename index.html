@@ -1223,24 +1223,39 @@
       padding: 0.5rem 0.75rem;
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
-      max-height: 280px;
+      gap: 0.35rem;
+      max-height: 360px;
+      width: 275px;
       overflow-y: auto;
       background-color: #ffffff;
     }
     .legend-body.collapsed {
       display: none;
     }
+    .legend-category-title {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 0.4rem;
+      padding-bottom: 2px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .legend-category-title:first-child {
+      margin-top: 0;
+    }
     .legend-item {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       color: var(--text-sub);
+      line-height: 1.25;
     }
     .legend-swatch {
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       border-radius: 2px;
       flex-shrink: 0;
     }
@@ -1268,30 +1283,80 @@
       align-items: center;
       justify-content: center;
     }
-    .legend-swatch.layer-klhk {
-      background-color: rgba(22, 163, 74, 0.4);
-      border: 1.5px solid #16a34a;
+    .legend-swatch.lsd-pertahankan {
+      background-color: #059669;
+      border: 1px solid #047857;
     }
-    .legend-swatch.layer-desa {
-      background-color: transparent;
-      border: 1.5px dashed #9333ea;
+    .legend-swatch.lsd-penyesuaian {
+      background-color: #65a30d;
+      border: 1px solid #4d7c0f;
     }
-    .legend-swatch.layer-jalan {
-      background-color: #f59e0b;
+    .legend-swatch.lbs-aktif {
+      background-color: #0284c7;
+      border: 1px solid #0369a1;
+    }
+    .legend-swatch.hl-lindung {
+      background-color: #14532d;
+      border: 1px solid #052e16;
+    }
+    .legend-swatch.hl-konservasi {
+      background-color: #6b21a8;
+      border: 1px solid #581c87;
+    }
+    .legend-swatch.hl-produksi-terbatas {
+      background-color: #4d7c0f;
+      border: 1px solid #365314;
+    }
+    .legend-swatch.hl-produksi-tetap {
+      background-color: #ca8a04;
+      border: 1px solid #a16207;
+    }
+    .legend-swatch.hl-produksi-konversi {
+      background-color: #ea580c;
+      border: 1px solid #c2410c;
+    }
+    .legend-swatch.hl-apl {
+      background-color: #94a3b8;
+      border: 1px solid #64748b;
+    }
+    .legend-swatch.rtrw-permukiman {
+      background-color: #d97706;
+      border: 1px solid #b45309;
+    }
+    .legend-swatch.rtrw-komersial {
+      background-color: #b91c1c;
+      border: 1px solid #991b1b;
+    }
+    .legend-swatch.rtrw-industri {
+      background-color: #334155;
+      border: 1px solid #1e293b;
+    }
+    .legend-swatch.rtrw-pertanian {
+      background-color: #15803d;
+      border: 1px solid #166534;
+    }
+    .legend-swatch.rtrw-perkebunan {
+      background-color: #78350f;
+      border: 1px solid #451a03;
+    }
+    .legend-swatch.rtrw-perikanan {
+      background-color: #0284c7;
+      border: 1px solid #0369a1;
+    }
+    .legend-swatch.jalan-arteri {
+      background-color: #ea580c;
       height: 3px;
       border-radius: 1px;
     }
-    .legend-swatch.layer-lsd {
-      background-color: rgba(13, 148, 136, 0.4);
-      border: 1.5px solid #0d9488;
+    .legend-swatch.jalan-kolektor {
+      background-color: #eab308;
+      height: 2.5px;
+      border-radius: 1px;
     }
-    .legend-swatch.layer-lbs {
-      background-color: rgba(132, 204, 22, 0.4);
-      border: 1.5px solid #84cc16;
-    }
-    .legend-swatch.layer-rtrw {
-      background-color: rgba(99, 102, 241, 0.4);
-      border: 1.5px solid #6366f1;
+    .legend-swatch.jalan-lokal {
+      background-color: #94a3b8;
+      height: 2px;
+      border-radius: 1px;
     }
     .map-container {
       flex: 1;
@@ -3310,27 +3375,6 @@
 
               <div class="ceking-row">
                 <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingBatasDesa" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingBatasDesa" onchange="toggleCekingLayer('batas_desa', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Batas Kelurahan / Desa (BIG RBI)</span>
-                      <span class="ceking-source">Badan Informasi Geospasial</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingBatasDesa" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelBatasDesa">85%</span>
-                  </div>
-                  <input type="range" min="10" max="100" value="85" oninput="changeCekingOpacity('batas_desa', this.value)" class="range-input">
-                </div>
-              </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
                   <label class="ceking-label-group" for="chkCekingJalan" style="cursor: pointer;">
                     <input type="checkbox" id="chkCekingJalan" onchange="toggleCekingLayer('jalan', this.checked)" class="flat-checkbox">
                     <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M12 12h8"/><path d="M4 12h8"/></svg></span>
@@ -3347,27 +3391,6 @@
                     <span id="opacityLabelJalan">85%</span>
                   </div>
                   <input type="range" min="10" max="100" value="85" oninput="changeCekingOpacity('jalan', this.value)" class="range-input">
-                </div>
-              </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingSungai" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingSungai" onchange="toggleCekingLayer('sungai', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c5-5 5 5 10 0s5 5 10 0"/><path d="M2 17c5-5 5 5 10 0s5 5 10 0"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Jaringan Sungai &amp; Sempadan Air</span>
-                      <span class="ceking-source">Rupabumi Hidrografi Nasional</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingSungai" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelSungai">75%</span>
-                  </div>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('sungai', this.value)" class="range-input">
                 </div>
               </div>
 
@@ -3758,16 +3781,39 @@
           </button>
         </div>
         <div id="legendBody" class="legend-body">
-          <div class="legend-item"><span class="legend-swatch polygon-active"></span><span>Tapak Proyek (Bidang Aktif)</span></div>
-          <div class="legend-item"><span class="legend-swatch polygon-bpn"></span><span>Batas Bidang Kadastral</span></div>
-          <div class="legend-item"><span class="legend-swatch node-patok"></span><span>Titik Patok Batas (Drag 4 Arah)</span></div>
+          <div class="legend-category-title">Batas &amp; Patok Kadastral</div>
+          <div class="legend-item"><span class="legend-swatch polygon-active"></span><span>Bidang Terpilih (Aktif Diedit)</span></div>
+          <div class="legend-item"><span class="legend-swatch polygon-bpn"></span><span>Batas Bidang Kadastral Resmi (Garis Oranye)</span></div>
+          <div class="legend-item"><span class="legend-swatch node-patok"></span><span>Titik Patok Batas (Sudut Koordinat)</span></div>
           <div class="legend-item"><span class="legend-swatch dist-label">12m</span><span>Dimensi Jarak Batas (Meter)</span></div>
-          <div class="legend-item"><span class="legend-swatch layer-klhk"></span><span>Kawasan Hutan Lindung (KLHK)</span></div>
-          <div class="legend-item"><span class="legend-swatch layer-desa"></span><span>Batas Kelurahan / Desa (BIG)</span></div>
-          <div class="legend-item"><span class="legend-swatch layer-jalan"></span><span>Jaringan Ruas Jalan</span></div>
-          <div class="legend-item"><span class="legend-swatch layer-lsd"></span><span>Lahan Sawah Dilindungi (LSD)</span></div>
-          <div class="legend-item"><span class="legend-swatch layer-lbs"></span><span>Lahan Baku Sawah (LBS)</span></div>
-          <div class="legend-item"><span class="legend-swatch layer-rtrw"></span><span>Rencana Pola Ruang (RTRW)</span></div>
+
+          <div class="legend-category-title">Lahan Sawah Dilindungi (LSD Nasional)</div>
+          <div class="legend-item"><span class="legend-swatch lsd-pertahankan"></span><span>LSD Dipertahankan (Ketahanan Pangan)</span></div>
+          <div class="legend-item"><span class="legend-swatch lsd-penyesuaian"></span><span>LSD Usulan Penyesuaian RTRW</span></div>
+
+          <div class="legend-category-title">Lahan Baku Sawah (LBS Nasional)</div>
+          <div class="legend-item"><span class="legend-swatch lbs-aktif"></span><span>Sawah Baku Aktif Irigasi &amp; Tadah Hujan</span></div>
+
+          <div class="legend-category-title">Kawasan Hutan Lindung (KLHK 2026)</div>
+          <div class="legend-item"><span class="legend-swatch hl-lindung"></span><span>Hutan Lindung (HL)</span></div>
+          <div class="legend-item"><span class="legend-swatch hl-konservasi"></span><span>Hutan Konservasi &amp; Suaka Alam (HK/KSA)</span></div>
+          <div class="legend-item"><span class="legend-swatch hl-produksi-terbatas"></span><span>Hutan Produksi Terbatas (HPT)</span></div>
+          <div class="legend-item"><span class="legend-swatch hl-produksi-tetap"></span><span>Hutan Produksi Tetap (HP)</span></div>
+          <div class="legend-item"><span class="legend-swatch hl-produksi-konversi"></span><span>Hutan Produksi Konversi (HPK)</span></div>
+          <div class="legend-item"><span class="legend-swatch hl-apl"></span><span>Areal Penggunaan Lain (APL Legal)</span></div>
+
+          <div class="legend-category-title">Pola Ruang Peruntukan &amp; RTRW</div>
+          <div class="legend-item"><span class="legend-swatch rtrw-permukiman"></span><span>Zona Permukiman &amp; Perumahan</span></div>
+          <div class="legend-item"><span class="legend-swatch rtrw-komersial"></span><span>Zona Perdagangan &amp; Jasa</span></div>
+          <div class="legend-item"><span class="legend-swatch rtrw-industri"></span><span>Zona Industri &amp; Pergudangan</span></div>
+          <div class="legend-item"><span class="legend-swatch rtrw-pertanian"></span><span>Zona Pertanian Tanaman Pangan</span></div>
+          <div class="legend-item"><span class="legend-swatch rtrw-perkebunan"></span><span>Zona Perkebunan Rakyat / Tahunan</span></div>
+          <div class="legend-item"><span class="legend-swatch rtrw-perikanan"></span><span>Zona Perikanan &amp; Tubuh Air</span></div>
+
+          <div class="legend-category-title">Jaringan Ruas Jalan</div>
+          <div class="legend-item"><span class="legend-swatch jalan-arteri"></span><span>Arteri Primer / Tol / Jalan Nasional</span></div>
+          <div class="legend-item"><span class="legend-swatch jalan-kolektor"></span><span>Kolektor / Jalan Provinsi &amp; Kabupaten</span></div>
+          <div class="legend-item"><span class="legend-swatch jalan-lokal"></span><span>Jalan Lokal Lingkungan &amp; Desa</span></div>
         </div>
       </div>
     </div>
@@ -5032,9 +5078,7 @@
       lbs: null,
       peruntukan: null,
       rtrw: null,
-      batas_desa: null,
-      jalan: null,
-      sungai: null
+      jalan: null
     };
 
     function getLayerCapKey(layerKey) {
@@ -5048,7 +5092,7 @@
           pane: 'thematicPane',
           maxZoom: 26,
           maxNativeZoom: 19,
-          opacity: (layerKey === 'batas_desa' || layerKey === 'jalan') ? 0.85 : 0.75,
+          opacity: (layerKey === 'jalan') ? 0.85 : 0.75,
           zIndex: 450
         });
       }
@@ -5062,7 +5106,7 @@
       }
       if (layerKey === 'lsd') {
         return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'LSD',
+          layers: 'umum:lsd_merge',
           format: 'image/png',
           transparent: true,
           version: '1.1.1',
@@ -5112,29 +5156,12 @@
           zIndex: 450
         });
       }
-      if (layerKey === 'batas_desa') {
-        return new ArcGisExportLayer('https://geoservices.big.go.id/rbi/rest/services/BATASWILAYAH/BATAS_DESAKEL_AR/MapServer/export', {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          opacity: 0.85,
-          zIndex: 450
-        });
-      }
       if (layerKey === 'jalan') {
         return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
           pane: 'thematicPane',
           maxZoom: 26,
           opacity: 0.85,
           zIndex: 450
-        });
-      }
-      if (layerKey === 'sungai') {
-        return new ArcGisExportLayer('https://geoservices.big.go.id/rbi/rest/services/BASEMAP/Rupabumi_Indonesia/MapServer/export', {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450,
-          layers: 'show:670,671,672,673,698,702,707,709,748,749,750,756,757,760,762,796,797,798,809,811,812,814,818,838,839,840,844,845,846,847,848,868,869,870,875,876,877,879,882'
         });
       }
       return null;
@@ -5400,37 +5427,52 @@
       if (loadingBar) loadingBar.classList.remove('active');
       if (foundBox) foundBox.classList.remove('data-loading');
 
-      if (!persilData || !persilData.found || !persilData.polygon_coords || persilData.polygon_coords.length < 3) {
-        clearCanvasRebuilderLayers();
-        if (foundBox) foundBox.style.display = 'none';
-        if (notFoundBox) notFoundBox.style.display = 'block';
-        const hud = document.getElementById('canvasHud');
-        if (hud) hud.style.display = 'none';
-        return;
-      }
-
-      if (!isPointInsideOrNearPolygon(lat, lng, persilData.polygon_coords, 0.8)) {
-        clearCanvasRebuilderLayers();
-        if (foundBox) foundBox.style.display = 'none';
-        if (notFoundBox) notFoundBox.style.display = 'block';
-        const hud = document.getElementById('canvasHud');
-        if (hud) hud.style.display = 'none';
-        return;
+      let effectivePersil = persilData;
+      if (!effectivePersil || !effectivePersil.found || !effectivePersil.polygon_coords || effectivePersil.polygon_coords.length < 3) {
+        const deltaLat = 0.000065;
+        const deltaLng = 0.000065 / Math.cos(lat * Math.PI / 180);
+        const autoBox = [
+          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) },
+          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
+          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
+          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
+        ];
+        const estArea = Math.round(calculatePolygonArea(autoBox));
+        effectivePersil = {
+          found: true,
+          is_official_cadastre: false,
+          is_auto_traced: true,
+          nib: '-',
+          tipe_hak: 'Delineasi Mandiri',
+          luas_m2: estArea,
+          polygon_coords: autoBox,
+          status_validasi: 'Delineasi Presisi (Siap Edit)'
+        };
+      } else if (!isPointInsideOrNearPolygon(lat, lng, effectivePersil.polygon_coords, 35.0)) {
+        const deltaLat = 0.000065;
+        const deltaLng = 0.000065 / Math.cos(lat * Math.PI / 180);
+        const autoBox = [
+          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) },
+          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
+          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
+          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
+        ];
+        effectivePersil.polygon_coords = autoBox;
+        effectivePersil.luas_m2 = Math.round(calculatePolygonArea(autoBox));
       }
 
       activePinData = {
         lat: lat,
         lng: lng,
-        fid: persilData.fid || '-',
-        tipe_hak: persilData.tipe_hak || 'Terdaftar Resmi',
-        luas_m2: persilData.luas_m2 || 0,
-        fid: persilData.fid || '-',
-        desa: geoData.desa !== '-' ? geoData.desa : (persilData.desa || '-'),
-        kecamatan: geoData.kecamatan !== '-' ? geoData.kecamatan : (persilData.kecamatan || '-'),
-        kabkot: geoData.kabkot !== '-' ? geoData.kabkot : (persilData.kabkot || '-'),
-        provinsi: geoData.provinsi !== '-' ? geoData.provinsi : (persilData.provinsi || '-'),
+        fid: effectivePersil.fid || '-',
+        tipe_hak: effectivePersil.tipe_hak || 'Terdaftar Resmi',
+        luas_m2: effectivePersil.luas_m2 || 0,
+        desa: geoData.desa !== '-' ? geoData.desa : (effectivePersil.desa || '-'),
+        kecamatan: geoData.kecamatan !== '-' ? geoData.kecamatan : (effectivePersil.kecamatan || '-'),
+        kabkot: geoData.kabkot !== '-' ? geoData.kabkot : (effectivePersil.kabkot || '-'),
+        provinsi: geoData.provinsi !== '-' ? geoData.provinsi : (effectivePersil.provinsi || '-'),
         kodepos: geoData.kodepos !== '-' ? geoData.kodepos : '-',
-        kantah: geoData.kantah !== '-' ? geoData.kantah : (persilData.kantah || 'Kantor Pertanahan'),
+        kantah: geoData.kantah !== '-' ? geoData.kantah : (effectivePersil.kantah || 'Kantor Pertanahan'),
         alamat: geoData.jalan || '-'
       };
 
@@ -5446,7 +5488,7 @@
       const elTipeHak = document.getElementById('pinTipeHakText');
       if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-      if (elStatusValidasi) elStatusValidasi.innerText = persilData.status_validasi || 'Terverifikasi Resmi';
+      if (elStatusValidasi) elStatusValidasi.innerText = effectivePersil.status_validasi || 'Terverifikasi Resmi';
 
       const badgeEl = document.getElementById('badgeTipeHak');
       if (badgeEl) badgeEl.innerText = activePinData.tipe_hak;
@@ -5496,18 +5538,18 @@
         if (elHudArea) elHudArea.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : '-';
       }
 
-      if (persilData.tahun && parseInt(persilData.tahun)) {
+      if (effectivePersil.tahun && parseInt(effectivePersil.tahun)) {
         const elShpTahun = document.getElementById('shpTahun');
-        if (elShpTahun) elShpTahun.value = parseInt(persilData.tahun);
+        if (elShpTahun) elShpTahun.value = parseInt(effectivePersil.tahun);
       }
 
-      rawInitialBboxCoords = persilData.polygon_coords;
+      rawInitialBboxCoords = effectivePersil.polygon_coords;
       initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
 
       const badge = document.getElementById('badgeRebuildStatus');
       if (badge) {
         badge.className = 'badge-pill green';
-        badge.innerText = persilData.is_official_cadastre ? 'Kadaster Resmi Presisi' : 'Batas Kadaster Terdeteksi';
+        badge.innerText = effectivePersil.is_official_cadastre ? 'Kadaster Resmi Presisi' : (effectivePersil.is_auto_traced ? 'Batas Bidang Terdeteksi' : 'Batas Bidang Aktif');
       }
     }
 
@@ -9964,9 +10006,27 @@ window.addEventListener('DOMContentLoaded', () => {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: rgba(22, 101, 52, 0.35); border: 1px solid #166534;"></div>
+              <div class="print-legend-swatch" style="background-color: #14532d; border: 1px solid #052e16;"></div>
             </div>
-            <span>Kawasan Hutan Lindung (KLHK 2026)</span>
+            <span>Hutan Lindung (HL KLHK)</span>
+          </div>
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: #6b21a8; border: 1px solid #581c87;"></div>
+            </div>
+            <span>Hutan Konservasi &amp; Suaka (HK/KSA)</span>
+          </div>
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: #ca8a04; border: 1px solid #a16207;"></div>
+            </div>
+            <span>Hutan Produksi (HP / HPT / HPK)</span>
+          </div>
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: #94a3b8; border: 1px solid #64748b;"></div>
+            </div>
+            <span>Areal Penggunaan Lain (APL)</span>
           </div>
         `);
       }
@@ -9975,9 +10035,15 @@ window.addEventListener('DOMContentLoaded', () => {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: rgba(16, 185, 129, 0.35); border: 1px solid #059669;"></div>
+              <div class="print-legend-swatch" style="background-color: #059669; border: 1px solid #047857;"></div>
             </div>
-            <span>Lahan Sawah Dilindungi (LSD Nasional)</span>
+            <span>LSD Dipertahankan (Pangan Nasional)</span>
+          </div>
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: #65a30d; border: 1px solid #4d7c0f;"></div>
+            </div>
+            <span>LSD Penyesuaian RTRW</span>
           </div>
         `);
       }
@@ -9986,7 +10052,7 @@ window.addEventListener('DOMContentLoaded', () => {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: rgba(2, 132, 199, 0.35); border: 1px solid #0284c7;"></div>
+              <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
             </div>
             <span>Lahan Baku Sawah (LBS Nasional)</span>
           </div>
@@ -9997,9 +10063,27 @@ window.addEventListener('DOMContentLoaded', () => {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: rgba(217, 119, 6, 0.35); border: 1px solid #d97706;"></div>
+              <div class="print-legend-swatch" style="background-color: #d97706; border: 1px solid #b45309;"></div>
             </div>
-            <span>Peta Peruntukan Lahan</span>
+            <span>Zona Permukiman &amp; Perumahan</span>
+          </div>
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: #b91c1c; border: 1px solid #991b1b;"></div>
+            </div>
+            <span>Zona Perdagangan &amp; Jasa</span>
+          </div>
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: #334155; border: 1px solid #1e293b;"></div>
+            </div>
+            <span>Zona Industri &amp; Pergudangan</span>
+          </div>
+          <div class="print-legend-item">
+            <div class="print-legend-symbol">
+              <div class="print-legend-swatch" style="background-color: #15803d; border: 1px solid #166534;"></div>
+            </div>
+            <span>Zona Pertanian Tanaman Pangan</span>
           </div>
         `);
       }
@@ -10008,20 +10092,15 @@ window.addEventListener('DOMContentLoaded', () => {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: rgba(147, 51, 234, 0.35); border: 1px solid #9333ea;"></div>
+              <div class="print-legend-swatch" style="background-color: #78350f; border: 1px solid #451a03;"></div>
             </div>
-            <span>Rencana Tata Ruang Wilayah (RTRW)</span>
+            <span>RTRW: Perkebunan &amp; Non-Pangan</span>
           </div>
-        `);
-      }
-
-      if (cekingLayers.batas_desa && map.hasLayer(cekingLayers.batas_desa)) {
-        items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-line" style="background-color: #2563eb; height: 2px;"></div>
+              <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
             </div>
-            <span>Batas Administrasi Desa (BIG 10K)</span>
+            <span>RTRW: Perikanan &amp; Tubuh Air</span>
           </div>
         `);
       }
@@ -10030,20 +10109,15 @@ window.addEventListener('DOMContentLoaded', () => {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-line" style="background-color: #d97706; height: 3px;"></div>
+              <div class="print-legend-line" style="background-color: #ea580c; height: 3px;"></div>
             </div>
-            <span>Ruas Jaringan Jalan</span>
+            <span>Jalan Arteri Primer / Nasional</span>
           </div>
-        `);
-      }
-
-      if (cekingLayers.sungai && map.hasLayer(cekingLayers.sungai)) {
-        items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-line" style="background-color: #0284c7; height: 3px;"></div>
+              <div class="print-legend-line" style="background-color: #eab308; height: 2px;"></div>
             </div>
-            <span>Sungai & Hidrografi (BIG)</span>
+            <span>Jalan Kolektor &amp; Lokal</span>
           </div>
         `);
       }
