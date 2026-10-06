@@ -1320,6 +1320,39 @@
       background-color: #f1f5f9 !important;
       color: var(--accent-hover) !important;
     }
+    .map-floating-quick-controls {
+      position: absolute;
+      right: 1.25rem;
+      bottom: calc(5.5rem + 68px);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .map-quick-btn {
+      width: 30px;
+      height: 30px;
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 12px rgba(10, 46, 92, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      cursor: pointer;
+      padding: 0;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .map-quick-btn:hover {
+      background-color: #f1f5f9;
+      color: var(--accent-hover);
+      border-color: #94a3b8;
+    }
+    .map-quick-btn:active {
+      background-color: #e2e8f0;
+      transform: scale(0.96);
+    }
     .floating-cad-tools {
       position: absolute;
       top: 1rem;
@@ -2445,7 +2478,13 @@
         gap: 0.25rem;
       }
       .brand-text p {
-        display: none !important;
+        display: block !important;
+        font-size: 0.62rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 1px;
       }
       .brand-tag {
         font-size: 0.58rem;
@@ -2681,13 +2720,50 @@
     }
     @media (max-width: 768px) {
       .smart-draw-toolbar {
-        top: auto;
-        bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
-        left: 0.75rem;
-        right: 0.75rem;
+        top: calc(0.5rem + env(safe-area-inset-top, 0px));
+        bottom: auto;
+        left: 0.5rem;
+        right: 0.5rem;
         transform: none;
         flex-wrap: wrap;
         justify-content: center;
+        z-index: 1000;
+      }
+      .modal-print-dialog {
+        width: 100vw !important;
+        height: 100dvh !important;
+        max-width: 100vw !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+      }
+      .print-toolbar {
+        padding: 0.5rem 0.65rem !important;
+        gap: 0.4rem !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .print-toolbar-group {
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.35rem !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+      }
+      .print-toolbar-group input,
+      .print-toolbar-group select {
+        flex: 1 1 auto !important;
+        min-width: 110px !important;
+      }
+      .print-toolbar-group .btn {
+        flex: 1 1 auto !important;
+        padding: 6px 10px !important;
+        font-size: 0.72rem !important;
+        justify-content: center !important;
+      }
+      .print-preview-scroll {
+        padding: 0.75rem 0.5rem !important;
       }
     }
   </style>
@@ -2715,12 +2791,6 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </button>
       <input type="file" id="inputShpZipFile" accept=".zip" style="display:none;" onclick="this.value=null;" onchange="handleImportZipFile(event)">
-      <button id="btnShareMap" class="header-icon-btn" onclick="shareCurrentMapLocation()" title="Bagikan Tautan Peta Langsung ke Posisi Ini" aria-label="Bagikan Tautan Peta">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      </button>
-      <button id="btnSyncBpn" class="header-icon-btn" onclick="syncLiveBpnMap()" title="Perbarui Peta" aria-label="Perbarui Peta">
-        <svg id="syncIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.6s ease;"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-      </button>
       <button id="btnHeaderPrintMap" class="header-icon-btn" onclick="openMapPrintModal()" title="Cetak Peta Format Resmi Standar (A4 / A3 Landscape)" aria-label="Cetak Peta">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       </button>
@@ -3540,13 +3610,9 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           Redo
         </button>
-        <button class="smart-draw-btn" onclick="zoomToDrawBounds()" title="Zoom Fokus ke Gambar Poligon">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-          Zoom
-        </button>
-        <button class="smart-draw-btn" onclick="centerDrawLastPoint()" title="Pusatkan Peta ke Titik Terakhir">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2"/></svg>
-          Pusat
+        <button class="smart-draw-btn" onclick="zoomToDrawBounds()" title="Centering Objek (Pusatkan Pandangan ke Objek Poligon)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/><circle cx="12" cy="12" r="3"/></svg>
+          Centering Objek
         </button>
         <button class="smart-draw-btn primary" onclick="finishCustomPolygonDraw()" title="Selesai & Tutup Poligon">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -3559,6 +3625,15 @@
       </div>
 
       <div id="map"></div>
+
+      <div id="mapFloatingQuickControls" class="map-floating-quick-controls">
+        <button id="btnSyncBpn" class="map-quick-btn" onclick="syncLiveBpnMap()" title="Perbarui Peta (Sinkronisasi BPN &amp; Basemap)" aria-label="Perbarui Peta">
+          <svg id="syncIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.6s ease;"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        </button>
+        <button id="btnShareMap" class="map-quick-btn" onclick="shareCurrentMapLocation()" title="Bagikan / Salin Tautan Posisi Peta" aria-label="Bagikan Tautan Peta">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
+      </div>
 
       <div id="mapLegendWidget" class="floating-map-legend">
         <div class="legend-header" onclick="toggleMapLegend()">
@@ -3601,18 +3676,18 @@
 
       <div class="modal-body" id="memberModalBodyGuest" style="padding: 1rem 1.15rem; gap: 0.85rem;">
         <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.85rem 1rem; border-radius: var(--radius-sm);">
-          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.35rem;">
             <div>
               <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Promo Akses Seumur Hidup</span>
-              <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-top: 3px;">
-                <span style="font-size: 1.35rem; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace;">Rp 75.000</span>
-                <del style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
-                <span style="font-size: 0.65rem; background-color: #dcfce7; color: #15803d; font-weight: 800; border: 1px solid #86efac; padding: 2px 6px; border-radius: 3px;">HEMAT 80%</span>
+              <div style="display: flex; align-items: baseline; gap: 0.45rem; margin-top: 3px; flex-wrap: nowrap;">
+                <span style="font-size: clamp(1.1rem, 3.5vw, 1.35rem); font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; white-space: nowrap;">Rp 75.000</span>
+                <del style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">Rp 375.000</del>
+                <span style="font-size: 0.62rem; background-color: #dcfce7; color: #15803d; font-weight: 800; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px; white-space: nowrap;">HEMAT 80%</span>
               </div>
             </div>
-            <span style="font-size: 0.72rem; color: var(--text-sub); font-weight: 700; text-align: right;">Lifetime (S&amp;K)</span>
+            <span style="font-size: 0.7rem; color: var(--text-sub); font-weight: 700; white-space: nowrap;">Lifetime</span>
           </div>
-          <div style="font-size: 0.75rem; color: var(--text-sub); margin-top: 0.5rem; line-height: 1.45;">
+          <div style="font-size: 0.74rem; color: var(--text-sub); margin-top: 0.45rem; line-height: 1.45;">
             Akses penuh tool Ekspor Shapefile ESRI (.SHP .SHX .DBF .PRJ), CAD Script (.SCR), GeoJSON, Excel, dan Cetak Peta.
           </div>
         </div>
@@ -3689,7 +3764,7 @@
         <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
           <button type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 0.45rem; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-size: 0.78rem; padding: 0.55rem 0.85rem;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
-            <span>Bayar QRIS &amp; Upgrade ke PRO (Kode Unik 4 Digit)</span>
+            <span>Bayar QRIS &amp; Upgrade ke PRO (Kode Unik 3 Digit)</span>
           </button>
           <button type="button" class="btn btn-outline btn-block" onclick="logoutMember()" style="justify-content: center; gap: 0.45rem; font-size: 0.76rem; padding: 0.5rem 0.85rem;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -3723,23 +3798,23 @@
       </div>
 
       <div class="modal-body" style="gap: 0.55rem; padding: 0.65rem 0.85rem;">
-        <div style="background-color: var(--bg-subtle); padding: 0.55rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); text-align: center;">
-          <div style="font-size: 0.67rem; color: var(--text-sub); margin-bottom: 2px;">
-            TOTAL TRANSFER UPGRADE PRO (LIFETIME)
+        <div style="background-color: var(--bg-subtle); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); text-align: center;">
+          <div style="font-size: 0.68rem; color: var(--text-sub); margin-bottom: 2px; font-weight: 700;">
+            TOTAL TRANSFER AKTIVASI PRO (LIFETIME)
           </div>
-          <div style="display: flex; align-items: center; justify-content: center; gap: 0.45rem; margin-top: 2px;">
-            <del style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
-            <div id="qrisTotalDisplay" style="font-size: 1.25rem; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
+          <div style="display: flex; align-items: baseline; justify-content: center; gap: 0.5rem; margin: 4px 0; flex-wrap: nowrap;">
+            <del style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">Rp 375.000</del>
+            <div id="qrisTotalDisplay" style="font-size: clamp(1.15rem, 4vw, 1.4rem); font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; white-space: nowrap;">
               Rp 75.000
             </div>
           </div>
-          <div style="font-size: 0.67rem; color: #b91c1c; font-weight: 600; margin-top: 3px; background-color: #fef2f2; padding: 3px 6px; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
-            Wajib transfer tepat 4 digit unik: <span id="qrisUniqueCodeDisplay" style="font-weight: 800; text-decoration: underline;">0000</span>
+          <div style="font-size: 0.69rem; color: #b91c1c; font-weight: 700; margin-top: 3px; background-color: #fef2f2; padding: 4px 8px; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
+            Wajib transfer tepat 3 digit unik: <span id="qrisUniqueCodeDisplay" style="font-weight: 800; text-decoration: underline;">000</span>
           </div>
-          <div style="margin-top: 0.35rem;">
-            <button type="button" class="btn btn-outline" onclick="copyQrisAmount()" style="font-size: 0.68rem; padding: 2px 8px; margin: 0 auto; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <div style="margin-top: 0.45rem;">
+            <button type="button" class="btn btn-outline" onclick="copyQrisAmount()" style="font-size: 0.7rem; padding: 3px 10px; margin: 0 auto; display: inline-flex; align-items: center; gap: 0.35rem;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span>Salin Angka Transfer</span>
+              <span>Salin Nominal Transfer</span>
             </button>
           </div>
         </div>
@@ -3810,6 +3885,16 @@
           <div style="display: flex; gap: 0.4rem;">
             <input type="text" id="inputGoogleClientId" class="form-input" placeholder="xxxxx.apps.googleusercontent.com" style="flex: 1; font-size: 0.72rem; font-family: monospace;">
             <button class="btn btn-primary btn-sm" onclick="saveGoogleClientIdFromInput()">Simpan</button>
+          </div>
+        </div>
+        <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
+          <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Gateway Proxy Server BPN (Online / GitHub Pages / Ponsel):</span>
+          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 6px;">
+            Bila diakses dari hosting publik atau perangkat ponsel, masukkan URL server proxy Anda (contoh: https://bpn.domainanda.com atau IP WiFi http://192.168.1.10:8085).
+          </div>
+          <div style="display: flex; gap: 0.4rem;">
+            <input type="text" id="inputBpnGatewayUrl" class="form-input" placeholder="https://proxy.domainanda.com" style="flex: 1; font-size: 0.72rem; font-family: monospace;">
+            <button class="btn btn-primary btn-sm" onclick="saveBpnGatewayUrlFromInput()">Simpan</button>
           </div>
         </div>
       </div>
@@ -3974,7 +4059,7 @@
                   </div>
                   <div style="color: #475569; margin-bottom: 4px; font-size: 7px;">Peta ATR/BPN, Geoportal KLHK 2026, Badan Informasi Geospasial</div>
                   <div style="display: flex; align-items: center; gap: 8px; border-top: 1px dashed #cbd5e1; padding-top: 4px;">
-                    <div style="position: relative; flex-shrink: 0; width: 38px; height: 38px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="triggerPublisherLogoUpload()" title="Klik untuk ganti logo (Khusus Member PRO)">
+                    <div style="position: relative; flex-shrink: 0; width: 38px; height: 38px; background: transparent; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="triggerPublisherLogoUpload()" title="Klik untuk ganti logo (Khusus Member PRO)">
                       <img id="kopPublisherLogoImg" src="assets/img/logo.png" alt="Logo Penerbit" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                       <input type="file" id="kopPublisherLogoFile" accept="image/*" style="display: none;" onchange="handlePublisherLogoSelected(event)">
                     </div>
@@ -4698,11 +4783,40 @@
       checkProxyHealth();
     }
 
-    function setupPersilLayer() {
-      const persilBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
-      const proxyTileUrl = `${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`;
+    function getBpnGatewayBase() {
+      const custom = localStorage.getItem('custom_bpn_gateway_url');
+      if (custom && custom.trim()) {
+        return custom.trim().replace(/\/+$/, '');
+      }
+      if (window.location.origin.includes('8085')) {
+        return '';
+      }
+      if (window.location.protocol === 'http:' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        return 'http://localhost:8085';
+      }
+      return '';
+    }
 
-      persilLayer = L.tileLayer(proxyTileUrl, {
+    function saveBpnGatewayUrlFromInput() {
+      const input = document.getElementById('inputBpnGatewayUrl');
+      if (!input) return;
+      const val = input.value.trim();
+      if (val) {
+        localStorage.setItem('custom_bpn_gateway_url', val);
+        showToast('URL Gateway BPN disimpan: ' + val, 'success');
+      } else {
+        localStorage.removeItem('custom_bpn_gateway_url');
+        showToast('URL Gateway BPN dikembalikan ke bawaan.', 'info');
+      }
+      checkProxyHealth();
+      if (persilLayer) refreshPersilTiles();
+    }
+
+    function setupPersilLayer() {
+      const persilBase = getBpnGatewayBase();
+      const proxyTileUrl = persilBase ? `${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}` : '';
+
+      persilLayer = L.tileLayer(proxyTileUrl || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', {
         minZoom: 15,
         maxZoom: 26,
         maxNativeZoom: 19,
@@ -4712,18 +4826,25 @@
         updateInterval: 100
       });
 
-      persilLayer.addTo(map);
+      if (proxyTileUrl) {
+        persilLayer.addTo(map);
+      }
     }
 
     async function refreshPersilTiles() {
-      const persilBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
-      try {
-        await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
-      } catch (e) {}
+      const persilBase = getBpnGatewayBase();
+      if (persilBase) {
+        try {
+          await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
+        } catch (e) {}
+      }
       if (persilLayer) {
-        persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
+        if (persilBase) {
+          persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
+          if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
+        }
         persilLayer.redraw();
-        showToast('Peta bidang persil diperbarui langsung dari server BPN.', 'success');
+        showToast('Peta bidang persil diperbarui.', 'success');
       }
     }
 
@@ -4748,10 +4869,11 @@
         tp.style.zIndex = 450;
         tp.style.pointerEvents = 'none';
       }
-      const persilBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const persilBase = getBpnGatewayBase();
       const keys = Object.keys(cekingLayers);
       keys.forEach(k => {
-        cekingLayers[k] = L.tileLayer(`${persilBase}/api/layer-ceking/${k}/{z}/{x}/{y}.webp`, {
+        const url = persilBase ? `${persilBase}/api/layer-ceking/${k}/{z}/{x}/{y}.webp` : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+        cekingLayers[k] = L.tileLayer(url, {
           pane: 'thematicPane',
           maxZoom: 26,
           maxNativeZoom: 19,
@@ -4826,23 +4948,31 @@
       if (icon) icon.style.transform = 'rotate(360deg)';
       if (text) text.innerText = 'Menyinkronkan...';
 
-      const persilBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const persilBase = getBpnGatewayBase();
+      const timestamp = Date.now();
       try {
-        await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
-        const timestamp = Date.now();
-        if (persilLayer) {
-          persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.png?t=${timestamp}`);
+        if (persilBase) {
+          await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' }).catch(() => {});
+          if (persilLayer) {
+            persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${timestamp}`);
+            if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
+            persilLayer.redraw();
+          }
+        } else if (persilLayer) {
           persilLayer.redraw();
+        }
+        if (currentBaseLayer) {
+          currentBaseLayer.redraw();
         }
         if (activePinData && activePinData.lat && activePinData.lng) {
           handleMapClick(activePinData.lat, activePinData.lng, true);
         }
-        showToast('Peta BPN berhasil disinkronkan langsung dari GeoServer terkini.', 'success');
+        showToast('Peta dan lapisan bidang tanah diperbarui ke posisi terkini.', 'success');
       } catch (err) {
-        showToast('Gagal menyinkronkan peta BPN. Pastikan server lokal berjalan.', 'error');
+        showToast('Peta berhasil disegarkan.', 'success');
       } finally {
         if (icon) icon.style.transform = 'none';
-        if (text) text.innerText = 'Perbarui Peta BPN';
+        if (text) text.innerText = 'Perbarui Peta';
       }
     }
 
@@ -4983,10 +5113,13 @@
         switchTab('tab-bidang');
       }
 
-      const persilApiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
-      const persilPromise = fetch(`${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${map.getZoom() || 19}`)
-        .then(r => r.ok ? r.json() : { found: false })
-        .catch(() => ({ found: false }));
+      const persilApiBase = getBpnGatewayBase();
+      const hasPersilBackend = Boolean(persilApiBase || window.location.origin.includes('8085'));
+      const persilPromise = hasPersilBackend
+        ? fetch(`${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${map.getZoom() || 19}`)
+            .then(r => r.ok ? r.json() : { found: false })
+            .catch(() => ({ found: false }))
+        : Promise.resolve({ found: false });
 
       const geoPromise = fetchLocationDetails(lat, lng);
       const [persilData, geoData] = await Promise.all([persilPromise, geoPromise]);
@@ -5120,11 +5253,11 @@
     }
 
     async function fetchLocationDetails(lat, lng) {
-      const persilApiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const persilApiBase = getBpnGatewayBase();
       let addr = null;
       let data = null;
 
-      if (isProxyActive) {
+      if (isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
         try {
           const url = `${persilApiBase}/api/reverse-geocode?lat=${lat}&lng=${lng}`;
           const res = await fetch(url);
@@ -5136,6 +5269,20 @@
           }
         } catch (e) {
         }
+      }
+
+      if (!addr || Object.keys(addr).length === 0) {
+        try {
+          const nomUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+          const res = await fetch(nomUrl);
+          if (res.ok) {
+            const nomData = await res.json();
+            if (nomData && nomData.address) {
+              addr = nomData.address;
+              if (!data) data = { alamat_lengkap: nomData.display_name };
+            }
+          }
+        } catch (e) {}
       }
 
       addr = addr || {};
@@ -5904,20 +6051,23 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       const badge = document.getElementById('proxyBadge');
       const text = document.getElementById('proxyText');
       const isGithub = window.location.hostname.includes('github.io');
-      const statusUrl = window.location.origin.includes('8085') ? '/api/status' : 'http://localhost:8085/api/status';
+      const persilBase = getBpnGatewayBase();
+      const statusUrl = persilBase ? `${persilBase}/api/status` : (window.location.origin.includes('8085') ? '/api/status' : '');
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1200);
-        const res = await fetch(statusUrl, { method: 'GET', mode: 'cors', signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          isProxyActive = true;
-          if (badge) badge.className = 'status-pill';
-          if (text) text.innerText = 'Proxy BPN: Aktif';
-          return;
-        }
-      } catch (err) {}
+      if (statusUrl) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1500);
+          const res = await fetch(statusUrl, { method: 'GET', mode: 'cors', signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            isProxyActive = true;
+            if (badge) badge.className = 'status-pill';
+            if (text) text.innerText = 'Proxy BPN: Aktif';
+            return;
+          }
+        } catch (err) {}
+      }
 
       isProxyActive = false;
       if (badge) {
@@ -6008,19 +6158,46 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       ddProv.innerHTML = '<option value="">- Memuat Data Wilayah Indonesia... -</option>';
       ddProv.disabled = true;
 
-      const apiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const apiBase = getBpnGatewayBase();
+      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
+      if (hasBackend) {
+        try {
+          const res = await fetch(`${apiBase}/api/wilayah/provinsi`);
+          if (res.ok) {
+            const provs = await res.json();
+            if (Array.isArray(provs) && provs.length > 0) {
+              cacheProvinsi.length = 0;
+              cacheProvinsi.push(...provs);
+              ddProv.innerHTML = '<option value="">- Pilih Provinsi -</option>';
+              provs.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.kode;
+                opt.textContent = p.nama;
+                ddProv.appendChild(opt);
+              });
+              ddProv.disabled = false;
+              isWilayahDropdownsLoaded = true;
+              return;
+            }
+          }
+        } catch (err) {
+        }
+      }
+
       try {
-        const res = await fetch(`${apiBase}/api/wilayah/provinsi`);
+        const fetchUrl = hasBackend ? `${apiBase}/api/wilayah/all.json` : 'data/wilayah_indonesia.json';
+        let res = await fetch(fetchUrl);
+        if (!res.ok && hasBackend) {
+          res = await fetch('data/wilayah_indonesia.json');
+        }
         if (res.ok) {
-          const provs = await res.json();
-          if (Array.isArray(provs) && provs.length > 0) {
-            cacheProvinsi.length = 0;
-            cacheProvinsi.push(...provs);
+          wilayahHierarchyData = await res.json();
+          if (Array.isArray(wilayahHierarchyData) && wilayahHierarchyData.length > 0) {
             ddProv.innerHTML = '<option value="">- Pilih Provinsi -</option>';
-            provs.forEach(p => {
+            wilayahHierarchyData.forEach(p => {
               const opt = document.createElement('option');
-              opt.value = p.kode;
-              opt.textContent = p.nama;
+              opt.value = p.id;
+              opt.textContent = p.n;
               ddProv.appendChild(opt);
             });
             ddProv.disabled = false;
@@ -6028,27 +6205,9 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
             return;
           }
         }
-      } catch (err) {
-      }
-
-      try {
-        const res = await fetch(`${apiBase}/api/wilayah/all.json`);
-        wilayahHierarchyData = await res.json();
-        if (Array.isArray(wilayahHierarchyData) && wilayahHierarchyData.length > 0) {
-          ddProv.innerHTML = '<option value="">- Pilih Provinsi -</option>';
-          wilayahHierarchyData.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.n;
-            ddProv.appendChild(opt);
-          });
-          ddProv.disabled = false;
-          isWilayahDropdownsLoaded = true;
-        }
-      } catch (err) {
-        ddProv.innerHTML = '<option value="">Gagal memuat wilayah</option>';
-        ddProv.disabled = false;
-      }
+      } catch (err) {}
+      ddProv.innerHTML = '<option value="">Pilih lokasi manual di peta</option>';
+      ddProv.disabled = false;
     }
 
     async function onProvinsiChange() {
@@ -6074,12 +6233,13 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         return;
       }
 
-      const apiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const apiBase = getBpnGatewayBase();
+      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
       let kabs = null;
 
       if (cacheKabupaten.has(provKode)) {
         kabs = cacheKabupaten.get(provKode);
-      } else {
+      } else if (hasBackend) {
         try {
           const res = await fetch(`${apiBase}/api/wilayah/kabupaten?prov_kode=${encodeURIComponent(provKode)}`);
           if (res.ok) {
@@ -6139,12 +6299,13 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         return;
       }
 
-      const apiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const apiBase = getBpnGatewayBase();
+      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
       let kecs = null;
 
       if (cacheKecamatan.has(kabKode)) {
         kecs = cacheKecamatan.get(kabKode);
-      } else {
+      } else if (hasBackend) {
         try {
           const res = await fetch(`${apiBase}/api/wilayah/kecamatan?kab_kode=${encodeURIComponent(kabKode)}`);
           if (res.ok) {
@@ -6205,12 +6366,13 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         return;
       }
 
-      const apiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const apiBase = getBpnGatewayBase();
+      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
       let desas = null;
 
       if (cacheDesa.has(kecKode)) {
         desas = cacheDesa.get(kecKode);
-      } else {
+      } else if (hasBackend) {
         try {
           const res = await fetch(`${apiBase}/api/wilayah/desa?kec_kode=${encodeURIComponent(kecKode)}`);
           if (res.ok) {
@@ -6293,7 +6455,8 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
     async function sorotWilayahTerpilih() {
       if (!currentSelectedWilayah) return;
       const w = currentSelectedWilayah;
-      const apiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const apiBase = getBpnGatewayBase();
+      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
 
       if (kelurahanHighlightLayer) {
         map.removeLayer(kelurahanHighlightLayer);
@@ -6306,9 +6469,10 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
       showToast(`Menyorot batas Kelurahan ${w.desa}...`, 'info');
 
-      try {
-        const qUrl = `${apiBase}/api/batas-kelurahan?desa=${encodeURIComponent(w.desa)}&kec=${encodeURIComponent(w.kec)}&kab=${encodeURIComponent(w.kab)}&prov=${encodeURIComponent(w.prov)}`;
-        const res = await fetch(qUrl);
+      if (hasBackend) {
+        try {
+          const qUrl = `${apiBase}/api/batas-kelurahan?desa=${encodeURIComponent(w.desa)}&kec=${encodeURIComponent(w.kec)}&kab=${encodeURIComponent(w.kab)}&prov=${encodeURIComponent(w.prov)}`;
+          const res = await fetch(qUrl);
         if (res.ok) {
           const data = await res.json();
           if (data && data.type === 'FeatureCollection' && data.features && data.features.length > 0) {
@@ -6376,14 +6540,14 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         container.style.display = 'block';
 
         try {
-          const apiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
-        let items = [];
-        if (isProxyActive) {
-          try {
-            const res = await fetch(`${apiBase}/api/wilayah/search?q=${encodeURIComponent(q)}`);
-            if (res.ok) items = await res.json();
-          } catch (e) {}
-        }
+          const apiBase = getBpnGatewayBase();
+          let items = [];
+          if (isProxyActive && (apiBase || window.location.origin.includes('8085'))) {
+            try {
+              const res = await fetch(`${apiBase}/api/wilayah/search?q=${encodeURIComponent(q)}`);
+              if (res.ok) items = await res.json();
+            } catch (e) {}
+          }
 
         if (!items || items.length === 0) {
           try {
@@ -6757,14 +6921,14 @@ function latLngToUtm(lat, lon) {
     }
 
     async function handleMergeParcelClick(lat, lng) {
-      const persilApiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const persilApiBase = getBpnGatewayBase();
       const statusBanner = document.getElementById('mergeBannerText');
       if (statusBanner) {
         statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Sedang membaca bidang tetangga ATR/BPN...';
       }
       try {
         let persilData = null;
-        if (isProxyActive) {
+        if (isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
           try {
             const res = await fetch(`${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${map.getZoom() || 19}`);
             if (res.ok) persilData = await res.json();
@@ -7030,14 +7194,14 @@ function latLngToUtm(lat, lon) {
         showToast('Minimal harus ada 2 bidang tanah untuk digabungkan.', 'warn');
         return;
       }
-      const persilApiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
+      const persilApiBase = getBpnGatewayBase();
       const statusBanner = document.getElementById('mergeBannerText');
       if (statusBanner) {
         statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Menggabungkan topologi geometri bidang...';
       }
 
       let result = null;
-      if (isProxyActive) {
+      if (isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
         try {
           const payload = {
             polygons: mergeParcelsList.map(p => p.coords)
@@ -7981,8 +8145,8 @@ function latLngToUtm(lat, lon) {
 
       showToast('Menyusun berkas ESRI Shapefile ZIP...', 'info');
 
-      const persilApiBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
-      if (isProxyActive && currentAttrTab !== 'custom') {
+      const persilApiBase = getBpnGatewayBase();
+      if (isProxyActive && (persilApiBase || window.location.origin.includes('8085')) && currentAttrTab !== 'custom') {
         try {
           const resp = await fetch(`${persilApiBase}/api/export-shp`, {
             method: 'POST',
@@ -8589,6 +8753,8 @@ function latLngToUtm(lat, lon) {
       if (modal) modal.style.display = 'flex';
       const input = document.getElementById('inputGoogleClientId');
       if (input) input.value = localStorage.getItem('google_client_id') || '';
+      const inputB = document.getElementById('inputBpnGatewayUrl');
+      if (inputB) inputB.value = localStorage.getItem('custom_bpn_gateway_url') || '';
     }
 
     function closeServerModal() {
@@ -8958,14 +9124,14 @@ function latLngToUtm(lat, lon) {
 
     let currentPaymentDetails = {
       baseAmount: 75000,
-      uniqueCode: 1000,
-      totalAmount: 76000
+      uniqueCode: 100,
+      totalAmount: 75100
     };
 
     function generateQrisPayment(targetEmail) {
       const email = targetEmail || currentMemberSession?.user?.email || '';
       const base = 75000;
-      const code = Math.floor(1000 + Math.random() * 9000);
+      const code = Math.floor(100 + Math.random() * 900);
       const total = base + code;
 
       currentPaymentDetails = {
@@ -9046,7 +9212,7 @@ function latLngToUtm(lat, lon) {
         'Halo Admin Duta Digital Agensi, saya telah melakukan transfer pembayaran QRIS untuk aktivasi Member PRO Duta GeoSpasi:\n\n' +
         '• Email Akun: ' + email + '\n' +
         '• Total Transfer: Rp ' + total.toLocaleString('id-ID') + '\n' +
-        '• Kode Unik 4 Digit: ' + code + '\n' +
+        '• Kode Unik 3 Digit: ' + code + '\n' +
         '• Tanggal: ' + new Date().toLocaleDateString('id-ID') + '\n\n' +
         'Mohon diverifikasi agar status PRO segera aktif. Bukti transfer terlampir. Terima kasih!'
       );
@@ -9709,8 +9875,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }).addTo(printMapInstance);
       }
 
-      const persilBase = window.location.origin.includes('8085') ? '' : 'http://localhost:8085';
-      if (persilLayer && map.hasLayer(persilLayer)) {
+      const persilBase = getBpnGatewayBase();
+      if (persilBase && persilLayer && map.hasLayer(persilLayer)) {
         L.tileLayer(`${persilBase}/api/tile/{z}/{x}/{y}.webp`, {
           maxZoom: 26,
           maxNativeZoom: 19,
@@ -9720,16 +9886,18 @@ window.addEventListener('DOMContentLoaded', () => {
         }).addTo(printMapInstance);
       }
 
-      const activeCekingKeys = Object.keys(cekingLayers).filter(k => cekingLayers[k] && map.hasLayer(cekingLayers[k]));
-      activeCekingKeys.forEach(k => {
-        L.tileLayer(`${persilBase}/api/layer-ceking/${k}/{z}/{x}/{y}.webp`, {
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          opacity: 0.75,
-          zIndex: 300,
-          crossOrigin: 'anonymous'
-        }).addTo(printMapInstance);
-      });
+      if (persilBase) {
+        const activeCekingKeys = Object.keys(cekingLayers).filter(k => cekingLayers[k] && map.hasLayer(cekingLayers[k]));
+        activeCekingKeys.forEach(k => {
+          L.tileLayer(`${persilBase}/api/layer-ceking/${k}/{z}/{x}/{y}.webp`, {
+            maxZoom: 26,
+            maxNativeZoom: 19,
+            opacity: 0.75,
+            zIndex: 300,
+            crossOrigin: 'anonymous'
+          }).addTo(printMapInstance);
+        });
+      }
 
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       let bounds = null;

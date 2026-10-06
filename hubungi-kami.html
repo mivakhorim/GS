@@ -131,27 +131,30 @@
     }
     .tabs-inner {
       display: flex;
-      gap: 0.5rem;
-      overflow-x: auto;
+      flex-wrap: wrap;
+      gap: 0.35rem;
       padding-top: 0.5rem;
-      padding-bottom: 0;
+      padding-bottom: 0.5rem;
     }
     .tab-link {
-      padding: 0.625rem 1rem;
-      font-size: 0.8125rem;
+      padding: 0.45rem 0.8rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: #64748b;
       text-decoration: none;
-      border-bottom: 2px solid transparent;
-      white-space: nowrap;
-      transition: color 0.15s ease, border-bottom-color 0.15s ease;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      transition: all 0.15s ease;
     }
     .tab-link:hover {
       color: #0a2e5c;
+      background: #f1f5f9;
+      border-color: #cbd5e1;
     }
     .tab-link.active {
       color: #0a2e5c;
-      border-bottom-color: #0a2e5c;
+      background: #e2e8f0;
+      border-color: #0a2e5c;
       font-weight: 700;
     }
     .doc-article {
@@ -299,7 +302,8 @@
     }
     .info-callout {
       background: #eff4fa;
-      border-left: 3px solid #0a2e5c;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
       padding: 1rem 1.25rem;
       font-size: 0.835rem;
       color: #0a2e5c;
@@ -465,7 +469,7 @@
       </div>
 
       <div class="info-callout">
-        <strong>Pemberitahuan Aktivasi Akun PRO:</strong> Setelah melakukan transfer melalui QRIS dengan nominal Rp 75.000 ditambah 4 digit kode unik acak, Anda dapat langsung melakukan konfirmasi ke WhatsApp admin 0831-3030-0094 dengan menyertakan alamat email akun Google Anda agar verifikasi whitelist segera diaktifkan.
+        <strong>Pemberitahuan Aktivasi Akun PRO:</strong> Setelah melakukan transfer melalui QRIS dengan nominal Rp 75.000 ditambah 3 digit kode unik acak, Anda dapat langsung melakukan konfirmasi ke WhatsApp admin 0831-3030-0094 dengan menyertakan alamat email akun Google Anda agar verifikasi whitelist segera diaktifkan.
       </div>
     </article>
   </main>
