@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jaminan Privasi Data Spasial - Duta GeoSpasi SHP Builder</title>
+  <meta name="description" content="Komitmen perlindungan privasi data spasial, pemrosesan koordinat lokal client-side di memori browser tanpa transmisi server eksternal di Duta GeoSpasi SHP Builder.">
+  <meta name="author" content="Duta Digital Agensi">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="shortcut icon" href="assets/img/favicon.ico">
+  <style>
+    @font-face {
+      font-family: 'Inter';
+      src: local('Segoe UI'), local('Arial'), sans-serif;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html {
+      background-color: #f8fafc;
+      color-scheme: light;
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      animation: smoothPageFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes smoothPageFade {
+      0% { opacity: 0.88; transform: translateY(3px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .container {
+      max-width: 64rem;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+      width: 100%;
+    }
+    .header-bar {
+      background-color: #0284c7;
+      color: #ffffff;
+      border-bottom: 1px solid #0369a1;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 4rem;
+      gap: 1rem;
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-logo {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #ffffff;
+      border-radius: 0.5rem;
+      padding: 0.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+    .brand-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .brand-tag {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .brand-sub {
+      font-size: 0.7rem;
+      color: #e0f2fe;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+    .btn-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .btn-home:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .nav-tabs {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 4rem;
+      z-index: 40;
+    }
+    .tabs-inner {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-top: 0.5rem;
+      padding-bottom: 0;
+    }
+    .tab-link {
+      padding: 0.625rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #64748b;
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .tab-link:hover {
+      color: #0284c7;
+    }
+    .tab-link.active {
+      color: #0284c7;
+      border-bottom-color: #0284c7;
+      font-weight: 700;
+    }
+    .content-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.875rem;
+      padding: 1.75rem;
+      margin-top: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .content-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 1.5rem;
+    }
+    .content-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .content-title h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .content-title p {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin: 0.15rem 0 0 0;
+    }
+    .card-body-text {
+      font-size: 0.875rem;
+      color: #334155;
+      display: flex;
+      flex-direction: column;
+      gap: 0.95rem;
+      line-height: 1.6;
+    }
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-top: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .info-box-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.6rem;
+    }
+    .info-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      font-size: 0.8125rem;
+      color: #334155;
+      padding: 0;
+      margin: 0;
+    }
+    .info-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+    }
+    .info-list li svg {
+      width: 1rem;
+      height: 1rem;
+      color: #059669;
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+    }
+    .social-btn {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.5rem;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .social-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      color: #0284c7;
+      border-color: #0284c7;
+    }
+    .footer-bar {
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      padding: 1.75rem 0 1.5rem 0;
+      margin-top: auto;
+    }
+    .footer-inner {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    @media (min-width: 768px) {
+      .footer-inner {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header-bar">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-wrap">
+        <div class="brand-logo">
+          <img src="assets/img/logo.png" onerror="this.onerror=null; this.src='assets/img/logo.png';" alt="Logo Duta GeoSpasi">
+        </div>
+        <div>
+          <div class="brand-title">
+            <span>Duta GeoSpasi</span>
+            <span class="brand-tag">SHP Builder</span>
+          </div>
+          <div class="brand-sub">Pusat Dokumentasi, Regulasi &amp; Panduan Geospasial</div>
+        </div>
+      </a>
+      <div>
+        <a href="index.html" class="btn-home">
+          <svg style="width: 0.85rem; height: 0.85rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span>Kembali ke SHP Builder</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav-tabs">
+    <div class="container tabs-inner">
+      <a href="jaminan-privasi.html" class="tab-link active">Jaminan Privasi</a>
+      <a href="syarat-ketentuan.html" class="tab-link">Syarat &amp; Ketentuan</a>
+      <a href="penafian-layanan.html" class="tab-link">Penafian ATR/BPN</a>
+      <a href="panduan-fitur.html" class="tab-link">Panduan Fitur</a>
+      <a href="hubungi-kami.html" class="tab-link">Hubungi Kami</a>
+    </div>
+  </nav>
+
+  <main class="container" style="flex: 1 0 auto;">
+    <article class="content-card">
+      <div class="content-header">
+        <div class="content-icon">
+          <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div class="content-title">
+          <h1>Jaminan Privasi &amp; Perlindungan Data Spasial</h1>
+          <p>Prinsip Keamanan Pemrosesan Data Mandiri 100% Client-Side</p>
+        </div>
+      </div>
+
+      <div class="card-body-text">
+        <p>Kami di <strong>Duta Digital Agensi (dutamik.id)</strong> menyadari sepenuhnya bahwa data koordinat kavling, batas persil tanah, dan data pemohon perizinan merupakan aset informasi bernilai strategis dan privat.</p>
+        
+        <p>Aplikasi <strong>Duta GeoSpasi SHP Builder</strong> dibangun dengan arsitektur komputasi modern yang menempatkan seluruh beban pemrosesan geometri poligon, digitasi patok, penataan atribut tabel dBase III (.DBF), hingga perakitan paket berkas Shapefile (.ZIP) berjalan murni secara lokal di dalam memori peramban komputer pengguna.</p>
+
+        <div class="info-box">
+          <div class="info-box-title">Pilar Keamanan &amp; Perlindungan Privasi Data:</div>
+          <ul class="info-list">
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Komputasi Lokal Tanpa Unggah Geometri</strong>: Seluruh titik koordinat (WGS 84 &amp; UTM), panjang batas kavling, dan perhitungan luas bidang tanah diproses langsung pada peramban web perangkat Anda tanpa pernah dikirim ke server cloud mana pun.</span>
+            </li>
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Kepatuhan Standar Dokumen OSS &amp; Amdalnet</strong>: Tabel atribut Shapefile yang dihasilkan dirancang memenuhi nomenklatur resmi perizinan KKPR OSS RBA dan Amdalnet tanpa menyisipkan skrip pelacak tersembunyi.</span>
+            </li>
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Isolasi Sandbox Peramban Modern</strong>: Sesi kerja dilindungi oleh sistem keamanan isolasi peramban peramban Anda, mencegah pihak luar mengintip atau mengekstrak draf peta yang sedang Anda susun.</span>
+            </li>
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Hak Penuh Kendali &amp; Pembersihan Data</strong>: Anda memiliki kuasa mutlak untuk menghapus draf kerja, koordinat patok, maupun riwayat pencarian bidang tanah kapan saja melalui tombol Reset pada panel aplikasi.</span>
+            </li>
+          </ul>
+        </div>
+
+        <p>Dengan perlindungan data yang terisolasi ini, Anda dapat bekerja mengolah data spasial proyek perumahan, kawasan industri, maupun pertambangan dengan tenang dan aman.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer-bar">
+    <div class="container footer-inner">
+      <div>
+        <div style="font-weight: 700; font-size: 0.875rem; color: #0f172a; margin-bottom: 0.25rem;">Duta Digital Agensi | dutamik.id</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">Duta Media Informasi berKarya : Bulusan RT 01 RW 08 Mandan, Kec/Kab. Sukoharjo, Jawa Tengah</div>
+        <div style="font-size: 0.75rem; color: #475569; margin-bottom: 0.75rem;">WhatsApp: 0831-3030-0094 : Email: dutadigitalagensi@gmail.com</div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <a href="https://dutamik.id" target="_blank" rel="noopener" class="social-btn" title="Situs Resmi: dutamik.id" aria-label="Website Resmi">
+            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+          </a>
+          <a href="https://wa.me/6283130300094" target="_blank" rel="noopener" class="social-btn" title="WhatsApp: 0831-3030-0094" aria-label="WhatsApp">
+            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          </a>
+          <a href="mailto:dutadigitalagensi@gmail.com" class="social-btn" title="Email: dutadigitalagensi@gmail.com" aria-label="Email">
+            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </a>
+          <a href="https://instagram.com/dutadigitalagensi" target="_blank" rel="noopener" class="social-btn" title="Instagram: @dutadigitalagensi" aria-label="Instagram">
+            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="https://tiktok.com/@dutadigitalagensi" target="_blank" rel="noopener" class="social-btn" title="TikTok: @dutadigitalagensi" aria-label="TikTok">
+            <svg style="width: 1rem; height: 1rem;" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1.01v8.83c-.02 2.05-.75 4.13-2.14 5.67-1.78 2.02-4.5 3.01-7.17 2.65-2.61-.33-4.99-1.92-6.23-4.23-1.43-2.63-1.06-6.04.94-8.25 1.58-1.77 4-2.62 6.35-2.22v4.18c-1.22-.24-2.54.06-3.41.93-.86.85-1.1 2.19-.6 3.32.48 1.11 1.66 1.83 2.87 1.77 1.34-.03 2.5-1.02 2.66-2.35.04-.33.05-.67.05-1.01V.02z"/></svg>
+          </a>
+          <a href="https://x.com/dutadigitalagensi" target="_blank" rel="noopener" class="social-btn" title="X: @dutadigitalagensi" aria-label="X">
+            <svg style="width: 1rem; height: 1rem;" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div style="font-size: 0.75rem; color: #64748b; line-height: 1.5; text-align: left;">
+        <div>&copy; 2026 Duta Digital Agensi (dutamik.id). Hak cipta dilindungi.</div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
