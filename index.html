@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Duta GeoSpasi : Sistem Digitalisasi Geospasial Indonesia</title>
   <meta name="description" content="Duta GeoSpasi : Sistem digitalisasi geospasial kadaster resmi ATR BPN, visualisasi peta bidang tanah bhumi WMS, pin koordinat, digitasi patok batas presisi, dan ekspor Shapefile ESRI SHP ZIP standar OSS RBA AMDALNET.">
   <meta name="keywords" content="peta bidang tanah, atr bpn bhumi, kadaster indonesia, web gis bpn, cek sertifikat tanah, shapefile bpn, ekspor shp oss rba, amdalnet ukl upl, duta geospasi, duta digital agensi, dutamik id">
@@ -159,24 +159,37 @@
       margin: 0;
       padding: 0;
     }
+    html {
+      height: 100%;
+      height: -webkit-fill-available;
+      -webkit-text-size-adjust: 100%;
+    }
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: var(--text-main);
       background-color: var(--bg-canvas);
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100%;
+      height: 100dvh;
+      min-height: 100%;
+      min-height: -webkit-fill-available;
+      max-height: 100dvh;
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
     header {
-      height: var(--header-h);
+      min-height: var(--header-h);
+      height: auto;
       background-color: var(--accent);
       border-bottom: 1px solid var(--accent-dark);
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 1.25rem;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-left: max(1.25rem, calc(1.25rem + env(safe-area-inset-left, 0px)));
+      padding-right: max(1.25rem, calc(1.25rem + env(safe-area-inset-right, 0px)));
       z-index: 1000;
       flex-shrink: 0;
       color: #ffffff;
@@ -341,41 +354,45 @@
     .header-auth-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      padding: 0 10px;
+      gap: 0.5rem;
+      padding: 0 11px;
       height: 32px;
-      background-color: var(--bg-surface);
-      border: 1px solid var(--border-light);
+      background-color: #0f3b73;
+      border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: var(--radius-sm);
-      color: var(--text-main);
+      color: #ffffff;
       font-size: 0.72rem;
       font-weight: 700;
+      letter-spacing: 0.02em;
       cursor: pointer;
       transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
     .header-auth-badge:hover {
-      background-color: var(--bg-subtle);
-      border-color: var(--accent);
-      color: var(--accent);
+      background-color: #174a8b;
+      border-color: rgba(255, 255, 255, 0.45);
+      color: #ffffff;
     }
     .tier-tag {
-      font-size: 0.62rem;
+      font-size: 0.6rem;
       font-weight: 800;
       letter-spacing: 0.04em;
-      padding: 1px 6px;
-      border-radius: 2px;
+      padding: 2px 6px;
+      border-radius: 3px;
       text-transform: uppercase;
-      line-height: 1.2;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
     }
     .tier-tag.free {
-      background-color: #f1f5f9;
-      color: #64748b;
-      border: 1px solid #cbd5e1;
+      background-color: rgba(255, 255, 255, 0.14);
+      color: #bfdbfe;
+      border: 1px solid rgba(191, 219, 254, 0.28);
     }
     .tier-tag.pro {
-      background-color: #dcfce7;
-      color: #15803d;
-      border: 1px solid #86efac;
+      background-color: #059669;
+      color: #ffffff;
+      border: 1px solid #34d399;
+      box-shadow: 0 0 8px rgba(5, 150, 105, 0.45);
     }
     .status-pill {
       display: inline-flex;
@@ -427,7 +444,8 @@
     .app-body {
       display: flex;
       flex: 1;
-      height: calc(100vh - var(--header-h));
+      height: calc(100dvh - var(--header-h));
+      height: calc(100% - var(--header-h));
       position: relative;
       overflow: hidden;
     }
@@ -1607,28 +1625,32 @@
       align-items: center;
       justify-content: center;
       z-index: 2000;
-      padding: 1rem;
+      padding: 0.75rem;
+      overflow-y: auto;
     }
     .modal-card {
       background-color: var(--bg-surface);
       border: 1px solid var(--border-light);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-md);
       box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
       width: 100%;
-      max-width: 520px;
+      max-width: 400px;
+      max-height: calc(100vh - 1.5rem);
+      margin: auto;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
     .modal-head {
-      padding: 1rem 1.25rem;
+      padding: 0.65rem 0.85rem;
       border-bottom: 1px solid var(--border-light);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
     }
     .modal-head h3 {
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       font-weight: 700;
       color: var(--text-main);
     }
@@ -1645,13 +1667,15 @@
       color: var(--text-main);
     }
     .modal-body {
-      padding: 1.25rem;
+      padding: 0.65rem 0.85rem;
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
-      font-size: 0.78rem;
+      gap: 0.5rem;
+      font-size: 0.73rem;
       color: var(--text-sub);
-      line-height: 1.5;
+      line-height: 1.4;
+      overflow-y: auto;
+      flex: 1 1 auto;
     }
     .code-box {
       font-family: 'JetBrains Mono', monospace;
@@ -2375,25 +2399,6 @@
         margin: 4mm;
       }
     }
-    .mobile-menu-btn {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-sm);
-      background-color: var(--bg-surface);
-      color: var(--text-main);
-      cursor: pointer;
-      margin-right: 0.5rem;
-      flex-shrink: 0;
-    }
-    .mobile-menu-btn:hover {
-      background-color: var(--bg-subtle);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
     .mobile-overlay {
       display: none;
       position: fixed;
@@ -2409,9 +2414,6 @@
       display: block;
     }
     @media (max-width: 768px) {
-      .mobile-menu-btn {
-        display: flex !important;
-      }
       .brand-text p {
       font-size: 0.73rem;
       color: #ffffff !important;
@@ -2451,6 +2453,8 @@
         left: 0;
         top: var(--header-h);
         bottom: 0;
+        height: calc(100dvh - var(--header-h));
+        height: calc(100% - var(--header-h));
         width: 88%;
         max-width: 360px;
         transform: translateX(-100%);
@@ -2462,7 +2466,7 @@
         box-shadow: 4px 0 24px rgba(15, 23, 42, 0.25);
       }
       .floating-cad-tools {
-        top: 0.5rem;
+        top: calc(0.5rem + env(safe-area-inset-top, 0px));
         right: 0.5rem;
         width: calc(100% - 1rem);
         max-width: 300px;
@@ -2482,6 +2486,9 @@
         border-right: none;
         border-bottom: none;
         padding: 0.5rem 0.75rem;
+        padding-bottom: max(0.5rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)));
+        padding-left: max(0.75rem, calc(0.75rem + env(safe-area-inset-left, 0px)));
+        padding-right: max(0.75rem, calc(0.75rem + env(safe-area-inset-right, 0px)));
         gap: 0.5rem;
         flex-wrap: wrap;
         justify-content: space-between;
@@ -2494,7 +2501,7 @@
         display: flex !important;
       }
       .toast-container {
-        bottom: 5.5rem;
+        bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
         left: 1rem;
         right: 1rem;
         align-items: center;
@@ -2504,8 +2511,13 @@
         max-width: 320px;
       }
       .sidebar-toggle-fab {
-        top: 0.75rem;
+        top: calc(0.75rem + env(safe-area-inset-top, 0px));
         left: 0.75rem;
+      }
+      .header-auth-badge {
+        padding: 0 8px;
+        height: 30px;
+        gap: 0.35rem;
       }
     }
 
@@ -2625,7 +2637,7 @@
     @media (max-width: 768px) {
       .smart-draw-toolbar {
         top: auto;
-        bottom: 5rem;
+        bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
         left: 0.75rem;
         right: 0.75rem;
         transform: none;
@@ -2646,9 +2658,6 @@
 
   <header>
     <div class="brand-wrap">
-      <button id="btnMobileMenu" class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Buka Menu Panel">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
       <img src="assets/img/logo.png" alt="DutaGeoSpasi Logo" class="brand-logo-img" style="width: 34px; height: 34px; object-fit: contain; border-radius: 6px; background-color: #ffffff; padding: 2px; flex-shrink: 0;">
       <div class="brand-text">
         <h1>Duta GeoSpasi <span class="brand-tag">SHP Builder</span></h1>
@@ -2677,6 +2686,17 @@
       </button>
     </div>
   </header>
+
+  <div id="fileProtocolBanner" style="display: none; background-color: #0c2d57; color: #f8fafc; padding: 7px 14px; font-size: 0.72rem; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.15); z-index: 9999; flex-shrink: 0;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Aplikasi dibuka dari berkas lokal (file://). Untuk otentikasi Akun Google, gunakan server lokal:</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.65rem;">
+      <a href="http://localhost:8085/SHP-Builder.html" style="background-color: #16a34a; color: #ffffff; font-weight: 700; padding: 3px 10px; border-radius: 4px; text-decoration: none; font-size: 0.7rem; border: 1px solid #22c55e;">Buka Localhost (8085)</a>
+      <button onclick="document.getElementById('fileProtocolBanner').style.display='none'" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.85rem; padding: 0 4px;" aria-label="Tutup Banner">&times;</button>
+    </div>
+  </div>
 
   <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileSidebar(true)"></div>
 
@@ -3524,38 +3544,38 @@
   </main>
 
   <div id="memberModal" class="modal-backdrop" onclick="if(event.target===this) closeMemberModal()">
-    <div class="modal-card" style="max-width: 490px;">
-      <div class="modal-head">
-        <div style="display: flex; align-items: center; gap: 0.55rem;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <h3>Portal Member Duta GeoSpasi</h3>
+    <div class="modal-card" style="max-width: 460px; width: min(460px, calc(100vw - 2rem)); max-height: min(650px, calc(100dvh - 2.5rem));">
+      <div class="modal-head" style="padding: 0.85rem 1.15rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <h3 style="font-size: 0.88rem; font-weight: 700; color: var(--text-main);">Portal Member Duta GeoSpasi</h3>
         </div>
         <button class="modal-close-btn" onclick="closeMemberModal()" aria-label="Tutup Modal Member">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <div class="modal-body" id="memberModalBodyGuest">
-        <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.75rem 0.85rem; border-radius: var(--radius-sm);">
+      <div class="modal-body" id="memberModalBodyGuest" style="padding: 1rem 1.15rem; gap: 0.85rem;">
+        <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.85rem 1rem; border-radius: var(--radius-sm);">
           <div style="display: flex; justify-content: space-between; align-items: baseline;">
             <div>
-              <span style="font-size: 0.67rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Promo Akses Seumur Hidup</span>
-              <div style="display: flex; align-items: baseline; gap: 0.45rem; margin-top: 2px;">
+              <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Promo Akses Seumur Hidup</span>
+              <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-top: 3px;">
                 <span style="font-size: 1.35rem; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace;">Rp 75.000</span>
-                <del style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
-                <span style="font-size: 0.65rem; background-color: var(--emerald-soft); color: var(--emerald); font-weight: 700; padding: 1px 6px; border-radius: 2px;">HEMAT 80%</span>
+                <del style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
+                <span style="font-size: 0.65rem; background-color: #dcfce7; color: #15803d; font-weight: 800; border: 1px solid #86efac; padding: 2px 6px; border-radius: 3px;">HEMAT 80%</span>
               </div>
             </div>
-            <span style="font-size: 0.68rem; color: var(--text-sub); font-weight: 600; text-align: right;">Lifetime Access (S&amp;K)</span>
+            <span style="font-size: 0.72rem; color: var(--text-sub); font-weight: 700; text-align: right;">Lifetime (S&amp;K)</span>
           </div>
-          <div style="font-size: 0.71rem; color: var(--text-sub); margin-top: 0.45rem; line-height: 1.4;">
-            Biaya lisensi untuk membuka akses penuh tool Ekspor Shapefile ESRI (.SHP .SHX .DBF .PRJ), CAD Script, GeoJSON, Excel, dan Cetak Peta.
+          <div style="font-size: 0.75rem; color: var(--text-sub); margin-top: 0.5rem; line-height: 1.45;">
+            Akses penuh tool Ekspor Shapefile ESRI (.SHP .SHX .DBF .PRJ), CAD Script (.SCR), GeoJSON, Excel, dan Cetak Peta.
           </div>
         </div>
 
-        <div id="googleSignInContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; margin-top: 0.25rem;">
+        <div id="googleSignInContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; margin: 0.25rem 0;">
           <div id="gisButtonSlot" style="display: flex; justify-content: center; width: 100%;"></div>
-          <button type="button" class="btn-google" onclick="loginWithGoogle()" id="btnGoogleAuth" style="width: 100%; max-width: 320px;">
+          <button type="button" class="btn-google" onclick="loginWithGoogle()" id="btnGoogleAuth" style="width: 100%; max-width: 320px; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 0.65rem; font-size: 0.8rem; font-weight: 600;">
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -3565,132 +3585,127 @@
             <span>Masuk Menggunakan Akun Google</span>
           </button>
         </div>
-        <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 0.15rem;">
-          <button type="button" onclick="configureGoogleClientId()" style="background: none; border: none; font-size: 0.65rem; color: var(--accent); text-decoration: underline; cursor: pointer; padding: 2px 4px;">
-            Atur Google Client ID (Solusi 1 GIS)
-          </button>
-        </div>
 
-        <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center; line-height: 1.4; padding: 0.2rem 0.5rem;">
+        <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; line-height: 1.4; padding: 0 0.25rem;">
           Wajib login dengan Akun Google untuk otentikasi data resmi dan verifikasi aktivasi status PRO.
         </div>
 
-        <div style="border-top: 1px solid var(--border-light); padding-top: 0.55rem;">
-          <div style="font-weight: 700; font-size: 0.72rem; color: var(--text-main); margin-bottom: 0.35rem;">Tabel Hak Akses Fitur:</div>
-          <table class="member-features-table">
+        <div style="border-top: 1px solid var(--border-light); padding-top: 0.65rem;">
+          <div style="font-weight: 700; font-size: 0.75rem; color: var(--text-main); margin-bottom: 0.45rem;">Perbandingan Hak Akses Fitur:</div>
+          <table class="member-features-table" style="width: 100%; border-collapse: collapse; font-size: 0.72rem;">
             <thead>
               <tr>
-                <th>Fitur Geospasial</th>
-                <th>Tamu / Free</th>
-                <th>Member PRO</th>
+                <th style="padding: 7px 10px; background-color: var(--bg-subtle); color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border-light); text-align: left; width: 52%;">Fitur Geospasial</th>
+                <th style="padding: 7px 10px; background-color: var(--bg-subtle); color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border-light); text-align: center; width: 24%;">Tamu / Free</th>
+                <th style="padding: 7px 10px; background-color: var(--bg-subtle); color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border-light); text-align: center; width: 24%;">Member PRO</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Inspeksi Bidang BPN &amp; Ukur Luas</td>
-                <td style="color: var(--emerald); font-weight: 600;">Aktif</td>
-                <td style="color: var(--emerald); font-weight: 600;">Aktif</td>
+                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Inspeksi Bidang BPN &amp; Ukur Luas</td>
+                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
+                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
               </tr>
               <tr>
-                <td>Digitasi Patok Batas CAD</td>
-                <td style="color: var(--emerald); font-weight: 600;">Aktif</td>
-                <td style="color: var(--emerald); font-weight: 600;">Aktif</td>
+                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Digitasi Patok Batas CAD</td>
+                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
+                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
               </tr>
               <tr>
-                <td>Ekspor Paket ESRI Shapefile (.ZIP)</td>
-                <td style="color: var(--crimson); font-weight: 600;">Terkunci</td>
-                <td style="color: var(--emerald); font-weight: 600;">Aktif Unlimited</td>
+                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Ekspor ESRI Shapefile (.ZIP)</td>
+                <td style="color: var(--crimson); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Terkunci</td>
+                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Unlimited</td>
               </tr>
               <tr>
-                <td>Ekspor CAD (.SCR), GeoJSON, Excel</td>
-                <td style="color: var(--crimson); font-weight: 600;">Terkunci</td>
-                <td style="color: var(--emerald); font-weight: 600;">Aktif Unlimited</td>
+                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Ekspor CAD (.SCR), GeoJSON, Excel</td>
+                <td style="color: var(--crimson); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Terkunci</td>
+                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Unlimited</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="modal-body" id="memberModalBodyUser" style="display: none;">
-        <div class="member-profile-card">
+      <div class="modal-body" id="memberModalBodyUser" style="display: none; padding: 1rem 1.15rem; gap: 0.85rem;">
+        <div class="member-profile-card" style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.85rem;">
           <div class="member-avatar" id="memberAvatarInitials">U</div>
-          <div class="member-info">
-            <div class="member-name" id="memberProfileName">Nama Pengguna</div>
-            <div class="member-email" id="memberProfileEmail">user@gmail.com</div>
+          <div class="member-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem;">
+            <div class="member-name" id="memberProfileName" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Nama Pengguna</div>
+            <div class="member-email" id="memberProfileEmail" style="font-size: 0.74rem; color: var(--text-sub);">user@gmail.com</div>
             <div style="margin-top: 3px;">
               <span id="memberProfileBadge" class="member-plan-badge free">FREE MEMBER</span>
             </div>
           </div>
         </div>
 
-        <div id="memberStatusAlert" style="background-color: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.74rem;">
+        <div id="memberStatusAlert" style="background-color: var(--bg-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.74rem; line-height: 1.45;">
           Akun Anda saat ini berstatus <strong>FREE TIER</strong>. Hak akses ekspor Shapefile dan CAD dikunci. Lakukan pembayaran via QRIS untuk aktivasi status PRO Lifetime.
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.2rem;">
-          <button type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 0.4rem; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+          <button type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 0.45rem; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-size: 0.78rem; padding: 0.55rem 0.85rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
             <span>Bayar QRIS &amp; Upgrade ke PRO (Kode Unik 4 Digit)</span>
           </button>
-          <button type="button" class="btn btn-outline btn-block" onclick="logoutMember()" style="justify-content: center; gap: 0.4rem;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <button type="button" class="btn btn-outline btn-block" onclick="logoutMember()" style="justify-content: center; gap: 0.45rem; font-size: 0.76rem; padding: 0.5rem 0.85rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             <span>Keluar Akun (Logout)</span>
           </button>
         </div>
       </div>
 
-      <div class="modal-foot" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
-        <div style="display: flex; gap: 0.65rem; font-size: 0.68rem; flex-wrap: wrap;">
+      <div class="modal-foot" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1.15rem;">
+        <div style="display: flex; gap: 0.65rem; font-size: 0.7rem; flex-wrap: wrap;">
           <a href="jaminan-privasi.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Kebijakan Privasi</a>
           <a href="syarat-ketentuan.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Syarat &amp; Ketentuan</a>
           <a href="penafian-layanan.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Disclaimer BPN</a>
           <a href="hubungi-kami.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Bantuan</a>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="closeMemberModal()">Tutup</button>
+        <button class="btn btn-outline btn-sm" onclick="closeMemberModal()" style="padding: 5px 14px; font-size: 0.74rem; font-weight: 600;">Tutup</button>
       </div>
     </div>
   </div>
 
   <div id="qrisPaymentModal" class="modal-backdrop" onclick="if(event.target===this) closeQrisPaymentModal()">
-    <div class="modal-card" style="max-width: 480px; max-height: 92vh; overflow-y: auto;">
+    <div class="modal-card" style="max-width: 440px; max-height: calc(100dvh - 2rem); margin: auto;">
       <div class="modal-head">
-        <div style="display: flex; align-items: center; gap: 0.55rem;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
           <h3>Pembayaran QRIS Duta GeoSpasi PRO</h3>
         </div>
         <button class="modal-close-btn" onclick="closeQrisPaymentModal()" aria-label="Tutup Modal Pembayaran">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <div class="modal-body" style="gap: 0.75rem;">
-        <div style="background-color: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); text-align: center;">
-          <div style="font-size: 0.7rem; color: var(--text-sub); margin-bottom: 2px;">
-            TOTAL TRANSFER UPGRADE PRO (PROMO SEUMUR HIDUP / LIFETIME)
+      <div class="modal-body" style="gap: 0.55rem; padding: 0.65rem 0.85rem;">
+        <div style="background-color: var(--bg-subtle); padding: 0.55rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); text-align: center;">
+          <div style="font-size: 0.67rem; color: var(--text-sub); margin-bottom: 2px;">
+            TOTAL TRANSFER UPGRADE PRO (LIFETIME)
           </div>
-          <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 2px;">
-            <del style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
-            <div id="qrisTotalDisplay" style="font-size: 1.45rem; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 0.45rem; margin-top: 2px;">
+            <del style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
+            <div id="qrisTotalDisplay" style="font-size: 1.25rem; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
               Rp 75.000
             </div>
           </div>
-          <div style="font-size: 0.7rem; color: #b91c1c; font-weight: 600; margin-top: 5px; background-color: #fef2f2; padding: 4px 8px; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
-            Wajib transfer tepat 4 digit kode unik: <span id="qrisUniqueCodeDisplay" style="font-weight: 800; text-decoration: underline;">0000</span>
+          <div style="font-size: 0.67rem; color: #b91c1c; font-weight: 600; margin-top: 3px; background-color: #fef2f2; padding: 3px 6px; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
+            Wajib transfer tepat 4 digit unik: <span id="qrisUniqueCodeDisplay" style="font-weight: 800; text-decoration: underline;">0000</span>
           </div>
-          <div style="margin-top: 0.45rem;">
-            <button type="button" class="btn btn-outline" onclick="copyQrisAmount()" style="font-size: 0.7rem; padding: 3px 10px; margin: 0 auto; display: inline-flex; align-items: center; gap: 0.35rem;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <div style="margin-top: 0.35rem;">
+            <button type="button" class="btn btn-outline" onclick="copyQrisAmount()" style="font-size: 0.68rem; padding: 2px 8px; margin: 0 auto; display: inline-flex; align-items: center; gap: 0.35rem;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span>Salin Angka Transfer</span>
             </button>
           </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.85rem;">
-          <img src="assets/img/qris-duta.jpg" alt="QRIS Duta Digital Agensi" style="width: 220px; height: auto; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; display: block;">
-          <div style="font-size: 0.72rem; font-weight: 700; color: #1e293b; margin-top: 0.5rem;">Duta Digital Agensi</div>
-          <div style="font-size: 0.65rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">NMID: ID1025430780847</div>
-          <a href="assets/img/qris-duta.jpg" download="QRIS_Duta_Digital_Agensi.jpg" class="btn btn-outline" style="margin-top: 0.5rem; font-size: 0.68rem; padding: 3px 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.6rem;">
+          <img src="assets/img/qris-duta.jpg" alt="QRIS Duta Digital Agensi" style="width: 180px; height: auto; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; display: block;">
+          <div style="font-size: 0.7rem; font-weight: 700; color: #1e293b; margin-top: 0.35rem;">Duta Digital Agensi</div>
+          <div style="font-size: 0.62rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">NMID: ID1025430780847</div>
+          <a href="assets/img/qris-duta.jpg" download="QRIS_Duta_Digital_Agensi.jpg" class="btn btn-outline" style="margin-top: 0.35rem; font-size: 0.65rem; padding: 2px 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Unduh Gambar QRIS</span>
           </a>
         </div>
@@ -8399,6 +8414,12 @@ function latLngToUtm(lat, lon) {
     }
 
     function readUrlLocationParams() {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('open') === 'member' || searchParams.get('action') === 'login') {
+        setTimeout(() => {
+          openMemberModal();
+        }, 350);
+      }
       let lat = null, lng = null, zoom = null;
       const rawHash = window.location.hash.replace('#', '');
       const params = new URLSearchParams(rawHash || window.location.search);
@@ -8534,24 +8555,16 @@ function latLngToUtm(lat, lon) {
     function saveGoogleClientIdFromInput() {
       const input = document.getElementById('inputGoogleClientId');
       if (!input) return;
-      const val = input.value.trim();
+      const val = input.value.trim() || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
       GOOGLE_CLIENT_ID = val;
       localStorage.setItem('google_client_id', val);
-      if (val) {
-        showToast('Google Client ID berhasil disimpan. Solusi 1 GIS aktif.', 'success');
-        initGoogleIdentityServices();
-      } else {
-        showToast('Google Client ID dikosongkan. Menggunakan OAuth redirect standar.', 'info');
-        const slot = document.getElementById('gisButtonSlot');
-        const btn = document.getElementById('btnGoogleAuth');
-        if (slot) slot.innerHTML = '';
-        if (btn) btn.style.display = 'inline-flex';
-      }
+      showToast('Google Client ID berhasil disimpan.', 'success');
+      initGoogleIdentityServices();
     }
 
     const SUPABASE_PROJECT_URL = 'https://vezruyffzmabhtylxigc.supabase.co';
     let SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-    let GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '';
+    let GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
     let supabaseClient = null;
     let currentMemberSession = null;
     let currentMemberProfile = { role: 'free', status: 'none', email: '', name: '' };
@@ -8588,16 +8601,26 @@ function latLngToUtm(lat, lon) {
 
     function initGoogleIdentityServices() {
       if (!GOOGLE_CLIENT_ID) {
-        GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '';
+        GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
       }
       const slot = document.getElementById('gisButtonSlot');
       const btn = document.getElementById('btnGoogleAuth');
-      if (!GOOGLE_CLIENT_ID) {
-        if (slot) slot.innerHTML = '';
-        if (btn) btn.style.display = 'inline-flex';
+
+      if (window.location.protocol === 'file:') {
+        if (slot) {
+          slot.innerHTML = '<div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.73rem; color: #92400e; line-height: 1.45; text-align: center; width: 100%; max-width: 360px; margin-bottom: 0.25rem;"><div style="font-weight: 700; margin-bottom: 4px;">Pemberitahuan Protokol Berkas (file://)</div><div>Kebijakan keamanan Google OAuth 2.0 melarang login dari berkas lokal langsung. Buka aplikasi melalui server lokal untuk otentikasi resmi:</div><a href="http://localhost:8085/SHP-Builder.html?open=member" class="btn btn-sm" style="background-color: #0f3b73; color: #ffffff; text-decoration: none; padding: 6px 14px; font-weight: 700; border-radius: 4px; display: inline-block; margin-top: 8px;">Buka via Localhost (http://localhost:8085)</a></div>';
+        }
+        if (btn) btn.style.display = 'none';
         return;
       }
+
       if (typeof window.google === 'undefined' || !window.google.accounts || !window.google.accounts.id) {
+        if (btn) btn.style.display = 'inline-flex';
+        setTimeout(() => {
+          if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.id) {
+            initGoogleIdentityServices();
+          }
+        }, 600);
         return;
       }
       try {
@@ -8653,23 +8676,7 @@ function latLngToUtm(lat, lon) {
     }
 
     function configureGoogleClientId() {
-      const current = localStorage.getItem('google_client_id') || '';
-      const input = prompt('Masukkan Google OAuth 2.0 Web Client ID (dari Google Cloud Console > Credentials > OAuth 2.0 Client IDs):', current);
-      if (input !== null) {
-        const val = input.trim();
-        GOOGLE_CLIENT_ID = val;
-        localStorage.setItem('google_client_id', val);
-        if (val) {
-          showToast('Google Client ID berhasil disimpan. Mengaktifkan Solusi 1 GIS.', 'success');
-          initGoogleIdentityServices();
-        } else {
-          showToast('Google Client ID dihapus. Menggunakan metode OAuth redirect standar.', 'info');
-          const slot = document.getElementById('gisButtonSlot');
-          const btn = document.getElementById('btnGoogleAuth');
-          if (slot) slot.innerHTML = '';
-          if (btn) btn.style.display = 'inline-flex';
-        }
-      }
+      openServerModal();
     }
 
     async function fetchMemberProfile(user) {
@@ -8699,43 +8706,41 @@ function latLngToUtm(lat, lon) {
 
     async function loginWithGoogle() {
       if (!ensureSupabaseClient()) return;
+      if (window.location.protocol === 'file:') {
+        showToast('Google melarang login dari file://. Mengalihkan ke http://localhost:8085...', 'warn');
+        setTimeout(() => {
+          window.location.href = 'http://localhost:8085/SHP-Builder.html?open=member';
+        }, 800);
+        return;
+      }
       if (!GOOGLE_CLIENT_ID) {
-        GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '';
+        GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
       }
       if (GOOGLE_CLIENT_ID && typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.id) {
         initGoogleIdentityServices();
         window.google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            const slot = document.getElementById('gisButtonSlot');
-            if (slot && slot.children.length === 0) {
-              window.google.accounts.id.renderButton(slot, {
-                theme: 'outline',
-                size: 'large',
-                type: 'standard',
-                shape: 'rectangular',
-                text: 'signin_with',
-                logo_alignment: 'left',
-                width: 320
-              });
+            const hasGisButton = document.querySelector('#gisButtonSlot iframe') || document.querySelector('#gisButtonSlot div[role="button"]');
+            if (hasGisButton) {
+              showToast('Silakan klik tombol Google Sign In di dalam modal akun.', 'info');
+            } else {
+              fallbackGoogleOAuthRedirect();
             }
           }
         });
         return;
       }
-      
-      const inputId = prompt('Untuk menggunakan Solusi 1 (Login langsung dengan domain Anda tanpa biaya),\nmasukkan Google OAuth Web Client ID dari Google Cloud Console:\n(Contoh: xxxxx.apps.googleusercontent.com)\n\nAtau klik Cancel untuk login via redirect standar:');
-      if (inputId && inputId.trim()) {
-        GOOGLE_CLIENT_ID = inputId.trim();
-        localStorage.setItem('google_client_id', GOOGLE_CLIENT_ID);
-        initGoogleIdentityServices();
-        showToast('Google Client ID tersimpan. Silakan klik tombol Google Sign-In.', 'success');
-        return;
-      }
-
       fallbackGoogleOAuthRedirect();
     }
 
     async function fallbackGoogleOAuthRedirect() {
+      if (window.location.protocol === 'file:') {
+        showToast('Google melarang login dari file://. Mengalihkan ke http://localhost:8085...', 'warn');
+        setTimeout(() => {
+          window.location.href = 'http://localhost:8085/SHP-Builder.html?open=member';
+        }, 800);
+        return;
+      }
       try {
         const redirectUrl = window.location.origin + window.location.pathname;
         const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -8744,7 +8749,13 @@ function latLngToUtm(lat, lon) {
             redirectTo: redirectUrl
           }
         });
-        if (error) showToast('Gagal memproses login Google: ' + error.message, 'crimson');
+        if (error) {
+          if (error.message && error.message.includes('redirect_uri')) {
+            showToast('Konfigurasi Google OAuth: Tambahkan https://vezruyffzmabhtylxigc.supabase.co/auth/v1/callback ke Authorized redirect URIs Google Cloud.', 'crimson');
+          } else {
+            showToast('Gagal memproses login Google: ' + error.message, 'crimson');
+          }
+        }
       } catch (err) {
         showToast('Terjadi kesalahan otentikasi Google: ' + err.message, 'crimson');
       }
@@ -9085,6 +9096,10 @@ window.addEventListener('DOMContentLoaded', () => {
       initSupabase();
       readUrlLocationParams();
       initSidebarResizer();
+      if (window.location.protocol === 'file:') {
+        const fileBanner = document.getElementById('fileProtocolBanner');
+        if (fileBanner) fileBanner.style.display = 'flex';
+      }
       if (window.innerWidth <= 768) {
         const fab = document.getElementById('mapSidebarFab');
         if (fab) fab.style.display = 'flex';

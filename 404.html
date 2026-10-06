@@ -4,15 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>404 - Halaman Tidak Ditemukan | Duta GeoSpasi SHP Builder</title>
-  <meta name="description" content="Halaman yang Anda tuju tidak tersedia atau telah dipindahkan.">
+  <meta name="description" content="Halaman yang Anda tuju tidak tersedia atau telah dipindahkan pada Duta GeoSpasi SHP Builder.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="assets/img/logo.png">
   <link rel="shortcut icon" href="assets/img/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    @font-face {
-      font-family: 'Inter';
-      src: local('Segoe UI'), local('Arial'), sans-serif;
-    }
     * {
       box-sizing: border-box;
       margin: 0;
@@ -23,33 +22,34 @@
       color-scheme: light;
     }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: #f8fafc;
-      color: #1e293b;
+      color: #0f172a;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      animation: smoothPageFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: pageEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      -webkit-font-smoothing: antialiased;
     }
-    @keyframes smoothPageFade {
-      0% { opacity: 0.88; transform: translateY(3px); }
+    @keyframes pageEnter {
+      0% { opacity: 0; transform: translateY(6px); }
       100% { opacity: 1; transform: translateY(0); }
     }
     .header-bar {
-      background-color: #0284c7;
+      background-color: #0a2e5c;
       color: #ffffff;
       position: sticky;
       top: 0;
       z-index: 40;
-      border-bottom: 1px solid #0369a1;
+      border-bottom: 1px solid #082449;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
     .header-inner {
-      max-width: 64rem;
+      max-width: 68rem;
       margin: 0 auto;
       padding: 0 1.25rem;
-      height: 4rem;
+      height: 3.875rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -63,15 +63,14 @@
       color: #ffffff;
     }
     .brand-logo {
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 2.25rem;
+      height: 2.25rem;
       background-color: #ffffff;
-      border-radius: 0.5rem;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.2rem;
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 2px;
       flex-shrink: 0;
     }
     .brand-logo img {
@@ -100,7 +99,7 @@
     }
     .brand-text-sub {
       font-size: 0.7rem;
-      color: #e0f2fe;
+      color: #bfdbfe;
       line-height: 1.2;
       margin-top: 2px;
     }
@@ -109,20 +108,21 @@
       align-items: center;
       gap: 0.4rem;
       padding: 0.45rem 0.85rem;
-      border-radius: 0.5rem;
-      background-color: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      background-color: #0f3b73;
+      border: 1px solid rgba(255, 255, 255, 0.25);
       color: #ffffff;
       font-size: 0.75rem;
       font-weight: 700;
       text-decoration: none;
-      transition: background-color 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-header:hover {
-      background-color: rgba(255, 255, 255, 0.25);
+      background-color: #174a8b;
+      border-color: rgba(255, 255, 255, 0.4);
     }
     .main-wrap {
-      max-width: 32rem;
+      max-width: 34rem;
       margin: 0 auto;
       padding: 4rem 1.25rem;
       flex: 1 0 auto;
@@ -133,32 +133,33 @@
       text-align: center;
     }
     .badge-404 {
-      width: 5rem;
-      height: 5rem;
-      border-radius: 1rem;
-      background-color: #f0f9ff;
-      border: 1px solid #bae6fd;
-      color: #0284c7;
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 6px;
+      background-color: #eff4fa;
+      border: 1px solid #cbd5e1;
+      color: #0a2e5c;
       display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 1.5rem;
-      font-size: 1.85rem;
+      font-size: 1.75rem;
       font-weight: 900;
       letter-spacing: -0.03em;
+      font-family: 'JetBrains Mono', monospace;
     }
     .title-404 {
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 800;
-      color: #0f172a;
+      color: #0a2e5c;
       letter-spacing: -0.02em;
     }
     .desc-404 {
-      font-size: 0.85rem;
+      font-size: 0.875rem;
       color: #475569;
       margin-top: 0.65rem;
       line-height: 1.6;
-      max-width: 26rem;
+      max-width: 28rem;
     }
     .actions-wrap {
       margin-top: 2rem;
@@ -173,22 +174,22 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      padding: 0.625rem 1.25rem;
-      border-radius: 0.5rem;
+      padding: 0.6rem 1.15rem;
+      border-radius: 6px;
       font-size: 0.8125rem;
       font-weight: 700;
       text-decoration: none;
-      transition: all 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       cursor: pointer;
     }
     .btn-primary {
-      background-color: #0284c7;
+      background-color: #0a2e5c;
       color: #ffffff;
-      border: 1px solid #0284c7;
+      border: 1px solid #0a2e5c;
     }
     .btn-primary:hover {
-      background-color: #0369a1;
-      border-color: #0369a1;
+      background-color: #174a8b;
+      border-color: #174a8b;
     }
     .btn-outline {
       background-color: #ffffff;
@@ -196,12 +197,13 @@
       border: 1px solid #cbd5e1;
     }
     .btn-outline:hover {
-      border-color: #0284c7;
-      color: #0284c7;
+      border-color: #0a2e5c;
+      color: #0a2e5c;
     }
     .attr-box {
       margin-top: 3rem;
       padding-top: 1.5rem;
+      border-top: 1px solid #e2e8f0;
       width: 100%;
       font-size: 0.75rem;
       color: #64748b;
@@ -279,20 +281,5 @@
     <div>&copy; 2026 Duta Digital Agensi (dutamik.id). Hak Cipta Dilindungi.</div>
   </footer>
 
-  <script>
-    (function() {
-      document.addEventListener('click', function(e) {
-        var a = e.target.closest('a');
-        if (!a || a.target === '_blank' || a.hasAttribute('download') || a.download || !a.href) return;
-        var href = a.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('blob:') || href.startsWith('data:') || href.startsWith('http')) return;
-        e.preventDefault();
-        document.body.style.transition = 'opacity 0.1s ease-out, transform 0.1s ease-out';
-        document.body.style.opacity = '0';
-        document.body.style.transform = 'translateY(-2px)';
-        setTimeout(function() { window.location.href = href; }, 100);
-      });
-    })();
-  </script>
 </body>
 </html>

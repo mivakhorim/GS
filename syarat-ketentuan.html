@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Syarat &amp; Ketentuan Layanan - Duta GeoSpasi SHP Builder</title>
-  <meta name="description" content="Syarat dan ketentuan penggunaan lisensi member PRO seumur hidup, hak ekspor Shapefile ESRI, CAD Script, GeoJSON, Excel, dan layout cetak di Duta GeoSpasi SHP Builder.">
+  <title>Syarat &amp; Ketentuan - Duta GeoSpasi SHP Builder</title>
+  <meta name="description" content="Syarat dan ketentuan layanan resmi, lisensi member PRO seumur hidup Rp 75.000, verifikasi QRIS kode unik, dan batas tanggung jawab penggunaan aplikasi spasial.">
   <meta name="author" content="Duta Digital Agensi">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/png" href="assets/img/logo.png">
   <link rel="shortcut icon" href="assets/img/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    @font-face {
-      font-family: 'Inter';
-      src: local('Segoe UI'), local('Arial'), sans-serif;
-    }
     * {
       box-sizing: border-box;
       margin: 0;
@@ -25,20 +24,21 @@
       scroll-behavior: smooth;
     }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background-color: #f8fafc;
-      color: #1e293b;
+      color: #0f172a;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      animation: smoothPageFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: pageEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      -webkit-font-smoothing: antialiased;
     }
-    @keyframes smoothPageFade {
-      0% { opacity: 0.88; transform: translateY(3px); }
+    @keyframes pageEnter {
+      0% { opacity: 0; transform: translateY(6px); }
       100% { opacity: 1; transform: translateY(0); }
     }
     .container {
-      max-width: 64rem;
+      max-width: 68rem;
       margin-left: auto;
       margin-right: auto;
       padding-left: 1.25rem;
@@ -46,9 +46,9 @@
       width: 100%;
     }
     .header-bar {
-      background-color: #0284c7;
+      background-color: #0a2e5c;
       color: #ffffff;
-      border-bottom: 1px solid #0369a1;
+      border-bottom: 1px solid #082449;
       position: sticky;
       top: 0;
       z-index: 50;
@@ -58,7 +58,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 4rem;
+      height: 3.875rem;
       gap: 1rem;
     }
     .brand-wrap {
@@ -69,12 +69,11 @@
       color: inherit;
     }
     .brand-logo {
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 2.25rem;
+      height: 2.25rem;
       background: #ffffff;
-      border-radius: 0.5rem;
-      padding: 0.2rem;
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 6px;
+      padding: 2px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -106,7 +105,7 @@
     }
     .brand-sub {
       font-size: 0.7rem;
-      color: #e0f2fe;
+      color: #bfdbfe;
       line-height: 1.2;
       margin-top: 2px;
     }
@@ -115,23 +114,24 @@
       align-items: center;
       gap: 0.4rem;
       padding: 0.45rem 0.85rem;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 0.5rem;
+      background: #0f3b73;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 700;
       color: #ffffff;
       text-decoration: none;
-      transition: background 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-home:hover {
-      background: rgba(255, 255, 255, 0.25);
+      background: #174a8b;
+      border-color: rgba(255, 255, 255, 0.4);
     }
     .nav-tabs {
       background: #ffffff;
       border-bottom: 1px solid #e2e8f0;
       position: sticky;
-      top: 4rem;
+      top: 3.875rem;
       z-index: 40;
     }
     .tabs-inner {
@@ -149,126 +149,131 @@
       text-decoration: none;
       border-bottom: 2px solid transparent;
       white-space: nowrap;
-      transition: all 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .tab-link:hover {
-      color: #0284c7;
+      color: #0a2e5c;
     }
     .tab-link.active {
-      color: #0284c7;
-      border-bottom-color: #0284c7;
+      color: #0a2e5c;
+      border-bottom-color: #0a2e5c;
       font-weight: 700;
     }
-    .content-card {
+    .doc-article {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 0.875rem;
-      padding: 1.75rem;
-      margin-top: 1.5rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      border-radius: 6px;
+      padding: 2.25rem 2.5rem;
+      margin-top: 2rem;
+      margin-bottom: 3.5rem;
     }
-    .content-header {
+    @media (max-width: 640px) {
+      .doc-article {
+        padding: 1.5rem 1.25rem;
+      }
+    }
+    .doc-header {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #f1f5f9;
-      margin-bottom: 1.5rem;
+      gap: 0.85rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 1.75rem;
     }
-    .content-icon {
+    .doc-icon {
       width: 2.5rem;
       height: 2.5rem;
-      border-radius: 0.75rem;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      background: #eff6ff;
-      color: #0284c7;
-      border: 1px solid #bae6fd;
+      background: #eff4fa;
+      color: #0a2e5c;
+      border: 1px solid #cbd5e1;
     }
-    .content-title h1 {
-      font-size: 1.15rem;
+    .doc-title h1 {
+      font-size: 1.25rem;
       font-weight: 800;
-      color: #0f172a;
-      margin: 0;
+      color: #0a2e5c;
+      letter-spacing: -0.01em;
     }
-    .content-title p {
-      font-size: 0.75rem;
+    .doc-title p {
+      font-size: 0.775rem;
       color: #64748b;
-      margin: 0.15rem 0 0 0;
+      margin-top: 0.2rem;
     }
-    .card-body-text {
-      font-size: 0.875rem;
+    .doc-body {
+      font-size: 0.9rem;
       color: #334155;
       display: flex;
       flex-direction: column;
-      gap: 0.95rem;
-      line-height: 1.6;
+      gap: 1.25rem;
+      line-height: 1.7;
     }
-    .info-box {
-      background: #f8fafc;
+    .table-wrap {
+      overflow-x: auto;
+      margin: 0.5rem 0;
       border: 1px solid #e2e8f0;
-      border-radius: 0.75rem;
-      padding: 1.25rem;
-      margin-top: 0.35rem;
-      margin-bottom: 0.35rem;
-    }
-    .info-box-title {
-      font-size: 0.875rem;
-      font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 0.6rem;
     }
     .table-spec {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.8125rem;
-      margin-top: 0.35rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.5rem;
-      overflow: hidden;
+      font-size: 0.835rem;
     }
     .table-spec th {
-      background-color: #f8fafc;
-      padding: 0.65rem 0.85rem;
+      background-color: #eff4fa;
+      padding: 0.75rem 1rem;
       text-align: left;
       font-weight: 700;
-      color: #0f172a;
-      border-bottom: 1px solid #e2e8f0;
+      color: #0a2e5c;
+      border-bottom: 1px solid #cbd5e1;
       border-right: 1px solid #e2e8f0;
     }
     .table-spec th:last-child {
       border-right: none;
     }
     .table-spec td {
-      padding: 0.65rem 0.85rem;
+      padding: 0.75rem 1rem;
       color: #334155;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
       border-right: 1px solid #f1f5f9;
+    }
+    .table-spec tr:last-child td {
+      border-bottom: none;
     }
     .table-spec td:last-child {
       border-right: none;
     }
+    .term-section {
+      border-left: 3px solid #0a2e5c;
+      background: #f8fafc;
+      padding: 1rem 1.25rem;
+      font-size: 0.85rem;
+      color: #334155;
+      line-height: 1.6;
+    }
+    .term-section strong {
+      color: #0a2e5c;
+    }
     .social-btn {
       width: 2rem;
       height: 2rem;
-      border-radius: 0.5rem;
+      border-radius: 6px;
       background: #ffffff;
       border: 1px solid #cbd5e1;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #475569;
-      transition: all 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       text-decoration: none;
     }
     .social-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-      color: #0284c7;
-      border-color: #0284c7;
+      color: #0a2e5c;
+      border-color: #0a2e5c;
     }
     .footer-bar {
       background: #ffffff;
@@ -324,22 +329,21 @@
   </nav>
 
   <main class="container" style="flex: 1 0 auto;">
-    <article class="content-card">
-      <div class="content-header">
-        <div class="content-icon">
-          <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <article class="doc-article">
+      <div class="doc-header">
+        <div class="doc-icon">
+          <svg style="width: 1.35rem; height: 1.35rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </div>
-        <div class="content-title">
+        <div class="doc-title">
           <h1>Syarat &amp; Ketentuan Layanan (Terms of Service)</h1>
           <p>Ketentuan Penggunaan Aplikasi, Hak Akses Lisensi Member, dan Batasan Tanggung Jawab</p>
         </div>
       </div>
 
-      <div class="card-body-text">
+      <div class="doc-body">
         <p>Dengan mengakses, mendaftar, atau menggunakan aplikasi <strong>Duta GeoSpasi SHP Builder</strong>, Anda menyetujui seluruh ketentuan layanan yang diatur secara sah oleh Duta Digital Agensi di bawah ini:</p>
 
-        <div class="info-box">
-          <div class="info-box-title">Matriks Hak Akses Fitur Aplikasi:</div>
+        <div class="table-wrap">
           <table class="table-spec">
             <thead>
               <tr>
@@ -388,11 +392,17 @@
           </table>
         </div>
 
-        <p><strong>1. Mekanisme Otentikasi &amp; Aktivasi Status PRO</strong>: Aktivasi status PRO wajib menggunakan otentikasi login Akun Google resmi. Pembayaran dilakukan via transfer QRIS dengan nominal pokok Rp 75.000 ditambah 4 digit kode unik acak untuk keperluan pencocokan sistem. Status akun PRO terikat secara sah pada alamat email Google yang terverifikasi di basis data resmi.</p>
-        
-        <p><strong>2. Tanggung Jawab Isi Data Dokumen</strong>: Pengguna bertanggung jawab penuh terhadap ketepatan input koordinat, penamaan pemohon perizinan, batas kavling tapak proyek, dan seluruh pemanfaatan berkas ekspor untuk keperluan perizinan berusaha OSS RBA, AMDALNET, KKPR, maupun lampiran teknis kementerian terkait.</p>
+        <div class="term-section">
+          <strong>1. Mekanisme Otentikasi &amp; Aktivasi Status PRO</strong>: Aktivasi status PRO wajib menggunakan otentikasi login Akun Google resmi. Pembayaran dilakukan via transfer QRIS dengan nominal pokok Rp 75.000 ditambah 4 digit kode unik acak untuk keperluan pencocokan sistem. Status akun PRO terikat secara sah pada alamat email Google yang terverifikasi di basis data resmi.
+        </div>
 
-        <p><strong>3. Batasan Sertifikasi Hak Atas Tanah</strong>: Duta GeoSpasi SHP Builder merupakan instrumen bantu digitalisasi spasial mandiri. Dokumen yang dihasilkan tidak menggantikan fungsi yuridis Surat Ukur resmi yang diterbitkan oleh Kantor Pertanahan ATR/BPN.</p>
+        <div class="term-section">
+          <strong>2. Tanggung Jawab Isi Data Dokumen</strong>: Pengguna bertanggung jawab penuh terhadap ketepatan input koordinat, penamaan pemohon perizinan, batas kavling tapak proyek, dan seluruh pemanfaatan berkas ekspor untuk keperluan perizinan berusaha OSS RBA, AMDALNET, KKPR, maupun lampiran teknis kementerian terkait.
+        </div>
+
+        <div class="term-section">
+          <strong>3. Batasan Sertifikasi Hak Atas Tanah</strong>: Duta GeoSpasi SHP Builder merupakan instrumen bantu digitalisasi spasial mandiri. Dokumen yang dihasilkan tidak menggantikan fungsi yuridis Surat Ukur resmi yang diterbitkan oleh Kantor Pertanahan ATR/BPN.
+        </div>
       </div>
     </article>
   </main>
