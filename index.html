@@ -936,6 +936,7 @@
       cursor: pointer;
       transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
       text-decoration: none;
+      white-space: nowrap;
     }
     .btn-primary {
       background-color: var(--accent);
@@ -1233,6 +1234,9 @@
     }
     .legend-body.collapsed {
       display: none;
+    }
+    .floating-map-legend:has(.legend-body.collapsed) .legend-header {
+      border-bottom: none;
     }
     .legend-category-title {
       font-size: 0.62rem;
@@ -1693,15 +1697,28 @@
       border: 1.5px solid var(--accent) !important;
       border-radius: var(--radius-md);
       box-shadow: 0 10px 25px rgba(10, 46, 92, 0.18) !important;
-      padding: 0.6rem 1.1rem;
+      padding: 0.6rem 1rem;
       display: none;
       align-items: center;
-      gap: 0.8rem;
+      gap: 0.75rem;
       z-index: 950;
       font-size: 0.76rem;
       font-weight: 600;
       color: var(--text-main);
+      box-sizing: border-box;
+      max-width: min(740px, calc(100vw - 1.5rem));
+      width: max-content;
+    }
+    .merge-actions-wrap {
+      display: inline-flex;
+      gap: 0.4rem;
+      align-items: center;
+      flex-shrink: 0;
       white-space: nowrap;
+    }
+    .merge-actions-wrap .btn {
+      white-space: nowrap !important;
+      flex-shrink: 0;
     }
     .modal-backdrop {
       position: fixed;
@@ -1743,15 +1760,24 @@
     }
     .modal-close-btn {
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       color: var(--text-muted);
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      padding: 0;
+      transition: all 0.15s ease;
     }
     .modal-close-btn:hover {
       color: var(--text-main);
+      background-color: var(--bg-subtle);
+      border-color: var(--border-light);
     }
     .modal-body {
       padding: 0.65rem 0.85rem;
@@ -2198,25 +2224,28 @@
       background-color: #525659;
       padding: 2rem;
       display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .print-sheet-paper {
       background-color: #ffffff;
       color: #000000;
-      width: 1120px;
-      height: 790px;
+      width: 1188px;
+      height: 840px;
       box-sizing: border-box;
       box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
       display: flex;
       flex-direction: column;
-      padding: 12px;
+      padding: 10px;
       position: relative;
       font-family: 'Inter', sans-serif;
       margin: auto;
       flex-shrink: 0;
     }
     .print-sheet-paper.a3 {
-      width: 1340px;
-      height: 940px;
+      width: 1680px;
+      height: 1188px;
+      padding: 12px;
     }
     #kopInsetBox {
       height: 155px;
@@ -2231,6 +2260,7 @@
       height: 260px !important;
     }
     .print-mobile-magnifier {
+      display: none !important;
       width: 100%;
       max-width: 1120px;
       margin: 1rem auto 2.5rem auto;
@@ -2240,7 +2270,6 @@
       box-shadow: 0 4px 16px rgba(10, 46, 92, 0.12);
       padding: 0.85rem;
       box-sizing: border-box;
-      display: flex;
       flex-direction: column;
       gap: 0.75rem;
       flex-shrink: 0;
@@ -2582,19 +2611,21 @@
         justify-content: center !important;
       }
       .print-sheet-paper {
-        width: 287mm !important;
-        height: 198mm !important;
+        width: 297mm !important;
+        height: 210mm !important;
         box-shadow: none !important;
         padding: 0 !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         box-sizing: border-box !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
         overflow: hidden !important;
       }
       .print-sheet-paper.a3 {
-        width: 410mm !important;
-        height: 287mm !important;
+        width: 420mm !important;
+        height: 297mm !important;
+        padding: 0 !important;
+        margin: 0 !important;
       }
       .print-sheet-frame {
         width: 100% !important;
@@ -2635,8 +2666,8 @@
         display: none !important;
       }
       @page {
-        size: landscape;
-        margin: 4mm;
+        size: 297mm 210mm landscape;
+        margin: 0;
       }
     }
     .mobile-overlay {
@@ -2656,7 +2687,7 @@
     @media (max-width: 768px) {
       .app-header {
         padding-left: max(0.4rem, calc(0.4rem + env(safe-area-inset-left, 0px)));
-        padding-right: max(0.4rem, calc(0.4rem + env(safe-area-inset-right, 0px)));
+        padding-right: max(0.75rem, calc(0.75rem + env(safe-area-inset-right, 0px)));
         gap: 0.25rem;
         overflow: hidden;
       }
@@ -2701,24 +2732,31 @@
         flex-shrink: 0;
       }
       .header-actions {
-        gap: 0.15rem;
+        gap: 0.35rem;
         flex-shrink: 0;
         align-items: center;
+        margin-right: 0.35rem;
       }
       .header-icon-btn {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         padding: 0;
         flex-shrink: 0;
       }
       .header-auth-badge {
-        height: 26px;
-        padding: 0 4px;
-        gap: 0.2rem;
+        height: 28px;
+        padding: 0 8px;
+        gap: 0.3rem;
         flex-shrink: 0;
+        background-color: rgba(255, 255, 255, 0.16) !important;
+        border: 1px solid rgba(255, 255, 255, 0.32) !important;
+        border-radius: 4px;
       }
       #headerMemberText {
-        display: none !important;
+        display: inline-block !important;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
       }
       #headerMemberBadge {
         font-size: 0.55rem;
@@ -2942,6 +2980,31 @@
         justify-content: center;
         z-index: 1000;
       }
+      .merge-notification-banner {
+        top: 0.5rem !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: calc(100vw - 1rem) !important;
+        max-width: calc(100vw - 1rem) !important;
+        padding: 0.5rem 0.65rem !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.45rem !important;
+        white-space: normal !important;
+        font-size: 0.72rem !important;
+      }
+      .merge-actions-wrap {
+        display: flex !important;
+        width: 100% !important;
+        gap: 0.35rem !important;
+      }
+      .merge-actions-wrap .btn {
+        flex: 1 1 0 !important;
+        padding: 5px 4px !important;
+        font-size: 0.72rem !important;
+        justify-content: center !important;
+        text-align: center !important;
+      }
       .modal-print-dialog {
         width: 100vw !important;
         height: 100dvh !important;
@@ -2975,6 +3038,14 @@
         font-size: 0.72rem !important;
         justify-content: center !important;
       }
+      .print-toolbar .modal-close-btn {
+        min-width: 34px !important;
+        min-height: 34px !important;
+        width: 34px !important;
+        height: 34px !important;
+        background-color: var(--bg-subtle) !important;
+        border: 1px solid var(--border-light) !important;
+      }
       .print-preview-scroll {
         padding: 0.5rem 0.25rem !important;
         overflow-x: hidden !important;
@@ -2985,6 +3056,27 @@
       }
       .print-sheet-paper {
         margin: 0 auto !important;
+      }
+      .print-kop-column {
+        overflow: hidden !important;
+      }
+      .print-legend-list {
+        overflow: hidden !important;
+        max-height: none !important;
+      }
+      .mag-footer-actions button {
+        display: none !important;
+      }
+    }
+    @media (max-width: 700px) {
+      .print-mobile-magnifier {
+        display: flex !important;
+        margin: 1rem 0 2rem 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .print-sheet-paper {
+        pointer-events: none !important;
       }
     }
   </style>
@@ -3813,14 +3905,14 @@
 
 
       <div id="mergeModeBanner" class="merge-notification-banner">
-        <div id="mergeBannerText" style="display: flex; align-items: center; gap: 0.5rem;">
+        <div id="mergeBannerText" style="display: flex; align-items: center; gap: 0.5rem; line-height: 1.35; flex: 1 1 auto; min-width: 0;">
           <span class="dot-indicator" style="background-color: var(--amber);"></span>
-          <strong>Mode Tambah Bidang (Gabung) Aktif</strong>: Klik bidang tanah tetangga di peta.
+          <span><strong>Mode Tambah Bidang (Gabung) Aktif</strong>: Klik bidang tanah tetangga di peta.</span>
         </div>
-        <div style="display: flex; gap: 0.4rem; align-items: center;">
-          <button class="btn btn-outline" id="btnMergePrecisionBpn" onclick="autoScaleToBpnArea()" style="padding: 4px 10px; font-size: 0.72rem; border-color: var(--emerald); color: var(--emerald); font-weight: 700;" title="Sesuaikan ukuran seluruh bidang terpilih dengan batas antar bidang tetap 1 garis">Presisi Batas</button>
-          <button class="btn btn-primary" onclick="finishMergeParcels()" style="padding: 4px 12px; font-size: 0.75rem; background-color: var(--accent); color: #ffffff; border: 1px solid var(--accent); font-weight: 700;">Selesai (<span id="mergeCountBadge">1</span>)</button>
-          <button class="btn btn-outline" onclick="cancelMergeMode()" style="padding: 3px 9px; font-size: 0.72rem;">Batal</button>
+        <div class="merge-actions-wrap" style="display: inline-flex; gap: 0.4rem; align-items: center; flex-shrink: 0; white-space: nowrap;">
+          <button class="btn btn-outline" id="btnMergePrecisionBpn" onclick="autoScaleToBpnArea()" style="padding: 4px 10px; font-size: 0.72rem; border-color: var(--emerald); color: var(--emerald); font-weight: 700; white-space: nowrap; flex-shrink: 0;" title="Sesuaikan ukuran seluruh bidang terpilih dengan batas antar bidang tetap 1 garis">Presisi Batas</button>
+          <button class="btn btn-primary" onclick="finishMergeParcels()" style="padding: 4px 12px; font-size: 0.75rem; background-color: var(--accent); color: #ffffff; border: 1px solid var(--accent); font-weight: 700; white-space: nowrap; flex-shrink: 0;">Selesai (<span id="mergeCountBadge">1</span>)</button>
+          <button class="btn btn-outline" onclick="cancelMergeMode()" style="padding: 3px 9px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0;">Batal</button>
         </div>
       </div>
 
@@ -3898,10 +3990,10 @@
             <span>Legenda Peta</span>
           </div>
           <button type="button" class="legend-toggle-btn" onclick="event.stopPropagation(); toggleMapLegend();" aria-label="Toggle Legenda">
-            <svg id="legendChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg id="legendChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transform: rotate(180deg); transition: transform 0.2s ease;"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
-        <div id="legendBody" class="legend-body">
+        <div id="legendBody" class="legend-body collapsed">
           <div class="legend-category-title">Batas &amp; Patok Kadastral</div>
           <div class="legend-item"><span class="legend-swatch polygon-active"></span><span>Bidang Terpilih (Aktif Diedit)</span></div>
           <div class="legend-item"><span class="legend-swatch polygon-bpn"></span><span>Batas Bidang Kadastral Resmi (Garis Oranye)</span></div>
@@ -4021,6 +4113,9 @@
               </tr>
             </tbody>
           </table>
+          <div style="margin-top: 0.65rem; background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;">
+            <strong>Dukungan &amp; Saran Fitur:</strong> Jika ada fitur yang memerlukan penyesuaian khusus atau saran fitur baru, pengguna dapat menghubungi Admin Duta Digital Agensi (dutamik.id) untuk penambahan update pada versi berikutnya.
+          </div>
         </div>
       </div>
 
@@ -4048,6 +4143,9 @@
             </div>
             <div style="font-size: 0.73rem; opacity: 0.95;">
               Akun Anda telah berstatus PRO Lifetime. Seluruh hak akses fitur ekspor SHP, CAD, GeoJSON, dan analisis spasial aktif sepenuhnya.
+            </div>
+            <div style="margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.25); font-size: 0.71rem; text-align: left; opacity: 0.95; line-height: 1.45;">
+              <strong>Catatan Dukungan Member PRO:</strong> Jika terdapat fitur yang error, membutuhkan penyesuaian khusus, atau ingin menyampaikan saran fitur baru, silakan hubungi Admin Duta Digital Agensi (dutamik.id) untuk menambahkan update ke versi berikutnya.
             </div>
           </div>
 
@@ -4205,7 +4303,7 @@
           </select>
         </div>
         <div class="print-toolbar-group">
-          <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; color: #0a2e5c; cursor: pointer; user-select: none; background: var(--bg-subtle); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-light);">
+          <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; color: #0a2e5c; cursor: pointer; user-select: none;">
             <input type="checkbox" id="chkPrintToggleDimensi" checked onchange="togglePrintDimensions(this.checked)" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
             <span>Dimensi Batas</span>
           </label>
@@ -4213,7 +4311,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Cetak &amp; Simpan PDF</span>
           </button>
-          <button class="modal-close-btn" onclick="closeMapPrintModal()" aria-label="Tutup Cetak Peta" style="margin-left: 0.25rem;">
+          <button class="modal-close-btn" onclick="closeMapPrintModal()" aria-label="Tutup Cetak Peta">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -4337,7 +4435,7 @@
                   <div style="display: flex; align-items: center; gap: 8px; border-top: 1px dashed #cbd5e1; padding-top: 4px;">
                     <div style="position: relative; flex-shrink: 0; width: 38px; height: 38px; background: transparent; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="triggerPublisherLogoUpload()" title="Klik untuk ganti logo (Khusus Member PRO)">
                       <img id="kopPublisherLogoImg" src="assets/img/logo.png" alt="Logo Penerbit" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                      <input type="file" id="kopPublisherLogoFile" accept="image/*" style="display: none;" onchange="handlePublisherLogoSelected(event)">
+                      <input type="file" id="kopPublisherLogoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display: none;" onchange="handlePublisherLogoSelected(event)">
                     </div>
                     <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
                       <input type="text" id="kopPublisherNameInput" class="print-kop-input" value="Duta Digital Agensi (dutamik.id)" placeholder="Nama Penerbit / Instansi" style="font-weight: 800; font-size: 8.5px; color: #0f172a;" oninput="handlePublisherChange()">
@@ -4358,14 +4456,10 @@
 
         <div id="printMobileMagnifier" class="print-mobile-magnifier">
           <div class="magnifier-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <div>
-                <div style="font-weight: 800; font-size: 0.82rem; color: #0a2e5c; text-transform: uppercase; letter-spacing: 0.3px;">Lensa Pembesar &amp; Pengecekan Data Cetak</div>
-                <div style="font-size: 0.68rem; color: #64748b;">Inspeksi presisi &amp; edit data kop cetak secara nyaman pada layar ponsel</div>
-              </div>
+            <div>
+              <div style="font-weight: 800; font-size: 0.82rem; color: #0a2e5c; text-transform: uppercase; letter-spacing: 0.3px;">Penyesuaian Data Kop &amp; Bidang Cetak</div>
+              <div style="font-size: 0.68rem; color: #64748b;">Sesuaikan atribut wilayah administrasi, judul dokumen, dan penerbit resmi kop peta</div>
             </div>
-            <div class="magnifier-badge">MODE PENGECEKAN</div>
           </div>
 
           <div class="magnifier-nav-tabs">
@@ -4489,10 +4583,6 @@
               <span style="width: 7px; height: 7px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
               <span>Data tersinkron otomatis ke kop cetak</span>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="executeMapPrint()" style="padding: 6px 16px; font-weight: 700; font-size: 0.74rem;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>Cetak / Unduh PDF</span>
-            </button>
           </div>
         </div>
       </div>
@@ -7520,7 +7610,7 @@ function latLngToUtm(lat, lon) {
       mergePreviewLayers = [];
 
       mergeParcelsList.push({
-        coords: activeVertices.map(v => [v.lng, v.lat]),
+        coords: activeVertices.map(v => ({ lat: Number(v.lat.toFixed(7)), lng: Number(v.lng.toFixed(7)) })),
         fid: activePinData?.fid || 'Bidang 1',
         luas: activePinData?.luas_m2 || 0
       });
@@ -7555,168 +7645,75 @@ function latLngToUtm(lat, lon) {
       }
     }
 
-        function snapAndAlignAdjacentParcel(newCoords, existingParcelsCoords, snapThresholdMeters = 3.5) {
-      if (!newCoords || newCoords.length < 3 || !existingParcelsCoords || existingParcelsCoords.length === 0) {
+    function snapSharedBoundaryVertices(newCoords, existingPolys, snapThresholdMeters = 2.5) {
+      if (!newCoords || newCoords.length < 3 || !existingPolys || existingPolys.length === 0) {
         return newCoords;
       }
-
       function distM(p1, p2) {
         const dlat = (p1.lat - p2.lat) * 111320;
         const midLat = (p1.lat + p2.lat) * 0.5;
         const dlng = (p1.lng - p2.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
-        return Math.sqrt(dlat * dlat + dlng * dlng);
+        return Math.hypot(dlat, dlng);
+      }
+      function distToSegmentM(p, a, b) {
+        const dlat = (b.lat - a.lat) * 111320;
+        const midLat = (a.lat + b.lat) * 0.5;
+        const dlng = (b.lng - a.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
+        const segLen2 = dlat * dlat + dlng * dlng;
+        if (segLen2 === 0) return { dist: distM(p, a), pt: a };
+        const pLat = (p.lat - a.lat) * 111320;
+        const pLng = (p.lng - a.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
+        const t = Math.max(0, Math.min(1, (pLat * dlat + pLng * dlng) / segLen2));
+        const projLat = a.lat + (t * (b.lat - a.lat));
+        const projLng = a.lng + (t * (b.lng - a.lng));
+        return { dist: distM(p, { lat: projLat, lng: projLng }), pt: { lat: projLat, lng: projLng } };
       }
 
-      let snapped = newCoords.map(p => ({ lat: p.lat, lng: p.lng }));
-      const n = snapped.length;
-
-      for (let eIdx = 0; eIdx < existingParcelsCoords.length; eIdx++) {
-        const exist = existingParcelsCoords[eIdx];
-        if (!exist || exist.length < 3) continue;
-        const m = exist.length;
-
-        let foundShared = false;
-        for (let i = 0; i < n; i++) {
-          const b1 = snapped[i];
-          const b2 = snapped[(i + 1) % n];
-
+      return newCoords.map(v => {
+        let bestSnap = null;
+        let minD = snapThresholdMeters;
+        existingPolys.forEach(poly => {
+          if (!poly || poly.length < 3) return;
+          const m = poly.length;
           for (let j = 0; j < m; j++) {
-            const a1 = exist[j];
-            const a2 = exist[(j + 1) % m];
-
-            const d1 = distM(b1, a2);
-            const d2 = distM(b2, a1);
-
-            if (d1 <= snapThresholdMeters && d2 <= snapThresholdMeters) {
-              snapped[i] = { lat: a2.lat, lng: a2.lng };
-              snapped[(i + 1) % n] = { lat: a1.lat, lng: a1.lng };
-              foundShared = true;
-
-              if (n === 4 && m === 4) {
-                const pStart = snapped[i];
-                const pEnd = snapped[(i + 1) % n];
-                const dlatEdge = pEnd.lat - pStart.lat;
-                const dlngEdge = pEnd.lng - pStart.lng;
-                const cosLat = Math.cos(pStart.lat * Math.PI / 180);
-                const edgeMy = dlatEdge * 111320;
-                const edgeMx = dlngEdge * 111320 * cosLat;
-                const edgeLen = Math.hypot(edgeMx, edgeMy);
-                if (edgeLen > 0) {
-                  let perpMx = -edgeMy / edgeLen;
-                  let perpMy = edgeMx / edgeLen;
-
-                  const origOther1 = newCoords[(i + 3) % 4];
-                  const origW = Math.hypot(
-                    (origOther1.lat - pStart.lat) * 111320,
-                    (origOther1.lng - pStart.lng) * 111320 * cosLat
-                  );
-
-                  const dot = ((origOther1.lng - pStart.lng) * 111320 * cosLat) * perpMx +
-                              ((origOther1.lat - pStart.lat) * 111320) * perpMy;
-                  if (dot < 0) {
-                    perpMx = -perpMx;
-                    perpMy = -perpMy;
-                  }
-
-                  snapped[(i + 3) % 4] = {
-                    lat: Number((pStart.lat + (perpMy * origW) / 111320).toFixed(7)),
-                    lng: Number((pStart.lng + (perpMx * origW) / (111320 * cosLat)).toFixed(7))
-                  };
-                  snapped[(i + 2) % 4] = {
-                    lat: Number((pEnd.lat + (perpMy * origW) / 111320).toFixed(7)),
-                    lng: Number((pEnd.lng + (perpMx * origW) / (111320 * cosLat)).toFixed(7))
-                  };
-                }
-              }
-              break;
-            }
-
-            const d1s = distM(b1, a1);
-            const d2s = distM(b2, a2);
-            if (d1s <= snapThresholdMeters && d2s <= snapThresholdMeters) {
-              snapped[i] = { lat: a1.lat, lng: a1.lng };
-              snapped[(i + 1) % n] = { lat: a2.lat, lng: a2.lng };
-              foundShared = true;
-              break;
+            const rawA = poly[j];
+            const a = Array.isArray(rawA) ? { lat: rawA[1], lng: rawA[0] } : { lat: rawA.lat, lng: rawA.lng };
+            const d = distM(v, a);
+            if (d < minD) {
+              minD = d;
+              bestSnap = { lat: a.lat, lng: a.lng };
             }
           }
-          if (foundShared) break;
-        }
-      }
-      return snapped;
+          for (let j = 0; j < m; j++) {
+            const rawA = poly[j];
+            const rawB = poly[(j + 1) % m];
+            const a = Array.isArray(rawA) ? { lat: rawA[1], lng: rawA[0] } : { lat: rawA.lat, lng: rawA.lng };
+            const b = Array.isArray(rawB) ? { lat: rawB[1], lng: rawB[0] } : { lat: rawB.lat, lng: rawB.lng };
+            const res = distToSegmentM(v, a, b);
+            if (res.dist < minD) {
+              minD = res.dist;
+              bestSnap = res.pt;
+            }
+          }
+        });
+        return bestSnap ? { lat: Number(bestSnap.lat.toFixed(7)), lng: Number(bestSnap.lng.toFixed(7)) } : { lat: Number(v.lat.toFixed(7)), lng: Number(v.lng.toFixed(7)) };
+      });
     }
 
     async function handleMergeParcelClick(lat, lng) {
-      const persilApiBase = getBpnGatewayBase();
       const statusBanner = document.getElementById('mergeBannerText');
       if (statusBanner) {
-        statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Sedang membaca bidang tetangga kadastral...';
+        statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Sedang membaca data batas bidang tanah di titik klik...';
       }
       try {
-        let persilData = null;
-        if (isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
-          try {
-            const res = await fetch(`${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${map.getZoom() || 19}`);
-            if (res.ok) persilData = await res.json();
-          } catch (e) {}
-        }
+        const persilData = await fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
 
         if (!persilData || !persilData.found || !persilData.polygon_coords || persilData.polygon_coords.length < 3) {
-          if (activeVertices && activeVertices.length >= 3) {
-            const n = activeVertices.length;
-            let minD = 999999;
-            let bestIdx = 0;
-            for (let i = 0; i < n; i++) {
-              const p1 = activeVertices[i];
-              const p2 = activeVertices[(i + 1) % n];
-              const midLat = (p1.lat + p2.lat) * 0.5;
-              const midLng = (p1.lng + p2.lng) * 0.5;
-              const d = Math.hypot((lat - midLat) * 111320, (lng - midLng) * 111320 * Math.cos(lat * Math.PI / 180));
-              if (d < minD) { minD = d; bestIdx = i; }
-            }
-
-            const pStart = activeVertices[bestIdx];
-            const pEnd = activeVertices[(bestIdx + 1) % n];
-            const dlatEdge = pEnd.lat - pStart.lat;
-            const dlngEdge = pEnd.lng - pStart.lng;
-            const cosLat = Math.cos(pStart.lat * Math.PI / 180);
-            const edgeMy = dlatEdge * 111320;
-            const edgeMx = dlngEdge * 111320 * cosLat;
-            const edgeLen = Math.hypot(edgeMx, edgeMy);
-            const perpMx = -edgeMy / (edgeLen || 1);
-            const perpMy = edgeMx / (edgeLen || 1);
-
-            const neighborWidth = Math.max(12, edgeLen * 0.85);
-            const clickVecX = (lng - pStart.lng) * 111320 * cosLat;
-            const clickVecY = (lat - pStart.lat) * 111320;
-            const dot = clickVecX * perpMx + clickVecY * perpMy;
-            const sign = dot < 0 ? -1 : 1;
-
-            const pOpp1 = {
-              lat: Number((pStart.lat + (sign * perpMy * neighborWidth) / 111320).toFixed(7)),
-              lng: Number((pStart.lng + (sign * perpMx * neighborWidth) / (111320 * cosLat)).toFixed(7))
-            };
-            const pOpp2 = {
-              lat: Number((pEnd.lat + (sign * perpMy * neighborWidth) / 111320).toFixed(7)),
-              lng: Number((pEnd.lng + (sign * perpMx * neighborWidth) / (111320 * cosLat)).toFixed(7))
-            };
-
-            const neighborCoords = [pStart, pEnd, pOpp2, pOpp1];
-            const neighborArea = Math.round(calculatePolygonArea(neighborCoords));
-            const neighborNib = `Tetangga-${mergeParcelsList.length + 1}`;
-
-            persilData = {
-              found: true,
-              fid: neighborNib,
-              luas_m2: neighborArea,
-              polygon_coords: neighborCoords
-            };
-          } else {
-            if (statusBanner) {
-              statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--crimson);"></span> Bidang tidak terdeteksi. Silakan klik dekat garis batas bidang.';
-            }
-            return;
+          if (statusBanner) {
+            statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--crimson);"></span> Bidang tanah tidak terdeteksi pada titik klik. Pastikan klik berada tepat di dalam bidang tanah kadastral terdaftar.';
           }
+          showToast('Titik klik berada di luar bidang tanah terdaftar. Silakan klik tepat di dalam bidang yang ingin digabungkan.', 'warn');
+          return;
         }
 
         const isAlreadyAdded = mergeParcelsList.some(p => {
@@ -7725,33 +7722,47 @@ function latLngToUtm(lat, lon) {
         });
         if (isAlreadyAdded) {
           if (statusBanner) {
-            statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--amber);"></span> Bidang ${persilData.fid || ""} sudah ada dalam daftar gabung.`;
+            statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--amber);"></span> Bidang ${persilData.fid || ''} sudah ada dalam daftar gabung.`;
           }
+          showToast('Bidang tanah ini sudah terpilih sebelumnya.', 'info');
           return;
         }
 
+        let rawCoords = persilData.polygon_coords.map(p => {
+          if (Array.isArray(p)) return { lat: Number(p[1]), lng: Number(p[0]) };
+          return { lat: Number(p.lat), lng: Number(p.lng) };
+        });
+        rawCoords = cleanAndDeduplicateVertices(rawCoords, 0.25, 4.0);
+
         const existingPolys = [activeVertices, ...mergeParcelsList.map(p => p.coords)];
-        const coords = snapAndAlignAdjacentParcel(persilData.polygon_coords, existingPolys, 3.5);
+        const snappedCoords = snapSharedBoundaryVertices(rawCoords, existingPolys, 2.5);
+
+        const newParcelLuas = persilData.luas_m2 || Math.round(calculatePolygonArea(snappedCoords));
+        const newParcelFid = persilData.fid && persilData.fid !== '-' ? persilData.fid : `Bidang ${mergeParcelsList.length + 1}`;
+
         mergeParcelsList.push({
-          coords: coords,
-          fid: persilData.fid || 'Bidang ' + (mergeParcelsList.length + 1),
-          luas: persilData.luas_m2 || 0
+          coords: snappedCoords,
+          fid: newParcelFid,
+          luas: newParcelLuas
         });
 
-        const latlngs = coords.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lat, p.lng]);
+        const latlngs = snappedCoords.map(p => [p.lat, p.lng]);
         const previewLayer = L.polygon(latlngs, {
           color: '#082449',
           weight: 2.5,
           dashArray: '5, 5',
           fillColor: '#0a2e5c',
-          fillOpacity: 0.18
+          fillOpacity: 0.22
         }).addTo(map);
         mergePreviewLayers.push(previewLayer);
 
-        document.getElementById('mergeCountBadge').innerText = mergeParcelsList.length;
+        const countBadge = document.getElementById('mergeCountBadge');
+        if (countBadge) countBadge.innerText = mergeParcelsList.length;
+
         if (statusBanner) {
-          statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--emerald);"></span> Berhasil menambahkan Bidang (${Math.round(persilData.luas_m2 || 0)} m²). Total: ${mergeParcelsList.length} bidang.`;
+          statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--emerald);"></span> Terpilih: ${newParcelFid} (${Math.round(newParcelLuas).toLocaleString('id-ID')} m²). Total ${mergeParcelsList.length} bidang siap digabung.`;
         }
+        showToast(`Bidang ke-${mergeParcelsList.length} (${newParcelFid}) berhasil ditambahkan. Klik 'Selesai' untuk menggabungkan.`, 'success');
       } catch (err) {
         if (statusBanner) {
           statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--crimson);"></span> Gagal memuat bidang: ${err.message}`;
@@ -7975,9 +7986,12 @@ function latLngToUtm(lat, lon) {
       if (activePinData) {
         activePinData.fid = 'Gabungan Bidang';
         activePinData.luas_m2 = result.area_m2;
-        const _elNib = document.getElementById('pinNibText');  const _elLok = document.getElementById('pinLokasiUtamaText'); if (_elLok) _elLok.innerText = (activePinData.desa !== '-' && activePinData.kecamatan !== '-') ? `${activePinData.desa}, ${activePinData.kecamatan}` : (activePinData.desa !== '-' ? activePinData.desa : 'Bidang Tanah');
-        document.getElementById('pinLuasBpnText').innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m2`;
-        
+        const _elNib = document.getElementById('pinNibText');
+        if (_elNib) _elNib.innerText = 'Gabungan ' + (result.total_parcels_merged || mergeParcelsList.length) + ' Bidang';
+        const _elLok = document.getElementById('pinLokasiUtamaText');
+        if (_elLok) _elLok.innerText = (activePinData.desa !== '-' && activePinData.kecamatan !== '-') ? `${activePinData.desa}, ${activePinData.kecamatan}` : (activePinData.desa !== '-' ? activePinData.desa : 'Bidang Tanah');
+        const _elLuas = document.getElementById('pinLuasBpnText');
+        if (_elLuas) _elLuas.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
       }
 
       const hud = document.getElementById('canvasHud');
@@ -7986,14 +8000,19 @@ function latLngToUtm(lat, lon) {
         const elHudNib = document.getElementById('hudNib');
         if (elHudNib) elHudNib.innerText = activePinData?.fid || 'Gabungan Bidang';
         const elHudArea = document.getElementById('hudBpnArea');
-        if (elHudArea) elHudArea.innerText = `${Math.round(result.area_m2).toLocaleString('id-ID')} m2`;
+        if (elHudArea) elHudArea.innerText = `${Math.round(result.area_m2).toLocaleString('id-ID')} m²`;
+      }
+
+      const elShpLuas = document.getElementById('shpLuasHa');
+      if (elShpLuas) {
+        elShpLuas.value = `${(result.area_m2 / 10000).toFixed(4)} Ha`;
       }
 
       isParcelLocked = true;
       renderCanvasPolygon(true);
       cancelMergeMode();
       switchTab('tab-bidang');
-      showToast(`Penggabungan berhasil: ${result.total_parcels_merged} bidang digabung menjadi 1 poligon utuh (Luas: ${Math.round(result.area_m2).toLocaleString('id-ID')} m2, ${result.total_vertices} patok batas).`, 'success');
+      showToast(`Penggabungan berhasil: ${result.total_parcels_merged} bidang digabung menjadi 1 poligon utuh (Luas: ${Math.round(result.area_m2).toLocaleString('id-ID')} m², ${result.total_vertices} patok batas).`, 'success');
     }
 
     function setupDrawing() {
@@ -10232,14 +10251,34 @@ window.addEventListener('DOMContentLoaded', () => {
     function changePrintPaperSize(size) {
       const sheet = document.getElementById('printMapSheet');
       if (!sheet) return;
+      let dynStyle = document.getElementById('dynamicPagePrintStyle');
+      if (!dynStyle) {
+        dynStyle = document.createElement('style');
+        dynStyle.id = 'dynamicPagePrintStyle';
+        document.head.appendChild(dynStyle);
+      }
       if (size === 'a3') {
         sheet.classList.add('a3');
+        dynStyle.textContent = '@media print { @page { size: 420mm 297mm landscape !important; margin: 0 !important; } }';
       } else {
         sheet.classList.remove('a3');
+        dynStyle.textContent = '@media print { @page { size: 297mm 210mm landscape !important; margin: 0 !important; } }';
       }
       setTimeout(() => {
         if (printMapInstance) {
           printMapInstance.invalidateSize();
+          const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+          let bounds = null;
+          if (parts[0] && parts[0].length >= 3) {
+            parts.forEach(pList => {
+              const poly = L.polygon(pList.map(v => [v.lat, v.lng]));
+              if (!bounds) bounds = poly.getBounds();
+              else bounds.extend(poly.getBounds());
+            });
+          }
+          if (bounds && bounds.isValid()) {
+            printMapInstance.fitBounds(bounds, { padding: [40, 40] });
+          }
           updatePrintMapGraticule();
         }
         if (printInsetInstance) {
@@ -10841,8 +10880,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function isMobileDevice() {
       return (
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        (window.innerWidth <= 768)
+        (/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && !/iPad|Tablet/i.test(navigator.userAgent)) ||
+        (window.innerWidth <= 700)
       );
     }
 
@@ -10852,11 +10891,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const wrapper = document.getElementById('printSheetScaleWrapper');
       if (!scroll || !sheet) return;
       const isA3 = sheet.classList.contains('a3');
-      const sheetW = isA3 ? 1340 : 1120;
-      const sheetH = isA3 ? 940 : 790;
+      const sheetW = isA3 ? 1680 : 1188;
+      const sheetH = isA3 ? 1188 : 840;
       const containerW = scroll.clientWidth || window.innerWidth;
       if (containerW < sheetW + 24) {
-        const scale = Math.max(0.24, Math.min((containerW - 16) / sheetW, 0.98));
+        const scale = Math.max(0.18, Math.min((containerW - 16) / sheetW, 0.98));
         sheet.style.transform = `scale(${scale})`;
         sheet.style.transformOrigin = 'top center';
         if (wrapper) {
@@ -10896,7 +10935,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const prevTransform = sheet.style.transform;
       const prevOrigin = sheet.style.transformOrigin;
+      const prevPadding = sheet.style.padding;
+      const prevMargin = sheet.style.margin;
       sheet.style.transform = 'none';
+      sheet.style.transformOrigin = 'unset';
+      sheet.style.padding = '0';
+      sheet.style.margin = '0';
 
       const opt = {
         margin: 0,
@@ -10923,6 +10967,8 @@ window.addEventListener('DOMContentLoaded', () => {
       } finally {
         sheet.style.transform = prevTransform;
         sheet.style.transformOrigin = prevOrigin;
+        sheet.style.padding = prevPadding;
+        sheet.style.margin = prevMargin;
         adjustMobilePrintScale();
       }
     }
