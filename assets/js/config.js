@@ -466,12 +466,10 @@ function latLngToUtm(lat, lon) {
     window.initGoogleIdentityServices = function() {};
     window.handleGoogleSignInResponse = function() {};
     window.configureGoogleClientId = function() {};
-    window.saveGoogleClientIdFromInput = function() {};
     window.loginWithGoogle = function() { showToast('Layanan otentikasi sedang offline.', 'warn'); };
     window.fallbackGoogleOAuthRedirect = function() { showToast('Layanan otentikasi sedang offline.', 'warn'); };
     window.logoutMember = function() {};
     window.fetchMemberProfile = function() { return Promise.resolve(null); };
-    window.setMemberSecureData = function() {};
     window.verifyProLicenseIntegrity = function() { return false; };
     window.updateMemberUI = function() {
       const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;

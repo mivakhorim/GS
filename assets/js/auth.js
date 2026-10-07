@@ -3,15 +3,7 @@ function closeServerModal() {
       if (modal) modal.style.display = 'none';
     }
 
-    function saveGoogleClientIdFromInput() {
-      const input = document.getElementById('inputGoogleClientId');
-      if (!input) return;
-      const val = input.value.trim() || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
-      GOOGLE_CLIENT_ID = val;
-      localStorage.setItem('google_client_id', val);
-      showToast('Google Client ID berhasil disimpan.', 'success');
-      initGoogleIdentityServices();
-    }
+
 
     var SUPABASE_PROJECT_URL = 'https://vezruyffzmabhtylxigc.supabase.co';
     var SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
@@ -262,38 +254,10 @@ function closeServerModal() {
     }
 
     function ensureSupabaseClient() {
-      if (!SUPABASE_ANON_KEY) {
-        const inputKey = prompt('Masukkan Kunci Otentikasi Cloud Database (vezruyffzmabhtylxigc):');
-        if (inputKey && inputKey.trim()) {
-          saveSupabaseAnonKey(inputKey.trim());
-          return true;
-        } else {
-          showToast('Kunci Otentikasi Cloud belum diatur.', 'warn');
-          return false;
-        }
-      }
       if (!supabaseClient) {
         initSupabase();
       }
       return !!supabaseClient;
-    }
-
-    function saveSupabaseAnonKey(key) {
-      if (!key) return;
-      SUPABASE_ANON_KEY = key;
-      localStorage.setItem('supabase_anon_key', key);
-      initSupabase();
-      showToast('Kunci Otentikasi Cloud berhasil disimpan.', 'success');
-    }
-
-    function saveCustomSupabaseKey() {
-      const inputEl = document.getElementById('inputSupabaseAnonKey');
-      const val = inputEl?.value.trim();
-      if (!val) {
-        showToast('Masukkan Kunci Otentikasi Cloud terlebih dahulu.', 'warn');
-        return;
-      }
-      saveSupabaseAnonKey(val);
     }
 
     
@@ -467,36 +431,55 @@ function closeServerModal() {
       totalAmount: 75100
     };
 
-    function generateQrisPayment(targetEmail) {
+    function applyPaymentDetailsToUI(email, details) {
+      const emailInput = document.getElementById('qrisBuyerEmail');
+      if (emailInput) {
+        emailInput.value = email;
+        emailInput.readOnly = true;
+      }
+      const totalDisplay = document.getElementById('qrisTotalDisplay');
+      if (totalDisplay) {
+        totalDisplay.textContent = 'Rp ' + Number(details.totalAmount).toLocaleString('id-ID');
+      }
+      const codeDisplay = document.getElementById('qrisUniqueCodeDisplay');
+      if (codeDisplay) {
+        codeDisplay.textContent = String(details.uniqueCode);
+      }
+    }
+
+    async function generateQrisPayment(targetEmail) {
       const email = (currentMemberSession?.user?.email || targetEmail || '').trim();
       const base = 75000;
+
+      if (supabaseClient && currentMemberSession && currentMemberSession.user) {
+        try {
+          const { data, error } = await supabaseClient.rpc('create_pending_payment', {
+            p_plan: 'pro_annual',
+            p_base_amount: base
+          });
+          if (data && !error) {
+            currentPaymentDetails = {
+              baseAmount: Number(data.base_amount || base),
+              uniqueCode: Number(data.unique_code),
+              totalAmount: Number(data.total_amount),
+              id: data.id
+            };
+            applyPaymentDetailsToUI(email, currentPaymentDetails);
+            return;
+          }
+        } catch (rpcErr) {}
+      }
+
       const code = 100 + ((Date.now() + Math.floor(Math.random() * 899)) % 899);
       const total = base + code;
-
       currentPaymentDetails = {
         baseAmount: base,
         uniqueCode: code,
         totalAmount: total,
         id: null
       };
-
-      const emailInput = document.getElementById('qrisBuyerEmail');
-      if (emailInput) {
-        emailInput.value = email;
-        emailInput.readOnly = true;
-      }
-
-      const totalDisplay = document.getElementById('qrisTotalDisplay');
-      if (totalDisplay) {
-        totalDisplay.textContent = 'Rp ' + total.toLocaleString('id-ID');
-      }
-
-      const codeDisplay = document.getElementById('qrisUniqueCodeDisplay');
-      if (codeDisplay) {
-        codeDisplay.textContent = String(code);
-      }
-
-      savePendingPaymentRecord(email, base, code, total);
+      applyPaymentDetailsToUI(email, currentPaymentDetails);
+      await savePendingPaymentRecord(email, base, code, total);
     }
 
     async function savePendingPaymentRecord(email, base, code, total) {
@@ -621,17 +604,13 @@ function closeServerModal() {
 
     window.initSupabase = initSupabase;
     window.ensureSupabaseClient = ensureSupabaseClient;
-    window.saveSupabaseAnonKey = saveSupabaseAnonKey;
-    window.saveCustomSupabaseKey = saveCustomSupabaseKey;
     window.initGoogleIdentityServices = initGoogleIdentityServices;
     window.handleGoogleSignInResponse = handleGoogleSignInResponse;
     window.configureGoogleClientId = configureGoogleClientId;
-    window.saveGoogleClientIdFromInput = saveGoogleClientIdFromInput;
     window.fetchMemberProfile = fetchMemberProfile;
     window.loginWithGoogle = loginWithGoogle;
     window.fallbackGoogleOAuthRedirect = fallbackGoogleOAuthRedirect;
     window.logoutMember = logoutMember;
-    window.setMemberSecureData = setMemberSecureData;
     window.verifyProLicenseIntegrity = verifyProLicenseIntegrity;
     window.updateMemberUI = updateMemberUI;
     window.openMemberModal = openMemberModal;
@@ -644,5 +623,4 @@ function closeServerModal() {
     window.confirmPaymentWhatsApp = confirmPaymentWhatsApp;
     window.checkPaymentStatusLive = checkPaymentStatusLive;
     window.cancelAndClearCurrentPendingPayment = cancelAndClearCurrentPendingPayment;
-    window.isMemberProActive = verifyProLicenseIntegrity;
 

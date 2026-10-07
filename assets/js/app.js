@@ -126,16 +126,6 @@ function toggleMobileSidebar(forceClose = false) {
       if (modal) modal.style.display = 'none';
     }
 
-    function saveGoogleClientIdFromInput() {
-      const input = document.getElementById('inputGoogleClientId');
-      if (!input) return;
-      const val = input.value.trim() || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
-      GOOGLE_CLIENT_ID = val;
-      localStorage.setItem('google_client_id', val);
-      showToast('Google Client ID berhasil disimpan.', 'success');
-      initGoogleIdentityServices();
-    }
-
     setInterval(checkProxyHealth, 4000);
         function initSidebarResizer() {
       const sidebar = document.getElementById('sidebar');

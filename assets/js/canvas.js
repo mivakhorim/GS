@@ -105,8 +105,6 @@ async function handleImportZipFile(event) {
     function openServerModal() {
       const modal = document.getElementById('serverModal');
       if (modal) modal.style.display = 'flex';
-      const input = document.getElementById('inputGoogleClientId');
-      if (input) input.value = localStorage.getItem('google_client_id') || '';
       const inputB = document.getElementById('inputBpnGatewayUrl');
       if (inputB) inputB.value = localStorage.getItem('custom_bpn_gateway_url') || '';
     }
