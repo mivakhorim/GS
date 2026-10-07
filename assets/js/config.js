@@ -1,18 +1,27 @@
 (function initSecurityShield() {
-      const _a = ['Z2Vvc3Bhc2kuZHV0YW1pay5pZA==', 'ZHV0YW1pay5pZA==', 'Z2l0aHViLmlv'].map(function(s) {
+      const _a = ['Z2Vvc3Bhc2kuZHV0YW1pay5pZA==', 'ZHV0YW1pay5pZA==', 'Z2l0aHViLmlv', 'bG9jYWxob3N0', 'MTI3LjAuMC4x'].map(function(s) {
         try { return atob(s); } catch (e) { return ''; }
       });
       const _h = window.location.hostname;
-      if (!_h || window.location.protocol === 'file:') {
-        document.documentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#ffffff;color:#0f172a;font-family:sans-serif;text-align:center;padding:24px;"><div><h1 style="font-size:2rem;margin:0 0 12px;font-weight:800;">403 AKSES ONLINE WAJIB</h1><p style="color:#64748b;margin:0 0 24px;font-size:0.95rem;line-height:1.5;">Duta GeoSpasi beroperasi eksklusif secara online melalui domain resmi Duta Digital Agensi.<br>Akses offline atau berkas lokal tidak diizinkan demi keamanan data kadaster.</p><a href="https://geospasi.dutamik.id" style="display:inline-block;padding:10px 22px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;border-radius:4px;">Buka di geospasi.dutamik.id</a></div></div>';
-        throw new Error('403: Offline Access Denied');
-      }
-      const _ok = _a.some(function(d) {
+      const isFile = !_h || window.location.protocol === 'file:';
+      const isAllowedHost = _a.some(function(d) {
         return _h === d || _h.endsWith('.' + d);
       });
-      if (!_ok) {
-        document.documentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#ffffff;color:#0f172a;font-family:sans-serif;text-align:center;padding:24px;"><div><h1 style="font-size:2rem;margin:0 0 12px;font-weight:800;">403 AKSES TIDAK DIIZINKAN</h1><p style="color:#64748b;margin:0 0 24px;font-size:0.95rem;line-height:1.5;">Aplikasi ini dilindungi oleh Domain Lock resmi Duta Digital Agensi.<br>Penggunaan di luar domain resmi dilarang keras.</p><a href="https://geospasi.dutamik.id" style="display:inline-block;padding:10px 22px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;border-radius:4px;">Kunjungi Domain Resmi</a></div></div>';
-        throw new Error('403: Domain Unauthorized');
+
+      if (isFile || !isAllowedHost) {
+        function displayBlockNotice() {
+          const title = isFile ? '403 AKSES ONLINE WAJIB' : '403 AKSES TIDAK DIIZINKAN';
+          const desc = isFile
+            ? 'Duta GeoSpasi beroperasi eksklusif secara online melalui domain resmi Duta Digital Agensi.<br>Akses offline atau berkas lokal tidak diizinkan demi keamanan data kadaster.'
+            : 'Aplikasi ini dilindungi oleh Domain Lock resmi Duta Digital Agensi.<br>Penggunaan di luar domain resmi dilarang keras.';
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;color:#0f172a;font-family:system-ui,sans-serif;text-align:center;padding:24px;"><div style="background:#ffffff;padding:32px;border-radius:8px;border:1px solid #cbd5e1;max-width:480px;box-shadow:0 4px 12px rgba(0,0,0,0.05);"><h1 style="font-size:1.6rem;margin:0 0 12px;font-weight:800;color:#0f172a;">' + title + '</h1><p style="color:#64748b;margin:0 0 24px;font-size:0.9rem;line-height:1.5;">' + desc + '</p><a href="https://geospasi.dutamik.id" style="display:inline-block;padding:10px 22px;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:700;border-radius:4px;">Buka di geospasi.dutamik.id</a></div></div>';
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', displayBlockNotice);
+        } else {
+          displayBlockNotice();
+        }
+        throw new Error('403: Security Access Denied');
       }
     })();
 
@@ -167,8 +176,6 @@
       }
       return false;
     }
-
-    const persilClientCache = new Map();
 
     function distancePointToPolygonMeters(lat, lng, coords) {
       if (!coords || coords.length < 3) return Infinity;

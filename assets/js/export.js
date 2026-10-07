@@ -538,7 +538,7 @@ function exportCoordinatesXls() {
       }
     }
 
-    function generateShapefileZipClient    function generateShapefileZipClient(parts, attrs) {
+    function generateShapefileZipClient(parts, attrs) {
       return new Promise((resolve, reject) => {
         try {
           if (!window._dgKey || window._dgKey !== 0x7E3A9) {
