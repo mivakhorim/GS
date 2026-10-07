@@ -975,6 +975,37 @@
       display: flex;
       gap: 0.45rem;
     }
+    .btn-tool-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .btn-tool-icon:hover {
+      background-color: var(--bg-subtle);
+      border-color: var(--border-strong);
+      color: var(--accent);
+    }
+    .btn-tool-icon.active {
+      background-color: var(--crimson);
+      color: #ffffff;
+      border-color: var(--crimson);
+    }
+    .btn-tool-icon.danger {
+      color: var(--crimson);
+      border-color: #fee2e2;
+    }
+    .btn-tool-icon.danger:hover {
+      background-color: #fee2e2;
+      border-color: var(--crimson);
+      color: var(--crimson);
+    }
         .spec-list {
       display: flex;
       flex-direction: column;
@@ -3204,17 +3235,6 @@
     </div>
   </header>
 
-  <div id="fileProtocolBanner" style="display: none; background-color: #0c2d57; color: #f8fafc; padding: 7px 14px; font-size: 0.72rem; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.15); z-index: 9999; flex-shrink: 0;">
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span>Aplikasi dibuka dari berkas lokal (file://). Untuk otentikasi Akun Google, gunakan server lokal:</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 0.65rem;">
-      <a href="http://localhost:8085/SHP-Builder.html" style="background-color: #16a34a; color: #ffffff; font-weight: 700; padding: 3px 10px; border-radius: 4px; text-decoration: none; font-size: 0.7rem; border: 1px solid #22c55e;">Buka Localhost (8085)</a>
-      <button onclick="document.getElementById('fileProtocolBanner').style.display='none'" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.85rem; padding: 0 4px;" aria-label="Tutup Banner">&times;</button>
-    </div>
-  </div>
-
   <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileSidebar(true)"></div>
 
   <main class="app-body">
@@ -3300,23 +3320,33 @@
                 </div>
               </div>
 
-              <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                <div style="display: flex; gap: 0.35rem;">
-                  <button class="btn btn-primary" onclick="autoScaleToBpnArea()" style="flex: 1; font-weight: 700; justify-content: center;" title="Menyesuaikan luas bidang di gambar ke luas resmi secara presisi">
+              <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+                  <button type="button" class="btn btn-primary" onclick="autoScaleToBpnArea()" style="font-weight: 700; justify-content: center; height: 36px;" title="Menyesuaikan luas bidang di gambar ke luas resmi secara presisi">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                     <span>Sesuaikan Bidang</span>
                   </button>
-                  <button id="btnToggleMerge" class="btn btn-outline" onclick="toggleMergeMode()" style="flex: 1; font-weight: 700; color: var(--accent); border-color: var(--accent); justify-content: center;" title="Tambah dan Gabungkan Bidang Tanah Bersebelahan">
+                  <button type="button" id="btnToggleMerge" class="btn btn-outline" onclick="toggleMergeMode()" style="font-weight: 700; color: var(--accent); border-color: var(--accent); justify-content: center; height: 36px;" title="Tambah dan Gabungkan Bidang Tanah Bersebelahan">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                    <span>+ Gabung Bidang</span>
+                    <span id="txtToggleMerge">Gabung Bidang</span>
                   </button>
                 </div>
-                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
-                  <button class="btn btn-outline btn-sm" onclick="addVertexToActivePolygon()" style="flex: 1; justify-content: center;" title="Tambah Patok Baru di Gambar">+ Patok</button>
-                  <button class="btn btn-outline btn-sm" onclick="removeLastVertexFromActive()" style="flex: 1; justify-content: center;" title="Hapus Patok Terakhir">- Patok</button>
-                  <button id="btnToggleFreeDelete" class="btn btn-outline btn-sm" onclick="toggleFreeDeleteVertexMode()" style="flex: 1; justify-content: center; font-weight: 600;" title="Klik langsung patok di peta untuk menghapus">Hapus Bebas</button>
-                  <button class="btn btn-outline btn-sm" onclick="cleanInternalDanglingVertices()" style="flex: 1; justify-content: center;" title="Bersihkan Patok Sisa dan Garis Dalam">Bersihkan Patok</button>
-                  <button class="btn btn-outline btn-sm" onclick="removeActivePin()" style="flex: 1; border-color: var(--crimson); color: var(--crimson); justify-content: center;" title="Batalkan Pilihan Bidang (Bersihkan Peta)">Batal Pilihan</button>
+                <div class="geo-patok-toolbar" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--bg-alt); padding: 3px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
+                  <button type="button" class="btn-tool-icon" onclick="addVertexToActivePolygon()" title="Tambah Patok Baru di Gambar" aria-label="Tambah Patok">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <button type="button" class="btn-tool-icon" onclick="removeLastVertexFromActive()" title="Hapus Patok Terakhir" aria-label="Hapus Patok Terakhir">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <button type="button" id="btnToggleFreeDelete" class="btn-tool-icon" onclick="toggleFreeDeleteVertexMode()" title="Mode Hapus Patok Bebas (Klik patok di peta untuk menghapus)" aria-label="Hapus Bebas">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  </button>
+                  <button type="button" class="btn-tool-icon" onclick="cleanInternalDanglingVertices()" title="Bersihkan Patok Sisa dan Garis Dalam" aria-label="Bersihkan Patok">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                  </button>
+                  <button type="button" class="btn-tool-icon danger" onclick="removeActivePin()" title="Batalkan Pilihan Bidang (Bersihkan Peta)" aria-label="Batal Pilihan">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -4348,15 +4378,11 @@
       </div>
       <div class="modal-body">
         <p>
-          Aplikasi ini dapat memanfaatkan server proxy lokal atau gateway kustom untuk mengoptimalkan caching dan transfer data geospasial.
+          Duta GeoSpasi beroperasi secara online dengan integrasi aman Supabase Edge Gateway dan basis data geospasial resmi.
         </p>
-        <div>
-          <span style="font-weight: 600; font-size: 0.76rem;">Perintah Menjalankan Server Proxy:</span>
-          <div class="code-box" style="margin-top: 4px;">python server.py</div>
+        <div style="background-color: var(--bg-subtle); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.73rem; color: var(--text-sub); line-height: 1.45;">
+          Data bidang tanah kadaster diproses melalui koneksi HTTPS berkecepatan tinggi dengan validasi resmi ATR/BPN Republik Indonesia.
         </div>
-        <p style="font-size: 0.72rem; color: var(--text-muted);">
-          Atau jalankan file <code>jalankan-peta.bat</code> pada direktori aplikasi. Setelah aktif, buka <code>http://localhost:8085/index.html</code>.
-        </p>
         <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
           <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Google OAuth Web Client ID (Solusi 1 GIS):</span>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 6px;">
@@ -4370,7 +4396,7 @@
         <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
           <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Gateway Proxy Geospasial Kustom (Opsional):</span>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 6px;">
-            Bila ingin menghubungkan server proxy mandiri berkecepatan tinggi, masukkan URL proxy (contoh: https://proxy.domainanda.com atau IP WiFi http://192.168.1.10:8085). Tanpa gateway, sistem otomatis menggunakan direct fallback resmi.
+            Bila ingin menghubungkan server proxy mandiri berkecepatan tinggi, masukkan URL proxy HTTPS resmi (contoh: https://proxy.domainanda.com). Tanpa gateway, sistem otomatis menggunakan gateway default resmi.
           </div>
           <div style="display: flex; gap: 0.4rem;">
             <input type="text" id="inputBpnGatewayUrl" class="form-input" placeholder="https://proxy.domainanda.com" style="flex: 1; font-size: 0.72rem; font-family: monospace;">
@@ -4798,17 +4824,20 @@
 
   <script>
     (function initSecurityShield() {
-      const _a = ['Z2Vvc3Bhc2kuZHV0YW1pay5pZA==', 'ZHV0YW1pay5pZA==', 'bG9jYWxob3N0', 'MTI3LjAuMC4x'].map(function(s) {
+      const _a = ['Z2Vvc3Bhc2kuZHV0YW1pay5pZA==', 'ZHV0YW1pay5pZA==', 'Z2l0aHViLmlv'].map(function(s) {
         try { return atob(s); } catch (e) { return ''; }
       });
       const _h = window.location.hostname;
+      if (!_h || window.location.protocol === 'file:') {
+        document.documentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#ffffff;color:#0f172a;font-family:sans-serif;text-align:center;padding:24px;"><div><h1 style="font-size:2rem;margin:0 0 12px;font-weight:800;">403 AKSES ONLINE WAJIB</h1><p style="color:#64748b;margin:0 0 24px;font-size:0.95rem;line-height:1.5;">Duta GeoSpasi beroperasi eksklusif secara online melalui domain resmi Duta Digital Agensi.<br>Akses offline atau berkas lokal tidak diizinkan demi keamanan data kadaster.</p><a href="https://geospasi.dutamik.id" style="display:inline-block;padding:10px 22px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;border-radius:4px;">Buka di geospasi.dutamik.id</a></div></div>';
+        throw new Error('403: Offline Access Denied');
+      }
       const _ok = _a.some(function(d) {
-        return _h === d || _h.endsWith('.' + d) || _h === '';
+        return _h === d || _h.endsWith('.' + d);
       });
-
       if (!_ok) {
-        document.documentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#ffffff;color:#0f172a;font-family:sans-serif;text-align:center;padding:24px;"><div><h1 style="font-size:2.5rem;margin:0 0 12px;font-weight:800;">403 AKSES TIDAK DIIZINKAN</h1><p style="color:#64748b;margin:0 0 24px;font-size:1rem;line-height:1.5;">Aplikasi ini dilindungi oleh Domain Lock resmi Duta Digital Agensi.<br>Penggunaan di luar domain resmi dilarang keras.</p><a href="https://geospasi.dutamik.id/SHP-Builder" style="display:inline-block;padding:12px 24px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;border-radius:4px;">Kunjungi Domain Resmi</a></div></div>';
-        throw new Error('403');
+        document.documentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#ffffff;color:#0f172a;font-family:sans-serif;text-align:center;padding:24px;"><div><h1 style="font-size:2rem;margin:0 0 12px;font-weight:800;">403 AKSES TIDAK DIIZINKAN</h1><p style="color:#64748b;margin:0 0 24px;font-size:0.95rem;line-height:1.5;">Aplikasi ini dilindungi oleh Domain Lock resmi Duta Digital Agensi.<br>Penggunaan di luar domain resmi dilarang keras.</p><a href="https://geospasi.dutamik.id" style="display:inline-block;padding:10px 22px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;border-radius:4px;">Kunjungi Domain Resmi</a></div></div>';
+        throw new Error('403: Domain Unauthorized');
       }
     })();
 
@@ -5388,14 +5417,8 @@
 
     function getBpnGatewayBase() {
       const custom = localStorage.getItem('custom_bpn_gateway_url');
-      if (custom && custom.trim()) {
+      if (custom && custom.trim() && custom.trim().startsWith('https://')) {
         return custom.trim().replace(/\/+$/, '');
-      }
-      if (window.location.origin.includes('8085')) {
-        return '';
-      }
-      if (window.location.protocol === 'http:' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        return 'http://localhost:8085';
       }
       return '';
     }
@@ -5876,28 +5899,22 @@
       }
 
       const endpointsToTry = [];
-      if (window.location.origin && window.location.origin.includes('8085')) {
-        endpointsToTry.push({ url: `/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 14000 });
-      }
-      endpointsToTry.push({ url: `http://127.0.0.1:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 14000 });
-      endpointsToTry.push({ url: `http://localhost:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 14000 });
-
       const persilApiBase = getBpnGatewayBase();
-      if (persilApiBase && !persilApiBase.includes('8085')) {
-        endpointsToTry.push({ url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 14000 });
+      if (persilApiBase && persilApiBase.startsWith('https://')) {
+        endpointsToTry.push({ url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 12000 });
       }
 
       const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
       endpointsToTry.push({
         url: `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-        timeout: 10000
+        timeout: 12000
       });
 
       for (const item of endpointsToTry) {
         try {
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), item.timeout || 14000);
+          const tid = setTimeout(() => controller.abort(), item.timeout || 12000);
           const reqOpt = { signal: controller.signal, mode: 'cors' };
           if (item.headers) reqOpt.headers = item.headers;
           const res = await fetch(item.url, reqOpt);
@@ -5907,6 +5924,13 @@
             if (data && data.found && Array.isArray(data.polygon_coords) && data.polygon_coords.length >= 3) {
               persilClientCache.set(cacheKey, { data, time: Date.now() });
               return data;
+            }
+            if (data && Array.isArray(data.features) && data.features.length > 0) {
+              const parsed = parseGeoServerPersilGeoJson(data, lat, lng);
+              if (parsed && parsed.found && Array.isArray(parsed.polygon_coords) && parsed.polygon_coords.length >= 3) {
+                persilClientCache.set(cacheKey, { data: parsed, time: Date.now() });
+                return parsed;
+              }
             }
           }
         } catch (e) {}
@@ -6218,7 +6242,7 @@
       let addr = null;
       let data = null;
 
-      if (isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
+      if (isProxyActive && persilApiBase && persilApiBase.startsWith('https://')) {
         try {
           const url = `${persilApiBase}/api/reverse-geocode?lat=${lat}&lng=${lng}`;
           const res = await fetch(url);
@@ -6504,15 +6528,10 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       isFreeDeleteVertexMode = !isFreeDeleteVertexMode;
       const btn = document.getElementById('btnToggleFreeDelete');
       if (btn) {
+        btn.classList.toggle('active', isFreeDeleteVertexMode);
         if (isFreeDeleteVertexMode) {
-          btn.style.backgroundColor = 'var(--crimson)';
-          btn.style.color = '#ffffff';
-          btn.style.borderColor = 'var(--crimson)';
           showToast('Mode Hapus Patok Bebas Aktif: Klik langsung patok mana saja di peta untuk menghapusnya.', 'info');
         } else {
-          btn.style.backgroundColor = '';
-          btn.style.color = '';
-          btn.style.borderColor = '';
           showToast('Mode Hapus Patok Bebas dinonaktifkan.', 'info');
         }
       }
@@ -7041,35 +7060,30 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
     async function checkProxyHealth() {
       const badge = document.getElementById('proxyBadge');
       const text = document.getElementById('proxyText');
-      const isGithub = window.location.hostname.includes('github.io');
       const persilBase = getBpnGatewayBase();
-      const statusUrl = persilBase ? `${persilBase}/api/status` : (window.location.origin.includes('8085') ? '/api/status' : '');
-
-      if (statusUrl) {
+      if (persilBase && persilBase.startsWith('https://')) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 1500);
-          const res = await fetch(statusUrl, { method: 'GET', mode: 'cors', signal: controller.signal });
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const res = await fetch(`${persilBase}/api/status`, { method: 'GET', mode: 'cors', signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
             isProxyActive = true;
             if (badge) badge.className = 'status-pill';
-            if (text) text.innerText = 'Proxy Server: Aktif';
+            if (text) text.innerText = 'Gateway Kustom: Aktif';
             return;
           }
         } catch (err) {}
       }
 
-      isProxyActive = false;
+      isProxyActive = true;
       if (badge) {
-        badge.className = 'status-pill' + (isGithub ? '' : ' offline');
-        if (isGithub) {
-          badge.style.backgroundColor = '#0284c7';
-          badge.style.color = '#ffffff';
-        }
+        badge.className = 'status-pill';
+        badge.style.backgroundColor = '#0284c7';
+        badge.style.color = '#ffffff';
       }
       if (text) {
-        text.innerText = isGithub ? 'GitHub Pages (Mandiri)' : 'Sistem: Mode Mandiri';
+        text.innerText = 'Gateway Online: Aktif';
       }
     }
 
@@ -7152,7 +7166,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       ddProv.disabled = true;
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
+      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
       if (hasBackend) {
         try {
           const res = await fetch(`${apiBase}/api/wilayah/provinsi`);
@@ -7227,7 +7241,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       }
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
+      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
       let kabs = null;
 
       if (cacheKabupaten.has(provKode)) {
@@ -7293,7 +7307,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       }
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
+      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
       let kecs = null;
 
       if (cacheKecamatan.has(kabKode)) {
@@ -7360,7 +7374,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       }
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
+      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
       let desas = null;
 
       if (cacheDesa.has(kecKode)) {
@@ -7449,7 +7463,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       if (!currentSelectedWilayah) return;
       const w = currentSelectedWilayah;
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase || window.location.origin.includes('8085'));
+      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
 
       if (kelurahanHighlightLayer) {
         map.removeLayer(kelurahanHighlightLayer);
@@ -7536,7 +7550,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         try {
           const apiBase = getBpnGatewayBase();
           let items = [];
-          if (isProxyActive && (apiBase || window.location.origin.includes('8085'))) {
+          if (isProxyActive && apiBase && apiBase.startsWith('https://')) {
             try {
               const res = await fetch(`${apiBase}/api/wilayah/search?q=${encodeURIComponent(q)}`);
               if (res.ok) items = await res.json();
@@ -7805,7 +7819,8 @@ function latLngToUtm(lat, lon) {
       const btn = document.getElementById('btnToggleMerge');
       if (btn) {
         btn.classList.add('active');
-        btn.innerText = 'Batal Gabung';
+        const txt = document.getElementById('txtToggleMerge');
+        if (txt) txt.innerText = 'Batal Gabung';
       }
     }
 
@@ -7819,7 +7834,8 @@ function latLngToUtm(lat, lon) {
       const btn = document.getElementById('btnToggleMerge');
       if (btn) {
         btn.classList.remove('active');
-        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Tambah Bidang (Gabung)`;
+        const txt = document.getElementById('txtToggleMerge');
+        if (txt) txt.innerText = 'Gabung Bidang';
       }
     }
 
@@ -8145,7 +8161,7 @@ function latLngToUtm(lat, lon) {
         }
       } catch (sbErr) {}
 
-      if ((!result || !result.success) && isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
+      if ((!result || !result.success) && isProxyActive && persilApiBase && persilApiBase.startsWith('https://')) {
         try {
           const payload = {
             polygons: mergeParcelsList.map(p => p.coords)
@@ -9083,7 +9099,7 @@ function latLngToUtm(lat, lon) {
       showToast('Menyusun berkas ESRI Shapefile ZIP...', 'info');
 
       const persilApiBase = getBpnGatewayBase();
-      if (isProxyActive && (persilApiBase || window.location.origin.includes('8085')) && currentAttrTab !== 'custom') {
+      if (isProxyActive && persilApiBase && persilApiBase.startsWith('https://') && currentAttrTab !== 'custom') {
         try {
           const resp = await fetch(`${persilApiBase}/api/export-shp`, {
             method: 'POST',
@@ -9792,7 +9808,7 @@ function latLngToUtm(lat, lon) {
 
       if (window.location.protocol === 'file:') {
         if (slot) {
-          slot.innerHTML = '<div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.73rem; color: #92400e; line-height: 1.45; text-align: center; width: 100%; max-width: 360px; margin-bottom: 0.25rem;"><div style="font-weight: 700; margin-bottom: 4px;">Pemberitahuan Protokol Berkas (file://)</div><div>Kebijakan keamanan Google OAuth 2.0 melarang login dari berkas lokal langsung. Buka aplikasi melalui server lokal untuk otentikasi resmi:</div><a href="http://localhost:8085/SHP-Builder.html?open=member" class="btn btn-sm" style="background-color: #0f3b73; color: #ffffff; text-decoration: none; padding: 6px 14px; font-weight: 700; border-radius: 4px; display: inline-block; margin-top: 8px;">Buka via Localhost (http://localhost:8085)</a></div>';
+          slot.innerHTML = '<div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.73rem; color: #92400e; line-height: 1.45; text-align: center; width: 100%; max-width: 360px; margin-bottom: 0.25rem;"><div style="font-weight: 700; margin-bottom: 4px;">Pemberitahuan Protokol Berkas (file://)</div><div>Kebijakan keamanan Google OAuth melarang login dari berkas lokal. Buka aplikasi melalui domain resmi:</div><a href="https://geospasi.dutamik.id" class="btn btn-sm" style="background-color: #0f3b73; color: #ffffff; text-decoration: none; padding: 6px 14px; font-weight: 700; border-radius: 4px; display: inline-block; margin-top: 8px;">Buka geospasi.dutamik.id</a></div>';
         }
         if (btn) btn.style.display = 'none';
         return;
@@ -9896,10 +9912,7 @@ function latLngToUtm(lat, lon) {
     async function loginWithGoogle() {
       if (!ensureSupabaseClient()) return;
       if (window.location.protocol === 'file:') {
-        showToast('Google melarang login dari file://. Mengalihkan ke http://localhost:8085...', 'warn');
-        setTimeout(() => {
-          window.location.href = 'http://localhost:8085/SHP-Builder.html?open=member';
-        }, 800);
+        showToast('Otentikasi Google membutuhkan koneksi online. Silakan buka aplikasi pada domain resmi https://geospasi.dutamik.id', 'warn');
         return;
       }
       if (!GOOGLE_CLIENT_ID) {
@@ -9924,10 +9937,7 @@ function latLngToUtm(lat, lon) {
 
     async function fallbackGoogleOAuthRedirect() {
       if (window.location.protocol === 'file:') {
-        showToast('Google melarang login dari file://. Mengalihkan ke http://localhost:8085...', 'warn');
-        setTimeout(() => {
-          window.location.href = 'http://localhost:8085/SHP-Builder.html?open=member';
-        }, 800);
+        showToast('Otentikasi Google membutuhkan koneksi online. Silakan buka aplikasi pada domain resmi https://geospasi.dutamik.id', 'warn');
         return;
       }
       try {
