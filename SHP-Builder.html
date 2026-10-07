@@ -2462,6 +2462,61 @@
       z-index: 450;
       overflow: visible;
     }
+    .print-map-tools {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      pointer-events: auto;
+    }
+    .btn-print-tool {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-print-tool:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    .print-map-pan-pad {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 3px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    }
+    .btn-pan-mini {
+      width: 22px;
+      height: 20px;
+      border-radius: 2px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+    .btn-pan-mini:hover {
+      background: #e2e8f0;
+    }
     .print-kop-column {
       flex: 28;
       display: flex;
@@ -2568,49 +2623,47 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+      }
       body * {
         visibility: hidden !important;
       }
-      #modalPrintMap, #modalPrintMap * {
+      #modalPrintMap,
+      .modal-print-dialog,
+      .print-preview-scroll,
+      .print-sheet-scale-wrapper {
+        position: static !important;
+        display: block !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
         visibility: visible !important;
       }
-      #modalPrintMap {
+      #printMapSheet,
+      #printMapSheet * {
+        visibility: visible !important;
+      }
+      .print-toolbar,
+      #kopProBadgePublisher,
+      .btn-kop-helper,
+      .print-mobile-magnifier,
+      #printMobileMagnifier,
+      .print-map-tools {
+        display: none !important;
+        visibility: hidden !important;
+      }
+      .print-sheet-paper {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        background-color: #ffffff !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        z-index: 9999999 !important;
-        display: block !important;
-      }
-      .modal-print-dialog {
-        width: 100vw !important;
-        height: 100vh !important;
-        max-width: none !important;
-        max-height: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        background-color: #ffffff !important;
-      }
-      .print-toolbar,
-      #kopProBadgePublisher {
-        display: none !important;
-      }
-      .print-preview-scroll {
-        background-color: #ffffff !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        width: 100% !important;
-        height: 100% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
-      .print-sheet-paper {
         width: 297mm !important;
         height: 210mm !important;
         box-shadow: none !important;
@@ -2620,6 +2673,8 @@
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
         overflow: hidden !important;
+        transform: none !important;
+        transform-origin: unset !important;
       }
       .print-sheet-paper.a3 {
         width: 420mm !important;
@@ -2661,9 +2716,6 @@
         border: none !important;
         background: transparent !important;
         padding: 0 !important;
-      }
-      .btn-kop-helper {
-        display: none !important;
       }
       @page {
         size: 297mm 210mm landscape;
@@ -3076,7 +3128,11 @@
         max-width: 100% !important;
       }
       .print-sheet-paper {
-        pointer-events: none !important;
+        pointer-events: auto !important;
+      }
+      .print-map-area, #printMapContainer {
+        pointer-events: auto !important;
+        touch-action: pan-x pan-y pinch-zoom !important;
       }
     }
   </style>
@@ -3225,6 +3281,7 @@
                 <div style="display: flex; gap: 0.35rem;">
                   <button class="btn btn-outline btn-sm" onclick="addVertexToActivePolygon()" style="flex: 1; justify-content: center;" title="Tambah Patok Baru di Gambar">+ Patok</button>
                   <button class="btn btn-outline btn-sm" onclick="removeLastVertexFromActive()" style="flex: 1; justify-content: center;" title="Hapus Patok Terakhir">- Patok</button>
+                  <button class="btn btn-outline btn-sm" onclick="cleanInternalDanglingVertices()" style="flex: 1; justify-content: center;" title="Bersihkan Patok Sisa dan Garis Dalam">Bersihkan Patok</button>
                   <button class="btn btn-outline btn-sm" onclick="removeActivePin()" style="flex: 1; border-color: var(--crimson); color: var(--crimson); justify-content: center;" title="Batalkan Pilihan Bidang (Bersihkan Peta)">Batal Pilihan</button>
                 </div>
               </div>
@@ -4232,6 +4289,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
             <span>Cek Status Verifikasi Otomatis</span>
           </button>
+          <button type="button" class="btn btn-outline btn-block" onclick="cancelAndClearCurrentPendingPayment()" style="font-size: 0.72rem; justify-content: center; gap: 0.4rem; color: #dc2626; border-color: #fca5a5; margin-top: 0.15rem;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Batalkan &amp; Hapus Data Pembayaran Ini</span>
+          </button>
         </div>
       </div>
 
@@ -4329,6 +4390,33 @@
               <div class="print-map-area">
                 <div id="printMapContainer"></div>
                 <svg id="printGraticuleSvg" class="print-graticule-svg"></svg>
+                <div class="print-map-tools">
+                  <button type="button" class="btn-print-tool" onclick="zoomPrintMap(1)" title="Perbesar Peta Cetak" aria-label="Zoom In">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <button type="button" class="btn-print-tool" onclick="zoomPrintMap(-1)" title="Perkecil Peta Cetak" aria-label="Zoom Out">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <button type="button" class="btn-print-tool" onclick="fitPrintMapBounds()" title="Pusatkan Bidang Cetak" aria-label="Fit Bounds">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M3 12h3m12 0h3M12 3v3m0 12v3"/></svg>
+                  </button>
+                  <div class="print-map-pan-pad">
+                    <button type="button" class="btn-pan-mini pan-up" onclick="panPrintMap(0, -60)" aria-label="Geser Atas">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+                    </button>
+                    <div style="display: flex; gap: 2px;">
+                      <button type="button" class="btn-pan-mini pan-left" onclick="panPrintMap(-60, 0)" aria-label="Geser Kiri">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <button type="button" class="btn-pan-mini pan-right" onclick="panPrintMap(60, 0)" aria-label="Geser Kanan">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    </div>
+                    <button type="button" class="btn-pan-mini pan-down" onclick="panPrintMap(0, 60)" aria-label="Geser Bawah">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                  </div>
+                </div>
               </div>
               <div class="print-kop-column">
                 <div class="print-kop-box" style="text-align: center; padding: 4px 6px;">
@@ -5212,9 +5300,10 @@
             crossOrigin: 'anonymous'
           })
         ]),
-        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        osm: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
           maxZoom: 26,
           maxNativeZoom: 19,
+          subdomains: 'abcd',
           crossOrigin: 'anonymous'
         }),
         esri_topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
@@ -5785,26 +5874,29 @@
     async function fetchPersilCadastreData(lat, lng, zoom = 19) {
       const cacheKey = `${lat.toFixed(6)},${lng.toFixed(6)}`;
       const cached = persilClientCache.get(cacheKey);
-      if (cached && (Date.now() - cached.time < 600000)) {
+      if (cached && cached.data && cached.data.found && (Date.now() - cached.time < 600000)) {
         return cached.data;
       }
 
       const persilApiBase = getBpnGatewayBase();
-      const originHas8085 = Boolean(window.location.origin && window.location.origin.includes('8085'));
-      const endpointsToTry = [];
+      const endpointsToTry = [
+        `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`
+      ];
 
       if (persilApiBase) {
         endpointsToTry.push(`${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`);
-      } else if (originHas8085) {
+      }
+      if (window.location.origin && window.location.origin.includes('8085')) {
         endpointsToTry.push(`/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`);
-      } else {
+      }
+      if (!endpointsToTry.includes(`http://127.0.0.1:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`)) {
         endpointsToTry.push(`http://127.0.0.1:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`);
       }
 
       for (const ep of endpointsToTry) {
         try {
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), 3500);
+          const tid = setTimeout(() => controller.abort(), 9500);
           const res = await fetch(ep, { signal: controller.signal, mode: 'cors' });
           clearTimeout(tid);
           if (res.ok) {
@@ -5819,7 +5911,7 @@
 
       try {
         const ptMerc = L.CRS.EPSG3857.project(L.latLng(lat, lng));
-        const deltaM = 25.0;
+        const deltaM = 28.0;
         const minx = (ptMerc.x - deltaM).toFixed(4);
         const maxx = (ptMerc.x + deltaM).toFixed(4);
         const miny = (ptMerc.y - deltaM).toFixed(4);
@@ -5829,7 +5921,7 @@
         
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(wmsUrl)}`;
         const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 6000);
+        const tid = setTimeout(() => controller.abort(), 4500);
         const res = await fetch(proxyUrl, { signal: controller.signal });
         clearTimeout(tid);
         if (res.ok) {
@@ -5842,13 +5934,11 @@
         }
       } catch (e) {}
 
-      const notFoundResult = {
+      return {
         found: false,
         message: 'Titik koordinat berada di luar bidang tanah terdaftar.',
         polygon_coords: null
       };
-      persilClientCache.set(cacheKey, { data: notFoundResult, time: Date.now() });
-      return notFoundResult;
     }
 
     function startDelineasiMandiriAtClick() {
@@ -6046,6 +6136,30 @@
           badge.innerText = effectivePersil.is_official_cadastre ? 'Kadaster Resmi Presisi' : (effectivePersil.is_auto_traced ? 'Batas Bidang Terdeteksi' : 'Batas Bidang Aktif');
         }
       } else {
+        activePinData = {
+          lat: lat,
+          lng: lng,
+          fid: '-',
+          tipe_hak: 'Belum Terdaftar / Di Luar Batas',
+          luas_m2: 0,
+          desa: geoData.desa || '-',
+          kecamatan: geoData.kecamatan || '-',
+          kabkot: geoData.kabkot || '-',
+          provinsi: geoData.provinsi || '-',
+          kodepos: geoData.kodepos || '-',
+          kantah: geoData.kantah || 'Kantor Pertanahan',
+          alamat: geoData.jalan || '-'
+        };
+        const lokasiFallback = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
+          ? `${activePinData.desa}, ${activePinData.kecamatan}`
+          : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
+        const elLokasi = document.getElementById('pinLokasiUtamaText');
+        if (elLokasi) elLokasi.innerText = lokasiFallback;
+        const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = activePinData.desa;
+        const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
+        const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
+        const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
+
         clearCanvasRebuilderLayers();
         if (foundBox) foundBox.style.display = 'none';
         if (notFoundBox) notFoundBox.style.display = 'flex';
@@ -6477,8 +6591,12 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
                   <span>Tahan &amp; geser patok di peta</span>
                 </div>
                 <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:10px;justify-content:center;width:100%;font-weight:600;color:var(--crimson);border-color:#fecdd3;" onclick="window.deleteVertexMarker(${pIdx}, ${idx})">
-                  Hapus Patok
+                  Hapus Patok ${nodeLabel}
                 </button>
+                ${parts.length > 1 ? `
+                <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:9.5px;justify-content:center;width:100%;font-weight:600;color:#991b1b;border-color:#fca5a5;margin-top:2px;" onclick="window.deletePartEntirely(${pIdx})">
+                  Hapus Sisa Garis / Bagian ${pfx}
+                </button>` : ''}
               </div>
             </div>
           `;
@@ -7893,7 +8011,11 @@ function latLngToUtm(lat, lon) {
           }
         }
         if (loop.length >= 3) {
-          loops.push(cleanAndDeduplicateVertices(loop, 1.2, 14.0));
+          const cleanLoop = cleanAndDeduplicateVertices(loop, 1.2, 14.0);
+          const loopArea = calculatePolygonArea(cleanLoop);
+          if (loopArea >= 12.0) {
+            loops.push(cleanLoop);
+          }
         }
       }
 
@@ -7902,27 +8024,38 @@ function latLngToUtm(lat, lon) {
         normPolys.forEach(p => { sumArea += calculatePolygonArea(p); });
         return {
           success: true,
-          is_multipart: true,
-          all_parts_coords: normPolys,
+          is_multipart: false,
+          all_parts_coords: [normPolys[0]],
           polygon_coords: normPolys[0],
           area_m2: sumArea,
           total_parcels_merged: normPolys.length,
-          total_vertices: normPolys.reduce((acc, p) => acc + p.length, 0)
+          total_vertices: normPolys[0].length
         };
       }
 
+      let maxLoopArea = 0;
+      loops.forEach(lp => {
+        const a = calculatePolygonArea(lp);
+        if (a > maxLoopArea) maxLoopArea = a;
+      });
+      const significantLoops = loops.filter(lp => {
+        const a = calculatePolygonArea(lp);
+        return a >= Math.max(15.0, maxLoopArea * 0.05);
+      });
+      const finalLoops = significantLoops.length > 0 ? significantLoops : [loops[0]];
+
       let totalArea = 0;
-      loops.forEach(lp => { totalArea += calculatePolygonArea(lp); });
-      const isMultipart = loops.length > 1;
+      finalLoops.forEach(lp => { totalArea += calculatePolygonArea(lp); });
+      const isMultipart = finalLoops.length > 1;
 
       return {
         success: true,
         is_multipart: isMultipart,
-        all_parts_coords: loops,
-        polygon_coords: loops[0],
+        all_parts_coords: finalLoops,
+        polygon_coords: finalLoops[0],
         area_m2: totalArea,
         total_parcels_merged: normPolys.length,
-        total_vertices: loops.reduce((acc, l) => acc + l.length, 0)
+        total_vertices: finalLoops.reduce((acc, l) => acc + l.length, 0)
       };
     }
 
@@ -7938,7 +8071,21 @@ function latLngToUtm(lat, lon) {
       }
 
       let result = null;
-      if (isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
+      try {
+        const payload = {
+          polygons: mergeParcelsList.map(p => p.coords)
+        };
+        const sbRes = await fetch('https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=merge-parcels', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (sbRes.ok) {
+          result = await sbRes.json();
+        }
+      } catch (sbErr) {}
+
+      if ((!result || !result.success) && isProxyActive && (persilApiBase || window.location.origin.includes('8085'))) {
         try {
           const payload = {
             polygons: mergeParcelsList.map(p => p.coords)
@@ -9997,6 +10144,28 @@ function latLngToUtm(lat, lon) {
       showToast('Pembayaran belum diverifikasi. Jika sudah transfer, silakan konfirmasi via WhatsApp agar admin segera mengaktifkan akun Anda.', 'warn');
     }
 
+    async function cancelAndClearCurrentPendingPayment() {
+      const email = document.getElementById('qrisBuyerEmail')?.value.trim() || currentMemberProfile?.email;
+      if (!email || !email.includes('@')) {
+        closeQrisPaymentModal();
+        return;
+      }
+      if (!confirm('Konfirmasi: Batalkan transaksi dan hapus data tagihan QRIS yang belum dibayar ini?')) return;
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('payments')
+            .delete()
+            .eq('email', email)
+            .eq('status', 'pending');
+          showToast('Data tagihan berhasil dibatalkan dan dihapus.', 'info');
+        } catch (e) {
+          showToast('Gagal membatalkan tagihan: ' + e.message, 'warn');
+        }
+      }
+      closeQrisPaymentModal();
+    }
+
     setInterval(checkProxyHealth, 4000);
         function initSidebarResizer() {
       const sidebar = document.getElementById('sidebar');
@@ -10073,19 +10242,76 @@ window.addEventListener('DOMContentLoaded', () => {
     window.deleteVertexMarker = function(pIdx, vIdx) {
       if (map) map.closePopup();
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      const targetPart = parts[pIdx] || activeVertices;
-      if (targetPart.length <= 3) {
-        showToast('Bidang minimal membutuhkan 3 titik patok.', 'warn');
+      if (parts.length > 1) {
+        const targetPart = parts[pIdx];
+        if (!targetPart || targetPart.length <= 3) {
+          parts.splice(pIdx, 1);
+          if (parts.length === 1) {
+            activeVertices = parts[0];
+            activeMultiParts = null;
+          } else {
+            activeMultiParts = parts;
+            activeVertices = parts[0];
+          }
+          renderCanvasPolygon(true);
+          showToast('Sisa garis patok / bagian berhasil dibersihkan.', 'success');
+          return;
+        } else {
+          targetPart.splice(vIdx, 1);
+          renderCanvasPolygon(true);
+          showToast('Titik patok berhasil dihapus.', 'success');
+          return;
+        }
+      }
+      if (activeVertices.length <= 3) {
+        showToast('Poligon utama minimal membutuhkan 3 titik sudut patok.', 'warn');
         return;
       }
-      if (parts.length === 1) {
-        removeVertexAt(vIdx);
-      } else {
-        targetPart.splice(vIdx, 1);
-        renderCanvasPolygon(true);
-      }
+      removeVertexAt(vIdx);
       showToast('Titik patok berhasil dihapus.', 'success');
     };
+
+    window.deletePartEntirely = function(pIdx) {
+      if (map) map.closePopup();
+      if (!activeMultiParts || activeMultiParts.length <= 1) {
+        showToast('Hanya ada satu bidang aktif.', 'info');
+        return;
+      }
+      activeMultiParts.splice(pIdx, 1);
+      if (activeMultiParts.length === 1) {
+        activeVertices = activeMultiParts[0];
+        activeMultiParts = null;
+      } else {
+        activeVertices = activeMultiParts[0];
+      }
+      renderCanvasPolygon(true);
+      showToast('Bagian / sisa garis berhasil dihapus.', 'success');
+    };
+
+    function cleanInternalDanglingVertices() {
+      if (activeMultiParts && activeMultiParts.length > 1) {
+        let maxA = 0;
+        activeMultiParts.forEach(p => {
+          const a = calculatePolygonArea(p);
+          if (a > maxA) maxA = a;
+        });
+        const validParts = activeMultiParts.filter(p => p.length >= 3 && calculatePolygonArea(p) >= Math.max(15.0, maxA * 0.05));
+        if (validParts.length > 0) {
+          if (validParts.length === 1) {
+            activeVertices = validParts[0];
+            activeMultiParts = null;
+          } else {
+            activeMultiParts = validParts;
+            activeVertices = validParts[0];
+          }
+          renderCanvasPolygon(true);
+          showToast('Patok sisa dan garis dalam berhasil dibersihkan.', 'success');
+          return;
+        }
+      }
+      cleanActiveVerticesManual();
+      showToast('Titik sudut batas berhasil dirapikan.', 'success');
+    }
 
     let printMapInstance = null;
     let printInsetInstance = null;
@@ -10259,10 +10485,10 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       if (size === 'a3') {
         sheet.classList.add('a3');
-        dynStyle.textContent = '@media print { @page { size: 420mm 297mm landscape !important; margin: 0 !important; } }';
+        dynStyle.textContent = '@media print { @page { size: 420mm 297mm landscape; margin: 0; } }';
       } else {
         sheet.classList.remove('a3');
-        dynStyle.textContent = '@media print { @page { size: 297mm 210mm landscape !important; margin: 0 !important; } }';
+        dynStyle.textContent = '@media print { @page { size: 297mm 210mm landscape; margin: 0; } }';
       }
       setTimeout(() => {
         if (printMapInstance) {
@@ -10653,6 +10879,35 @@ window.addEventListener('DOMContentLoaded', () => {
       svg.innerHTML = elements.join('');
     }
 
+    function zoomPrintMap(delta) {
+      if (!printMapInstance) return;
+      if (delta > 0) printMapInstance.zoomIn();
+      else printMapInstance.zoomOut();
+    }
+
+    function panPrintMap(dx, dy) {
+      if (!printMapInstance) return;
+      printMapInstance.panBy([dx, dy], { animate: false });
+    }
+
+    function fitPrintMapBounds() {
+      if (!printMapInstance) return;
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      let bounds = null;
+      if (parts[0] && parts[0].length >= 3) {
+        parts.forEach(pList => {
+          const poly = L.polygon(pList.map(v => [v.lat, v.lng]));
+          if (!bounds) bounds = poly.getBounds();
+          else bounds.extend(poly.getBounds());
+        });
+      }
+      if (bounds && bounds.isValid()) {
+        printMapInstance.fitBounds(bounds, { padding: [40, 40] });
+      } else if (map) {
+        printMapInstance.setView(map.getCenter(), map.getZoom());
+      }
+    }
+
     function initOrUpdatePrintMaps() {
       const container = document.getElementById('printMapContainer');
       const insetContainer = document.getElementById('printInsetContainer');
@@ -10662,7 +10917,12 @@ window.addEventListener('DOMContentLoaded', () => {
         printMapInstance = L.map('printMapContainer', {
           zoomControl: false,
           attributionControl: false,
-          fadeAnimation: false
+          fadeAnimation: false,
+          dragging: true,
+          touchZoom: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true,
+          boxZoom: true
         });
 
         printMapInstance.on('moveend zoomend', () => {
@@ -10924,8 +11184,30 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!sheet) return;
       showToast('Menyiapkan dokumen PDF peta...', 'info');
 
+      const magEl = document.getElementById('printMobileMagnifier');
+      const prevMagDisplay = magEl ? magEl.style.display : '';
+      if (magEl) magEl.style.display = 'none';
+
+      const mapTools = sheet.querySelector('.print-map-tools');
+      const prevToolsDisplay = mapTools ? mapTools.style.display : '';
+      if (mapTools) mapTools.style.display = 'none';
+
+      const wrapper = document.getElementById('printSheetScaleWrapper');
+      const prevWrapH = wrapper ? wrapper.style.height : '';
+      const prevWrapOverflow = wrapper ? wrapper.style.overflow : '';
+      if (wrapper) {
+        wrapper.style.height = 'auto';
+        wrapper.style.overflow = 'visible';
+      }
+
       if (typeof html2pdf === 'undefined') {
         window.print();
+        if (magEl) magEl.style.display = prevMagDisplay;
+        if (mapTools) mapTools.style.display = prevToolsDisplay;
+        if (wrapper) {
+          wrapper.style.height = prevWrapH;
+          wrapper.style.overflow = prevWrapOverflow;
+        }
         return;
       }
 
@@ -10950,7 +11232,11 @@ window.addEventListener('DOMContentLoaded', () => {
           scale: 2,
           useCORS: true,
           allowTaint: true,
-          logging: false
+          logging: false,
+          width: isA3 ? 1680 : 1188,
+          height: isA3 ? 1188 : 840,
+          windowWidth: isA3 ? 1680 : 1188,
+          windowHeight: isA3 ? 1188 : 840
         },
         jsPDF: {
           unit: 'mm',
@@ -10965,6 +11251,12 @@ window.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         window.print();
       } finally {
+        if (magEl) magEl.style.display = prevMagDisplay;
+        if (mapTools) mapTools.style.display = prevToolsDisplay;
+        if (wrapper) {
+          wrapper.style.height = prevWrapH;
+          wrapper.style.overflow = prevWrapOverflow;
+        }
         sheet.style.transform = prevTransform;
         sheet.style.transformOrigin = prevOrigin;
         sheet.style.padding = prevPadding;
