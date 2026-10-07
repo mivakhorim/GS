@@ -119,6 +119,8 @@
 
   <script src="assets/js/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="assets/js/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -1777,7 +1779,9 @@
       border-top: 1px solid var(--border-light);
       background-color: var(--bg-subtle);
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
       gap: 0.5rem;
     }
     .btn-google {
@@ -2153,7 +2157,8 @@
       border-top: 1px solid var(--border-light);
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
+      text-align: center;
       gap: 0.75rem;
     }
     .modal-print-dialog {
@@ -2225,6 +2230,121 @@
     .print-sheet-paper.a3 #printInsetContainer {
       height: 260px !important;
     }
+    .print-mobile-magnifier {
+      width: 100%;
+      max-width: 1120px;
+      margin: 1rem auto 2.5rem auto;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 16px rgba(10, 46, 92, 0.12);
+      padding: 0.85rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .magnifier-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 0.55rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .magnifier-badge {
+      font-size: 0.64rem;
+      font-weight: 800;
+      background-color: #e0f2fe;
+      color: #0369a1;
+      padding: 2px 7px;
+      border-radius: 2px;
+      letter-spacing: 0.05em;
+    }
+    .magnifier-nav-tabs {
+      display: flex;
+      gap: 0.35rem;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .mag-tab-btn {
+      padding: 5px 11px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mag-tab-btn.active {
+      background-color: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    .mag-section-pane {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .mag-section-pane.active {
+      display: flex;
+    }
+    .mag-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.5rem;
+    }
+    .mag-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .mag-label {
+      font-size: 0.69rem;
+      font-weight: 700;
+      color: var(--text-sub);
+    }
+    .mag-input {
+      width: 100%;
+      padding: 6px 9px;
+      font-size: 0.76rem;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      background-color: #ffffff;
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+    .mag-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .mag-val-box {
+      padding: 6px 9px;
+      font-size: 0.74rem;
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      box-sizing: border-box;
+      min-height: 31px;
+      display: flex;
+      align-items: center;
+    }
+    .mag-footer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-light);
+      padding-top: 0.6rem;
+      margin-top: 0.25rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
     .print-kop-input {
       border: 1px solid transparent;
       background: transparent;
@@ -3107,7 +3227,7 @@
                 </button>
 
                 <div class="btn-group">
-                  <button class="btn btn-outline" onclick="exportCoordinatesXls()" style="flex:1;">Excel (.xls)</button>
+                  <button class="btn btn-outline" onclick="exportCoordinatesXls()" style="flex:1;">Excel (.xlsx)</button>
                   <button class="btn btn-outline" onclick="openExportCoordsModal()" style="flex:1;">Koordinat (CAD / Peta)</button>
                   <button class="btn btn-outline" onclick="exportGeoJSON()" style="flex:1;">GeoJSON</button>
                   <button class="btn btn-outline" onclick="exportKML()" style="flex:1;">KML</button>
@@ -3121,14 +3241,17 @@
             </div>
           </div>
 
-          <div id="persilNotFoundBox" class="notice-clean-box" style="display: none;">
+          <div id="persilNotFoundBox" class="notice-clean-box" style="display: none; flex-direction: column; gap: 0.5rem;">
             <div class="notice-clean-title">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <span>Di Luar Batas Bidang Terdaftar</span>
             </div>
             <p class="notice-clean-desc">
-              Titik koordinat berada di luar poligon bidang tanah terdaftar atau di luar toleransi batas kavling. Klik tepat di dalam area batas bidang atau gunakan menu Digitasi untuk memetakan bidang secara mandiri.
+              Titik koordinat berada di luar poligon bidang tanah terdaftar ATR/BPN. Klik tepat di dalam area batas persil atau gunakan tombol di bawah untuk membuat delineasi mandiri.
             </p>
+            <button type="button" class="btn-action primary" style="width: 100%; font-size: 0.74rem; padding: 6px 10px;" onclick="startDelineasiMandiriAtClick()">
+              Delineasi Mandiri di Titik Ini
+            </button>
           </div>
 
         </section>
@@ -3164,9 +3287,9 @@
               </div>
 
               <div style="display: flex; gap: 0.35rem; margin-bottom: 0.4rem;">
-                <button class="btn btn-primary" onclick="exportCoordinatesXls()" style="flex: 1.2; justify-content: center; font-size: 0.72rem; font-weight: 700; background-color: #166534;" title="Ekspor daftar koordinat lengkap ke berkas Microsoft Excel (.xls)">
+                <button class="btn btn-primary" onclick="exportCoordinatesXls()" style="flex: 1.2; justify-content: center; font-size: 0.72rem; font-weight: 700; background-color: #166534;" title="Ekspor daftar koordinat lengkap ke berkas Microsoft Excel (.xlsx)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                  Ekspor Excel (.xls)
+                  Ekspor Excel (.xlsx)
                 </button>
                 <button class="btn btn-outline" onclick="openExportCoordsModal()" style="flex: 1; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--accent); border-color: var(--accent);" title="Pilih format ekspor koordinat peta (WGS84/UTM) atau sistem CAD (AutoCAD/Civil 3D)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -3222,8 +3345,6 @@
                 <option value="esri_sat">Citra Satelit (Esri)</option>
                 <option value="esri_hybrid">Satelit Hybrid</option>
                 <option value="osm" selected>Peta Garis (OpenStreetMap)</option>
-                <option value="carto_positron">Peta Terang (CartoDB)</option>
-                <option value="carto_voyager">Peta Jalan &amp; Bangunan</option>
                 <option value="esri_topo">Topografi &amp; Kontur</option>
               </select>
             </div>
@@ -3941,14 +4062,13 @@
         </div>
       </div>
 
-      <div class="modal-foot" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1.15rem;">
-        <div style="display: flex; gap: 0.65rem; font-size: 0.7rem; flex-wrap: wrap;">
+      <div class="modal-foot" style="justify-content: center; align-items: center; text-align: center; flex-wrap: wrap; gap: 0.85rem; padding: 0.75rem 1.15rem;">
+        <div style="display: flex; gap: 0.85rem; font-size: 0.7rem; flex-wrap: wrap; justify-content: center; text-align: center;">
           <a href="jaminan-privasi.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Kebijakan Privasi</a>
           <a href="syarat-ketentuan.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Syarat &amp; Ketentuan</a>
           <a href="penafian-layanan.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Penafian Layanan</a>
           <a href="hubungi-kami.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Bantuan</a>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="closeMemberModal()" style="padding: 5px 14px; font-size: 0.74rem; font-weight: 600;">Tutup</button>
       </div>
     </div>
   </div>
@@ -4017,9 +4137,8 @@
         </div>
       </div>
 
-      <div class="modal-foot" style="justify-content: space-between; align-items: center;">
-        <span style="font-size: 0.68rem; color: var(--text-muted);">Duta Digital Agensi (dutamik.id)</span>
-        <button class="btn btn-outline" onclick="closeQrisPaymentModal()">Tutup</button>
+      <div class="modal-foot" style="justify-content: center; align-items: center; text-align: center; padding: 0.75rem 1.15rem;">
+        <span style="font-size: 0.68rem; color: var(--text-muted); text-align: center;">Duta Digital Agensi (dutamik.id) : Duta Media Informasi berKarya : Sukoharjo, Jawa Tengah</span>
       </div>
     </div>
   </div>
@@ -4066,8 +4185,8 @@
           </div>
         </div>
       </div>
-      <div class="modal-foot">
-        <button class="btn btn-primary" onclick="closeServerModal()">Mengerti</button>
+      <div class="modal-foot" style="justify-content: center; align-items: center; text-align: center;">
+        <button class="btn btn-primary" onclick="closeServerModal()" style="min-width: 140px;">Mengerti</button>
       </div>
     </div>
   </div>
@@ -4086,32 +4205,16 @@
           </select>
         </div>
         <div class="print-toolbar-group">
-          <input type="text" id="printTitleInput" class="form-input" placeholder="JUDUL PETA" value="PETA TAPAK PROYEK & KAWASAN" style="padding: 4px 8px; font-size: 0.72rem; width: 175px;" oninput="updatePrintKopContent()">
-          <select id="printTitleSizeSelect" class="form-control" style="padding: 4px 22px 4px 6px; font-size: 0.72rem; width: auto;" onchange="changePrintTitleFontSize(this.value)" title="Ukuran Font Judul">
-            <option value="9px">9 px</option>
-            <option value="10px">10 px</option>
-            <option value="11px" selected>11 px (Standar)</option>
-            <option value="12px">12 px</option>
-            <option value="13px">13 px</option>
-            <option value="14px">14 px</option>
-            <option value="16px">16 px</option>
-            <option value="18px">18 px</option>
-            <option value="20px">20 px</option>
-          </select>
           <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; color: #0a2e5c; cursor: pointer; user-select: none; background: var(--bg-subtle); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-light);">
             <input type="checkbox" id="chkPrintToggleDimensi" checked onchange="togglePrintDimensions(this.checked)" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
             <span>Dimensi Batas</span>
           </label>
-          <button class="btn btn-primary" onclick="executeMapPrint()" style="padding: 5px 14px; font-size: 0.74rem; font-weight: 700;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Cetak / Simpan PDF
+          <button class="btn btn-primary" onclick="executeMapPrint()" style="padding: 5px 14px; font-size: 0.74rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Cetak &amp; Simpan PDF</span>
           </button>
-          <button class="btn btn-outline" onclick="generateExportPdfDirect()" style="padding: 5px 12px; font-size: 0.74rem; font-weight: 600; color: var(--accent); border-color: var(--accent); display: inline-flex; align-items: center; gap: 0.35rem;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Unduh PDF Langsung</span>
-          </button>
-          <button class="btn btn-outline" onclick="closeMapPrintModal()" style="padding: 5px 10px; font-size: 0.74rem;">
-            Tutup
+          <button class="modal-close-btn" onclick="closeMapPrintModal()" aria-label="Tutup Cetak Peta" style="margin-left: 0.25rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
       </div>
@@ -4252,6 +4355,146 @@
           </div>
         </div>
         </div>
+
+        <div id="printMobileMagnifier" class="print-mobile-magnifier">
+          <div class="magnifier-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <div>
+                <div style="font-weight: 800; font-size: 0.82rem; color: #0a2e5c; text-transform: uppercase; letter-spacing: 0.3px;">Lensa Pembesar &amp; Pengecekan Data Cetak</div>
+                <div style="font-size: 0.68rem; color: #64748b;">Inspeksi presisi &amp; edit data kop cetak secara nyaman pada layar ponsel</div>
+              </div>
+            </div>
+            <div class="magnifier-badge">MODE PENGECEKAN</div>
+          </div>
+
+          <div class="magnifier-nav-tabs">
+            <button type="button" class="mag-tab-btn active" onclick="switchMagnifierTab('wilayah', this)">Wilayah</button>
+            <button type="button" class="mag-tab-btn" onclick="switchMagnifierTab('judul', this)">Judul Peta</button>
+            <button type="button" class="mag-tab-btn" onclick="switchMagnifierTab('kegiatan', this)">Kegiatan</button>
+            <button type="button" class="mag-tab-btn" onclick="switchMagnifierTab('skala', this)">Skala &amp; Grid</button>
+            <button type="button" class="mag-tab-btn" onclick="switchMagnifierTab('penerbit', this)">Penerbit</button>
+          </div>
+
+          <div id="magSectionWilayah" class="mag-section-pane active">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span style="font-size: 0.72rem; font-weight: 700; color: #0a2e5c;">Data Wilayah Administrasi</span>
+              <button type="button" class="btn btn-outline btn-sm" onclick="copyActiveWilayahToKop(); syncMagnifierFromKop();" style="font-size: 0.68rem; padding: 2px 8px;">
+                Bantu Isi dari Peta
+              </button>
+            </div>
+            <div class="mag-form-grid">
+              <div class="mag-form-group">
+                <label class="mag-label">Desa / Kelurahan</label>
+                <input type="text" id="magDesaInput" class="mag-input" placeholder="Nama Desa" oninput="syncFromMagnifier('desa', this.value)">
+              </div>
+              <div class="mag-form-group">
+                <label class="mag-label">Kecamatan</label>
+                <input type="text" id="magKecamatanInput" class="mag-input" placeholder="Nama Kecamatan" oninput="syncFromMagnifier('kecamatan', this.value)">
+              </div>
+              <div class="mag-form-group">
+                <label class="mag-label">Kabupaten / Kota</label>
+                <input type="text" id="magKabkotInput" class="mag-input" placeholder="Nama Kab/Kota" oninput="syncFromMagnifier('kabkot', this.value)">
+              </div>
+              <div class="mag-form-group">
+                <label class="mag-label">Provinsi</label>
+                <input type="text" id="magProvinsiInput" class="mag-input" placeholder="Nama Provinsi" oninput="syncFromMagnifier('provinsi', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div id="magSectionJudul" class="mag-section-pane">
+            <div class="mag-form-group" style="margin-bottom: 0.4rem;">
+              <label class="mag-label">Judul Utama Dokumen Peta</label>
+              <input type="text" id="magTitleInput" class="mag-input font-bold" placeholder="JUDUL DOKUMEN PETA" style="font-size: 0.85rem; text-transform: uppercase;" oninput="syncFromMagnifier('title', this.value)">
+            </div>
+            <div class="mag-form-group" style="margin-bottom: 0.4rem;">
+              <label class="mag-label">Subjudul / Keterangan Dokumen</label>
+              <input type="text" id="magSubtitleInput" class="mag-input" placeholder="SUBJUDUL / KETERANGAN" oninput="syncFromMagnifier('subtitle', this.value)">
+            </div>
+            <div class="mag-form-group">
+              <label class="mag-label">Ukuran Font Judul di Kop</label>
+              <select id="magTitleSizeSelect" class="mag-input" onchange="changePrintTitleFontSize(this.value)">
+                <option value="9px">9 px (Kecil)</option>
+                <option value="10px">10 px</option>
+                <option value="11px" selected>11 px (Standar Resmi)</option>
+                <option value="12px">12 px</option>
+                <option value="13px">13 px</option>
+                <option value="14px">14 px (Besar)</option>
+                <option value="16px">16 px</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="magSectionKegiatan" class="mag-section-pane">
+            <div class="mag-form-grid">
+              <div class="mag-form-group">
+                <label class="mag-label">Pemrakarsa / Pemohon</label>
+                <input type="text" id="magPemrakarsaInput" class="mag-input" placeholder="Nama Pemrakarsa" oninput="syncFromMagnifier('pemrakarsa', this.value)">
+              </div>
+              <div class="mag-form-group">
+                <label class="mag-label">Nama Kegiatan</label>
+                <input type="text" id="magKegiatanInput" class="mag-input" placeholder="Nama Kegiatan" oninput="syncFromMagnifier('kegiatan', this.value)">
+              </div>
+              <div class="mag-form-group">
+                <label class="mag-label">Tahun Pelaksanaan</label>
+                <input type="text" id="magTahunInput" class="mag-input" placeholder="2026" oninput="syncFromMagnifier('tahun', this.value)">
+              </div>
+              <div class="mag-form-group">
+                <label class="mag-label">Luas Terhitung</label>
+                <div id="magLuasDisplay" class="mag-val-box font-bold">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="magSectionSkala" class="mag-section-pane">
+            <div class="mag-form-grid">
+              <div class="mag-form-group">
+                <label class="mag-label">Skala Peta Terhitung</label>
+                <div id="magSkalaDisplay" class="mag-val-box font-mono" style="font-weight: 800; color: #0a2e5c;">SKALA 1 : 2.500</div>
+              </div>
+              <div class="mag-form-group">
+                <label class="mag-label">Sistem Proyeksi &amp; Datum</label>
+                <div class="mag-val-box">Geografi &amp; UTM WGS 84</div>
+              </div>
+              <div class="mag-form-group" style="grid-column: 1 / -1;">
+                <label class="mag-label">Koordinat Graticule Sudut Peta</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; font-size: 0.68rem; font-family: monospace;">
+                  <div class="mag-val-box" id="magGratNw">NW: -</div>
+                  <div class="mag-val-box" id="magGratNe">NE: -</div>
+                  <div class="mag-val-box" id="magGratSw">SW: -</div>
+                  <div class="mag-val-box" id="magGratSe">SE: -</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="magSectionPenerbit" class="mag-section-pane">
+            <div class="mag-form-group" style="margin-bottom: 0.4rem;">
+              <label class="mag-label">Nama Instansi / Penerbit Kop</label>
+              <input type="text" id="magPublisherNameInput" class="mag-input" placeholder="Nama Penerbit" oninput="syncFromMagnifier('pubName', this.value)">
+            </div>
+            <div class="mag-form-group" style="margin-bottom: 0.4rem;">
+              <label class="mag-label">Slogan / Info Lokasi Penerbit</label>
+              <input type="text" id="magPublisherInfoInput" class="mag-input" placeholder="Slogan / Alamat" oninput="syncFromMagnifier('pubInfo', this.value)">
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-subtle); padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-light);">
+              <span style="font-size: 0.7rem; color: var(--text-sub);">Logo Penerbit Resmi Kop</span>
+              <button type="button" class="btn btn-outline btn-sm" onclick="triggerPublisherLogoUpload()" style="font-size: 0.68rem; padding: 3px 8px;">Ganti Logo</button>
+            </div>
+          </div>
+
+          <div class="mag-footer-actions">
+            <div style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;">
+              <span style="width: 7px; height: 7px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
+              <span>Data tersinkron otomatis ke kop cetak</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="executeMapPrint()" style="padding: 6px 16px; font-weight: 700; font-size: 0.74rem;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Cetak / Unduh PDF</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -4333,13 +4576,10 @@
         </div>
       </div>
 
-      <div class="modal-coords-footer">
-        <div style="font-size: 0.69rem; color: var(--text-muted);">
+      <div class="modal-coords-footer" style="justify-content: center; align-items: center; text-align: center;">
+        <div style="font-size: 0.69rem; color: var(--text-muted); text-align: center;">
           Duta Digital Agensi (dutamik.id) : Duta Media Informasi berKarya : Sukoharjo, Jawa Tengah
         </div>
-        <button class="btn btn-outline btn-sm" onclick="closeExportCoordsModal()" style="font-weight: 600;">
-          Tutup
-        </button>
       </div>
     </div>
   </div>
@@ -4887,18 +5127,6 @@
           maxNativeZoom: 19,
           crossOrigin: 'anonymous'
         }),
-        carto_positron: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          crossOrigin: 'anonymous',
-          subdomains: 'abcd'
-        }),
-        carto_voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          crossOrigin: 'anonymous',
-          subdomains: 'abcd'
-        }),
         esri_topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
           maxZoom: 26,
           maxNativeZoom: 19,
@@ -5353,6 +5581,221 @@
     }
 
     const persilClientCache = new Map();
+
+    function distancePointToPolygonMeters(lat, lng, coords) {
+      if (!coords || coords.length < 3) return Infinity;
+      if (isPointInsideOrNearPolygon(lat, lng, coords, 0.5)) return 0;
+      let minDist = Infinity;
+      const n = coords.length;
+      for (let i = 0; i < n; i++) {
+        const p1 = coords[i];
+        const p2 = coords[(i + 1) % n];
+        const midLat = (p1.lat + p2.lat) * 0.5;
+        const cosLat = Math.cos(midLat * Math.PI / 180);
+        const px = lng * 111320 * cosLat;
+        const py = lat * 111320;
+        const ax = p1.lng * 111320 * cosLat;
+        const ay = p1.lat * 111320;
+        const bx = p2.lng * 111320 * cosLat;
+        const by = p2.lat * 111320;
+        const abx = bx - ax;
+        const aby = by - ay;
+        const lenSq = abx * abx + aby * aby;
+        let dist = Infinity;
+        if (lenSq === 0) {
+          dist = Math.hypot(px - ax, py - ay);
+        } else {
+          let t = ((px - ax) * abx + (py - ay) * aby) / lenSq;
+          t = Math.max(0, Math.min(1, t));
+          dist = Math.hypot(px - (ax + t * abx), py - (ay + t * aby));
+        }
+        if (dist < minDist) minDist = dist;
+      }
+      return minDist;
+    }
+
+    function parseGeoServerPersilGeoJson(data, clickLat, clickLng) {
+      if (!data || !Array.isArray(data.features) || data.features.length === 0) {
+        return null;
+      }
+      let chosenFeat = null;
+      let chosenCoords = null;
+      let bestDist = Infinity;
+      let foundExact = false;
+
+      for (const feat of data.features) {
+        const geom = feat.geometry;
+        if (!geom) continue;
+        let rings = [];
+        if (geom.type === 'Polygon' && Array.isArray(geom.coordinates) && geom.coordinates.length > 0) {
+          rings = [geom.coordinates[0]];
+        } else if (geom.type === 'MultiPolygon' && Array.isArray(geom.coordinates) && geom.coordinates.length > 0) {
+          rings = geom.coordinates.map(c => c[0]);
+        }
+        for (const ring of rings) {
+          if (!ring || ring.length < 3) continue;
+          const coords = ring.map(pt => {
+            const unproj = L.CRS.EPSG3857.unproject(L.point(pt[0], pt[1]));
+            return { lat: Number(unproj.lat.toFixed(7)), lng: Number(unproj.lng.toFixed(7)) };
+          });
+          if (coords.length > 1) {
+            const first = coords[0];
+            const last = coords[coords.length - 1];
+            if (Math.abs(first.lat - last.lat) < 0.0000005 && Math.abs(first.lng - last.lng) < 0.0000005) {
+              coords.pop();
+            }
+          }
+          if (coords.length < 3) continue;
+
+          if (isPointInsideOrNearPolygon(clickLat, clickLng, coords, 0.5)) {
+            chosenFeat = feat;
+            chosenCoords = coords;
+            foundExact = true;
+            break;
+          }
+          const d = distancePointToPolygonMeters(clickLat, clickLng, coords);
+          if (d <= 35.0 && d < bestDist) {
+            bestDist = d;
+            chosenFeat = feat;
+            chosenCoords = coords;
+          }
+        }
+        if (foundExact) break;
+      }
+
+      if (!chosenFeat || !chosenCoords || chosenCoords.length < 3) {
+        return null;
+      }
+
+      const props = chosenFeat.properties || {};
+      const nib = props.nib ? String(props.nib).trim() : '-';
+      const tipeHak = props.tipehak ? String(props.tipehak).trim() : 'Hak Milik';
+      const calcArea = Math.round(calculatePolygonArea(chosenCoords));
+      const luasM2 = props.luas && Number(props.luas) > 0 ? Number(props.luas) : calcArea;
+      const nomorHak = props.nomor ? String(props.nomor).trim() : '-';
+      const tahun = props.tahun ? String(props.tahun).trim() : '2026';
+
+      return {
+        found: true,
+        is_official_cadastre: true,
+        is_auto_traced: false,
+        nib: nib,
+        tipe_hak: tipeHak,
+        luas_m2: luasM2,
+        nomor_hak: nomorHak,
+        tahun: tahun,
+        fid: chosenFeat.id || '-',
+        polygon_coords: chosenCoords,
+        bbox_coords: chosenCoords,
+        status_validasi: 'Kadaster Resmi Presisi',
+        source: 'ATLAS GEOSERVER'
+      };
+    }
+
+    async function fetchPersilCadastreData(lat, lng, zoom = 19) {
+      const cacheKey = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+      const cached = persilClientCache.get(cacheKey);
+      if (cached && (Date.now() - cached.time < 600000)) {
+        return cached.data;
+      }
+
+      const persilApiBase = getBpnGatewayBase();
+      const originHas8085 = Boolean(window.location.origin && window.location.origin.includes('8085'));
+      const endpointsToTry = [];
+
+      if (persilApiBase) {
+        endpointsToTry.push(`${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`);
+      } else if (originHas8085) {
+        endpointsToTry.push(`/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`);
+      } else {
+        endpointsToTry.push(`http://127.0.0.1:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`);
+      }
+
+      for (const ep of endpointsToTry) {
+        try {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 3500);
+          const res = await fetch(ep, { signal: controller.signal, mode: 'cors' });
+          clearTimeout(tid);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.found && Array.isArray(data.polygon_coords) && data.polygon_coords.length >= 3) {
+              persilClientCache.set(cacheKey, { data, time: Date.now() });
+              return data;
+            }
+          }
+        } catch (e) {}
+      }
+
+      try {
+        const ptMerc = L.CRS.EPSG3857.project(L.latLng(lat, lng));
+        const deltaM = 25.0;
+        const minx = (ptMerc.x - deltaM).toFixed(4);
+        const maxx = (ptMerc.x + deltaM).toFixed(4);
+        const miny = (ptMerc.y - deltaM).toFixed(4);
+        const maxy = (ptMerc.y + deltaM).toFixed(4);
+        const bbox = `${minx},${miny},${maxx},${maxy}`;
+        const wmsUrl = `https://atlas.atrbpn.go.id/geoserver/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=bhumi:Persil&QUERY_LAYERS=bhumi:Persil&CRS=EPSG:3857&BBOX=${bbox}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json&FEATURE_COUNT=25`;
+        
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(wmsUrl)}`;
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(tid);
+        if (res.ok) {
+          const json = await res.json();
+          const parsed = parseGeoServerPersilGeoJson(json, lat, lng);
+          if (parsed && parsed.found) {
+            persilClientCache.set(cacheKey, { data: parsed, time: Date.now() });
+            return parsed;
+          }
+        }
+      } catch (e) {}
+
+      const notFoundResult = {
+        found: false,
+        message: 'Titik koordinat berada di luar bidang tanah terdaftar.',
+        polygon_coords: null
+      };
+      persilClientCache.set(cacheKey, { data: notFoundResult, time: Date.now() });
+      return notFoundResult;
+    }
+
+    function startDelineasiMandiriAtClick() {
+      if (!activePinMarker) {
+        showToast('Tentukan titik patok terlebih dahulu pada peta.', 'warn');
+        return;
+      }
+      const latlng = activePinMarker.getLatLng();
+      const lat = latlng.lat, lng = latlng.lng;
+      const deltaLat = 0.000065;
+      const deltaLng = 0.000065 / Math.cos(lat * Math.PI / 180);
+      const manualBox = [
+        { lat: +(lat + deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) },
+        { lat: +(lat + deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
+        { lat: +(lat - deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
+        { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
+      ];
+      const estArea = Math.round(calculatePolygonArea(manualBox));
+      activePinData = activePinData || {};
+      activePinData.lat = lat;
+      activePinData.lng = lng;
+      activePinData.luas_m2 = estArea;
+      activePinData.tipe_hak = 'Delineasi Mandiri';
+      rawInitialBboxCoords = manualBox;
+      initCanvasRebuilder(lat, lng, estArea, manualBox);
+      const notFoundBox = document.getElementById('persilNotFoundBox');
+      const foundBox = document.getElementById('persilFoundBox');
+      if (notFoundBox) notFoundBox.style.display = 'none';
+      if (foundBox) foundBox.style.display = 'flex';
+      const badge = document.getElementById('badgeRebuildStatus');
+      if (badge) {
+        badge.className = 'badge-pill yellow';
+        badge.innerText = 'Delineasi Mandiri';
+      }
+      showToast('Mode delineasi mandiri aktif. Geser titik sudut patok untuk menyesuaikan bentuk bidang.', 'success');
+    }
+
     async function handleMapClick(lat, lng, doSwitchTab = true) {
       isParcelLocked = false;
       clearCanvasRebuilderLayers();
@@ -5409,14 +5852,7 @@
         switchTab('tab-bidang');
       }
 
-      const persilApiBase = getBpnGatewayBase();
-      const hasPersilBackend = Boolean(persilApiBase || window.location.origin.includes('8085'));
-      const persilPromise = hasPersilBackend
-        ? fetch(`${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${map.getZoom() || 19}`)
-            .then(r => r.ok ? r.json() : { found: false })
-            .catch(() => ({ found: false }))
-        : Promise.resolve({ found: false });
-
+      const persilPromise = fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
       const geoPromise = fetchLocationDetails(lat, lng);
       const [persilData, geoData] = await Promise.all([persilPromise, geoPromise]);
 
@@ -5427,129 +5863,107 @@
       if (loadingBar) loadingBar.classList.remove('active');
       if (foundBox) foundBox.classList.remove('data-loading');
 
-      let effectivePersil = persilData;
-      if (!effectivePersil || !effectivePersil.found || !effectivePersil.polygon_coords || effectivePersil.polygon_coords.length < 3) {
-        const deltaLat = 0.000065;
-        const deltaLng = 0.000065 / Math.cos(lat * Math.PI / 180);
-        const autoBox = [
-          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) },
-          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
-        ];
-        const estArea = Math.round(calculatePolygonArea(autoBox));
-        effectivePersil = {
-          found: true,
-          is_official_cadastre: false,
-          is_auto_traced: true,
-          nib: '-',
-          tipe_hak: 'Delineasi Mandiri',
-          luas_m2: estArea,
-          polygon_coords: autoBox,
-          status_validasi: 'Delineasi Presisi (Siap Edit)'
+      const effectivePersil = persilData;
+      if (effectivePersil && effectivePersil.found && effectivePersil.polygon_coords && effectivePersil.polygon_coords.length >= 3) {
+        activePinData = {
+          lat: lat,
+          lng: lng,
+          fid: effectivePersil.fid || '-',
+          tipe_hak: effectivePersil.tipe_hak || 'Terdaftar Resmi',
+          luas_m2: effectivePersil.luas_m2 || 0,
+          desa: geoData.desa !== '-' ? geoData.desa : (effectivePersil.desa || '-'),
+          kecamatan: geoData.kecamatan !== '-' ? geoData.kecamatan : (effectivePersil.kecamatan || '-'),
+          kabkot: geoData.kabkot !== '-' ? geoData.kabkot : (effectivePersil.kabkot || '-'),
+          provinsi: geoData.provinsi !== '-' ? geoData.provinsi : (effectivePersil.provinsi || '-'),
+          kodepos: geoData.kodepos !== '-' ? geoData.kodepos : '-',
+          kantah: geoData.kantah !== '-' ? geoData.kantah : (effectivePersil.kantah || 'Kantor Pertanahan'),
+          alamat: geoData.jalan || '-'
         };
-      } else if (!isPointInsideOrNearPolygon(lat, lng, effectivePersil.polygon_coords, 35.0)) {
-        const deltaLat = 0.000065;
-        const deltaLng = 0.000065 / Math.cos(lat * Math.PI / 180);
-        const autoBox = [
-          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) },
-          { lat: +(lat + deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-          { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
-        ];
-        effectivePersil.polygon_coords = autoBox;
-        effectivePersil.luas_m2 = Math.round(calculatePolygonArea(autoBox));
-      }
 
-      activePinData = {
-        lat: lat,
-        lng: lng,
-        fid: effectivePersil.fid || '-',
-        tipe_hak: effectivePersil.tipe_hak || 'Terdaftar Resmi',
-        luas_m2: effectivePersil.luas_m2 || 0,
-        desa: geoData.desa !== '-' ? geoData.desa : (effectivePersil.desa || '-'),
-        kecamatan: geoData.kecamatan !== '-' ? geoData.kecamatan : (effectivePersil.kecamatan || '-'),
-        kabkot: geoData.kabkot !== '-' ? geoData.kabkot : (effectivePersil.kabkot || '-'),
-        provinsi: geoData.provinsi !== '-' ? geoData.provinsi : (effectivePersil.provinsi || '-'),
-        kodepos: geoData.kodepos !== '-' ? geoData.kodepos : '-',
-        kantah: geoData.kantah !== '-' ? geoData.kantah : (effectivePersil.kantah || 'Kantor Pertanahan'),
-        alamat: geoData.jalan || '-'
-      };
+        const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
+          ? `${activePinData.desa}, ${activePinData.kecamatan}`
+          : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
 
-      const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
-        ? `${activePinData.desa}, ${activePinData.kecamatan}`
-        : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
+        const elLokasi = document.getElementById('pinLokasiUtamaText');
+        if (elLokasi) elLokasi.innerText = lokasiUtama;
 
-      const elLokasi = document.getElementById('pinLokasiUtamaText');
-      if (elLokasi) elLokasi.innerText = lokasiUtama;
+        const elLuasBpn = document.getElementById('pinLuasBpnText');
+        if (elLuasBpn) elLuasBpn.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : '-';
+        const elTipeHak = document.getElementById('pinTipeHakText');
+        if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
+        const elStatusValidasi = document.getElementById('pinStatusValidasiText');
+        if (elStatusValidasi) elStatusValidasi.innerText = effectivePersil.status_validasi || 'Terverifikasi Resmi';
 
-      const elLuasBpn = document.getElementById('pinLuasBpnText');
-      if (elLuasBpn) elLuasBpn.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : '-';
-      const elTipeHak = document.getElementById('pinTipeHakText');
-      if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
-      const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-      if (elStatusValidasi) elStatusValidasi.innerText = effectivePersil.status_validasi || 'Terverifikasi Resmi';
+        const badgeEl = document.getElementById('badgeTipeHak');
+        if (badgeEl) badgeEl.innerText = activePinData.tipe_hak;
 
-      const badgeEl = document.getElementById('badgeTipeHak');
-      if (badgeEl) badgeEl.innerText = activePinData.tipe_hak;
+        const elLegalitas = document.getElementById('legalitasSummaryText');
+        if (elLegalitas) {
+          elLegalitas.innerText = `Terverifikasi Resmi : Status ${activePinData.tipe_hak || 'Hak Milik'}`;
+        }
 
-      const elLegalitas = document.getElementById('legalitasSummaryText');
-      if (elLegalitas) {
-        elLegalitas.innerText = `Terverifikasi Resmi : Status ${activePinData.tipe_hak || 'Hak Milik'}`;
-      }
+        const elAlamatGmaps = document.getElementById('pinAlamatGmapsText');
+        if (elAlamatGmaps) {
+          elAlamatGmaps.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.desa}, ${activePinData.kecamatan}, ${activePinData.kabkot}, ${activePinData.provinsi}`;
+        }
 
-      const elAlamatGmaps = document.getElementById('pinAlamatGmapsText');
-      if (elAlamatGmaps) {
-        elAlamatGmaps.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.desa}, ${activePinData.kecamatan}, ${activePinData.kabkot}, ${activePinData.provinsi}`;
-      }
+        const elShpProv = document.getElementById('shpProvinsi');
+        if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
 
-      const elShpProv = document.getElementById('shpProvinsi');
-      if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
+        const elShpKeterangan = document.getElementById('shpKeterangan');
+        if (elShpKeterangan) {
+          const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Desa ${activePinData.desa}, Kec. ${activePinData.kecamatan}, ${activePinData.kabkot}`;
+          elShpKeterangan.value = rawKet.toUpperCase();
+        }
+        updateShpLuasDisplay();
 
-      const elShpKeterangan = document.getElementById('shpKeterangan');
-      if (elShpKeterangan) {
-        const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Desa ${activePinData.desa}, Kec. ${activePinData.kecamatan}, ${activePinData.kabkot}`;
-        elShpKeterangan.value = rawKet.toUpperCase();
-      }
-      updateShpLuasDisplay();
+        const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = activePinData.desa;
+        const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
+        const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
+        const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
+        const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
+        const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = activePinData.kantah;
 
-      const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = activePinData.desa;
-      const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
-      const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
-      const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
-      const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
-      const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = activePinData.kantah;
+        const bhumiUrl = `https://bhumi.atrbpn.go.id/peta?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}&zoom=19`;
+        const btnBhumi = document.getElementById('btnLinkBhumi');
+        if (btnBhumi) btnBhumi.href = bhumiUrl;
+        const btnGmaps = document.getElementById('btnLinkGoogleMaps');
+        if (btnGmaps) btnGmaps.href = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
 
-      const bhumiUrl = `https://bhumi.atrbpn.go.id/peta?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}&zoom=19`;
-      const btnBhumi = document.getElementById('btnLinkBhumi');
-      if (btnBhumi) btnBhumi.href = bhumiUrl;
-      const btnGmaps = document.getElementById('btnLinkGoogleMaps');
-      if (btnGmaps) btnGmaps.href = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+        if (foundBox) foundBox.style.display = 'flex';
+        if (notFoundBox) notFoundBox.style.display = 'none';
 
-      if (foundBox) foundBox.style.display = 'flex';
-      if (notFoundBox) notFoundBox.style.display = 'none';
+        const hud = document.getElementById('canvasHud');
+        if (hud) {
+          hud.style.display = 'flex';
+          const elHudNib = document.getElementById('hudNib');
+          if (elHudNib) elHudNib.innerText = lokasiUtama;
+          const elHudArea = document.getElementById('hudBpnArea');
+          if (elHudArea) elHudArea.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : '-';
+        }
 
-      const hud = document.getElementById('canvasHud');
-      if (hud) {
-        hud.style.display = 'flex';
-        const elHudNib = document.getElementById('hudNib');
-        if (elHudNib) elHudNib.innerText = lokasiUtama;
-        const elHudArea = document.getElementById('hudBpnArea');
-        if (elHudArea) elHudArea.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : '-';
-      }
+        if (effectivePersil.tahun && parseInt(effectivePersil.tahun)) {
+          const elShpTahun = document.getElementById('shpTahun');
+          if (elShpTahun) elShpTahun.value = parseInt(effectivePersil.tahun);
+        }
 
-      if (effectivePersil.tahun && parseInt(effectivePersil.tahun)) {
-        const elShpTahun = document.getElementById('shpTahun');
-        if (elShpTahun) elShpTahun.value = parseInt(effectivePersil.tahun);
-      }
+        rawInitialBboxCoords = effectivePersil.polygon_coords;
+        initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
 
-      rawInitialBboxCoords = effectivePersil.polygon_coords;
-      initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
-
-      const badge = document.getElementById('badgeRebuildStatus');
-      if (badge) {
-        badge.className = 'badge-pill green';
-        badge.innerText = effectivePersil.is_official_cadastre ? 'Kadaster Resmi Presisi' : (effectivePersil.is_auto_traced ? 'Batas Bidang Terdeteksi' : 'Batas Bidang Aktif');
+        const badge = document.getElementById('badgeRebuildStatus');
+        if (badge) {
+          badge.className = 'badge-pill green';
+          badge.innerText = effectivePersil.is_official_cadastre ? 'Kadaster Resmi Presisi' : (effectivePersil.is_auto_traced ? 'Batas Bidang Terdeteksi' : 'Batas Bidang Aktif');
+        }
+      } else {
+        clearCanvasRebuilderLayers();
+        if (foundBox) foundBox.style.display = 'none';
+        if (notFoundBox) notFoundBox.style.display = 'flex';
+        const toolbar = document.getElementById('mapPrecisionToolbar');
+        if (toolbar) toolbar.style.display = 'none';
+        const hud = document.getElementById('canvasHud');
+        if (hud) hud.style.display = 'none';
+        showToast('Titik di luar batas bidang tanah terdaftar ATR/BPN. Silakan klik tepat di dalam area batas persil atau gunakan tombol Delineasi Mandiri.', 'info');
       }
     }
 
@@ -5923,10 +6337,10 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       } else {
         updateEdgeDistancePositions();
       }
-      if (activePolygonLayer) activePolygonLayer.bringToBack();
-      if (activePinMarker) activePinMarker.bringToFront();
-      if (vertexMarkers && vertexMarkers.length > 0) vertexMarkers.forEach(m => m.bringToFront());
-      if (vertexAddMarkers && vertexAddMarkers.length > 0) vertexAddMarkers.forEach(m => m.bringToFront());
+      if (activePolygonLayer && typeof activePolygonLayer.bringToBack === 'function') activePolygonLayer.bringToBack();
+      if (activePinMarker && typeof activePinMarker.setZIndexOffset === 'function') activePinMarker.setZIndexOffset(1000);
+      if (vertexMarkers && vertexMarkers.length > 0) vertexMarkers.forEach(m => { if (typeof m.setZIndexOffset === 'function') m.setZIndexOffset(2000); });
+      if (vertexAddMarkers && vertexAddMarkers.length > 0) vertexAddMarkers.forEach(m => { if (typeof m.setZIndexOffset === 'function') m.setZIndexOffset(1500); });
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
@@ -7962,9 +8376,7 @@ function latLngToUtm(lat, lon) {
       const luasM2 = Math.round(totalM2);
       const luasHa = (totalM2 / 10000).toFixed(4);
 
-      let rowsHtml = '';
-      let globalIdx = 1;
-
+      const rowsData = [];
       parts.forEach((pList, pIdx) => {
         const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
         pList.forEach((v, vIdx) => {
@@ -7973,73 +8385,60 @@ function latLngToUtm(lat, lon) {
           const dist = L.latLng(v.lat, v.lng).distanceTo(L.latLng(nextV.lat, nextV.lng));
           const utm = getUtmCoordinates(v.lat, v.lng);
 
-          rowsHtml += `<tr>
-            <td style="text-align:center; font-weight:bold;">${nodeLabel}</td>
-            <td style="text-align:right;">${v.lat.toFixed(7)}</td>
-            <td style="text-align:right;">${v.lng.toFixed(7)}</td>
-            <td style="text-align:right;">${utm.x.toFixed(2)}</td>
-            <td style="text-align:right;">${utm.y.toFixed(2)}</td>
-            <td style="text-align:center;">${utm.zone}</td>
-            <td style="text-align:right;">${dist.toFixed(2)}</td>
-          </tr>`;
-          globalIdx++;
+          rowsData.push([
+            nodeLabel,
+            parseFloat(v.lat.toFixed(7)),
+            parseFloat(v.lng.toFixed(7)),
+            parseFloat(utm.x.toFixed(2)),
+            parseFloat(utm.y.toFixed(2)),
+            utm.zone,
+            parseFloat(dist.toFixed(2))
+          ]);
         });
       });
 
-      const excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <title>DutaGeoSpasi Daftar Patok Batas</title>
-  <style>
-    body { font-family: Calibri, sans-serif; font-size: 11pt; }
-    table { border-collapse: collapse; width: 100%; }
-    th { background-color: #0a2e5c; color: #ffffff; border: 1px solid #000000; padding: 6px; text-align: center; }
-    td { border: 1px solid #cbd5e1; padding: 5px; }
-    .header-box { margin-bottom: 12px; }
-    .meta-title { font-size: 14pt; font-weight: bold; color: #0a2e5c; }
-    .meta-sub { font-size: 10pt; color: #475569; }
-  </style>
-  <link rel="icon" type="image/png" href="assets/img/logo.png">
-  <link rel="shortcut icon" href="assets/img/favicon.ico">
-  <link rel="apple-touch-icon" href="assets/img/logo.png">
-</head>
-<body>
-  <div class="header-box">
-    <div class="meta-title">DUTAGEOSPASI : DAFTAR KOORDINAT PATOK BATAS TANAH</div>
-    <div class="meta-sub">Pengembang: Duta Digital Agensi (dutamik.id) | Tagline: Duta Media Informasi berKarya | Sukoharjo, Jawa Tengah</div>
-    <br>
-    <table>
-      <tr><td style="font-weight:bold; width:150px;">Pemrakarsa</td><td>${pemrakarsa}</td><td style="font-weight:bold; width:150px;">Kabupaten / Kota</td><td>${kab}</td></tr>
-      <tr><td style="font-weight:bold;">Kegiatan</td><td>${kegiatan}</td><td style="font-weight:bold;">Provinsi</td><td>${prov}</td></tr>
-      <tr><td style="font-weight:bold;">Tahun</td><td>${tahun}</td><td style="font-weight:bold;">Luas Terhitung</td><td>${luasM2.toLocaleString('id-ID')} m² (${luasHa} Ha)</td></tr>
-    </table>
-    <br>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>PATOK</th>
-        <th>LATITUDE (DD)</th>
-        <th>LONGITUDE (DD)</th>
-        <th>UTM X (TIMUR)</th>
-        <th>UTM Y (UTARA)</th>
-        <th>ZONA UTM</th>
-        <th>JARAK BATAS (M)</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml}
-    </tbody>
-  </table>
-  <br>
-  <div style="font-size: 8pt; color: #64748b;">
-    Berkas dihasilkan otomatis oleh sistem DutaGeoSpasi (dutamik.id). Standar Datum WGS 84 dan Proyeksi UTM Nasional Kadastral.
-  </div>
-</body>
-</html>`;
+      if (typeof XLSX !== 'undefined') {
+        const wb = XLSX.utils.book_new();
+        const sheetData = [
+          ['DUTAGEOSPASI : DAFTAR KOORDINAT PATOK BATAS TANAH'],
+          ['Pengembang: Duta Digital Agensi (dutamik.id) | Tagline: Duta Media Informasi berKarya | Sukoharjo, Jawa Tengah'],
+          [],
+          ['Pemrakarsa', pemrakarsa, '', 'Kabupaten / Kota', kab],
+          ['Kegiatan', kegiatan, '', 'Provinsi', prov],
+          ['Tahun', tahun, '', 'Luas Terhitung', `${luasM2.toLocaleString('id-ID')} m² (${luasHa} Ha)`],
+          [],
+          ['PATOK', 'LATITUDE (DD)', 'LONGITUDE (DD)', 'UTM X (TIMUR)', 'UTM Y (UTARA)', 'ZONA UTM', 'JARAK BATAS (M)'],
+          ...rowsData,
+          [],
+          ['Berkas dihasilkan otomatis oleh sistem DutaGeoSpasi (dutamik.id). Standar Datum WGS 84 dan Proyeksi UTM Nasional Kadastral.']
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        ws['!cols'] = [
+          { wch: 12 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 12 },
+          { wch: 18 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'Daftar Patok');
+        XLSX.writeFile(wb, 'DutaGeoSpasi_daftar_patok.xlsx');
+        showToast('Berkas Excel patok batas (.xlsx) berhasil diunduh.', 'success');
+        return;
+      }
 
-      downloadFile(excelTemplate, 'DutaGeoSpasi_daftar_patok.xls', 'application/vnd.ms-excel;charset=utf-8');
-      showToast('Berkas Excel patok batas berhasil diunduh!', 'success');
+      let csvContent = `DUTAGEOSPASI : DAFTAR KOORDINAT PATOK BATAS TANAH\r\n`;
+      csvContent += `Pengembang: Duta Digital Agensi (dutamik.id) | Tagline: Duta Media Informasi berKarya | Sukoharjo, Jawa Tengah\r\n\r\n`;
+      csvContent += `Pemrakarsa,${pemrakarsa},,Kabupaten / Kota,${kab}\r\n`;
+      csvContent += `Kegiatan,${kegiatan},,Provinsi,${prov}\r\n`;
+      csvContent += `Tahun,${tahun},,Luas Terhitung,"${luasM2.toLocaleString('id-ID')} m² (${luasHa} Ha)"\r\n\r\n`;
+      csvContent += `PATOK,LATITUDE (DD),LONGITUDE (DD),UTM X (TIMUR),UTM Y (UTARA),ZONA UTM,JARAK BATAS (M)\r\n`;
+      rowsData.forEach(r => {
+        csvContent += `${r[0]},${r[1]},${r[2]},${r[3]},${r[4]},${r[5]},${r[6]}\r\n`;
+      });
+      downloadFile(csvContent, 'DutaGeoSpasi_daftar_patok.csv', 'text/csv;charset=utf-8;');
+      showToast('Berkas CSV koordinat patok berhasil diunduh.', 'success');
     }
 
     function exportCoordinatesOnly() {
@@ -9362,8 +9761,8 @@ function latLngToUtm(lat, lon) {
     }
 
     function syncPrintTitleFromKop(val) {
-      const inpToolbar = document.getElementById('printTitleInput');
-      if (inpToolbar) inpToolbar.value = val;
+      const magTitle = document.getElementById('magTitleInput');
+      if (magTitle) magTitle.value = val;
     }
 
     function updateMemberUI() {
@@ -9815,10 +10214,13 @@ window.addEventListener('DOMContentLoaded', () => {
       updatePrintKopContent();
       initPublisherKop();
       adjustMobilePrintScale();
+      syncMagnifierFromKop();
+      setupKopMagnifierClickListeners();
 
       setTimeout(() => {
         initOrUpdatePrintMaps();
         adjustMobilePrintScale();
+        syncMagnifierFromKop();
       }, 250);
     }
 
@@ -9850,12 +10252,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function updatePrintKopContent() {
-      const inpTitle = document.getElementById('printTitleInput')?.value.trim() || 'PETA TAPAK PROYEK & KAWASAN';
+      const elTitle = document.getElementById('kopMapTitleInput') || document.getElementById('kopMapTitle');
+      const inpTitle = elTitle?.value?.trim() || elTitle?.innerText?.trim() || 'PETA TAPAK PROYEK & KAWASAN';
       const inpPem = document.getElementById('shpPemrakarsa')?.value.trim() || 'PEMOHON OSS RBA';
       const inpKeg = document.getElementById('shpKegiatan')?.value.trim() || 'KKPR / PERIZINAN BERUSAHA';
       const inpTahun = document.getElementById('shpTahun')?.value.trim() || '2026';
 
-      const elTitle = document.getElementById('kopMapTitleInput') || document.getElementById('kopMapTitle');
       if (elTitle && document.activeElement !== elTitle) {
         if ('value' in elTitle) elTitle.value = inpTitle.toUpperCase();
         else elTitle.innerText = inpTitle.toUpperCase();
@@ -10489,7 +10891,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
 
       const isA3 = sheet.classList.contains('a3');
-      const docTitle = (document.getElementById('printTitleInput')?.value || 'PETA_KADASTRAL').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const docTitle = (document.getElementById('kopMapTitleInput')?.value || 'PETA_KADASTRAL').replace(/[^a-zA-Z0-9_-]/g, '_');
       const filename = `${docTitle}_${Date.now()}.pdf`;
 
       const prevTransform = sheet.style.transform;
@@ -10530,6 +10932,168 @@ window.addEventListener('DOMContentLoaded', () => {
         generateExportPdfDirect();
       } else {
         window.print();
+      }
+    }
+
+  
+    function switchMagnifierTab(tabKey, btnEl) {
+      document.querySelectorAll('.mag-tab-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      document.querySelectorAll('.mag-section-pane').forEach(p => p.classList.remove('active'));
+      const targetId = 'magSection' + tabKey.charAt(0).toUpperCase() + tabKey.slice(1);
+      const targetPane = document.getElementById(targetId);
+      if (targetPane) targetPane.classList.add('active');
+    }
+
+    function syncMagnifierFromKop() {
+      const elTitle = document.getElementById('kopMapTitleInput');
+      const elSub = document.getElementById('kopMapSubtitleInput');
+      const elDesa = document.getElementById('kopDesaInput');
+      const elKec = document.getElementById('kopKecamatanInput');
+      const elKab = document.getElementById('kopKabkotInput');
+      const elProv = document.getElementById('kopProvinsiInput');
+      const elPem = document.getElementById('kopPemrakarsa');
+      const elKeg = document.getElementById('kopKegiatan');
+      const elTahun = document.getElementById('kopTahun');
+      const elLuas = document.getElementById('kopLuas');
+      const elPubName = document.getElementById('kopPublisherNameInput');
+      const elPubInfo = document.getElementById('kopPublisherInfoInput');
+      const elScale = document.getElementById('kopScaleNumber');
+
+      const magTitle = document.getElementById('magTitleInput');
+      const magSub = document.getElementById('magSubtitleInput');
+      const magDesa = document.getElementById('magDesaInput');
+      const magKec = document.getElementById('magKecamatanInput');
+      const magKab = document.getElementById('magKabkotInput');
+      const magProv = document.getElementById('magProvinsiInput');
+      const magPem = document.getElementById('magPemrakarsaInput');
+      const magKeg = document.getElementById('magKegiatanInput');
+      const magTahun = document.getElementById('magTahunInput');
+      const magLuas = document.getElementById('magLuasDisplay');
+      const magPubName = document.getElementById('magPublisherNameInput');
+      const magPubInfo = document.getElementById('magPublisherInfoInput');
+      const magSkala = document.getElementById('magSkalaDisplay');
+
+      if (magTitle && elTitle) magTitle.value = elTitle.value;
+      if (magSub && elSub) magSub.value = elSub.value;
+      if (magDesa && elDesa) magDesa.value = elDesa.value;
+      if (magKec && elKec) magKec.value = elKec.value;
+      if (magKab && elKab) magKab.value = elKab.value;
+      if (magProv && elProv) magProv.value = elProv.value;
+      if (magPem && elPem) magPem.value = elPem.innerText;
+      if (magKeg && elKeg) magKeg.value = elKeg.innerText;
+      if (magTahun && elTahun) magTahun.value = elTahun.innerText;
+      if (magLuas && elLuas) magLuas.innerText = elLuas.innerText;
+      if (magPubName && elPubName) magPubName.value = elPubName.value;
+      if (magPubInfo && elPubInfo) magPubInfo.value = elPubInfo.value;
+      if (magSkala && elScale) magSkala.innerText = elScale.innerText;
+
+      const gNw = document.getElementById('gratNw')?.innerText || '-';
+      const gNe = document.getElementById('gratNe')?.innerText || '-';
+      const gSw = document.getElementById('gratSw')?.innerText || '-';
+      const gSe = document.getElementById('gratSe')?.innerText || '-';
+      const mNw = document.getElementById('magGratNw'); if (mNw) mNw.innerText = 'NW: ' + gNw;
+      const mNe = document.getElementById('magGratNe'); if (mNe) mNe.innerText = 'NE: ' + gNe;
+      const mSw = document.getElementById('magGratSw'); if (mSw) mSw.innerText = 'SW: ' + gSw;
+      const mSe = document.getElementById('magGratSe'); if (mSe) mSe.innerText = 'SE: ' + gSe;
+    }
+
+    function syncFromMagnifier(field, val) {
+      if (field === 'title') {
+        const kop = document.getElementById('kopMapTitleInput');
+        if (kop) kop.value = val.toUpperCase();
+      } else if (field === 'subtitle') {
+        const kop = document.getElementById('kopMapSubtitleInput');
+        if (kop) kop.value = val;
+      } else if (field === 'desa') {
+        const kop = document.getElementById('kopDesaInput');
+        if (kop) kop.value = val;
+      } else if (field === 'kecamatan') {
+        const kop = document.getElementById('kopKecamatanInput');
+        if (kop) kop.value = val;
+      } else if (field === 'kabkot') {
+        const kop = document.getElementById('kopKabkotInput');
+        if (kop) kop.value = val;
+      } else if (field === 'provinsi') {
+        const kop = document.getElementById('kopProvinsiInput');
+        if (kop) kop.value = val;
+      } else if (field === 'pemrakarsa') {
+        const kop = document.getElementById('kopPemrakarsa');
+        if (kop) kop.innerText = val.toUpperCase();
+        const shp = document.getElementById('shpPemrakarsa');
+        if (shp) shp.value = val.toUpperCase();
+      } else if (field === 'kegiatan') {
+        const kop = document.getElementById('kopKegiatan');
+        if (kop) kop.innerText = val.toUpperCase();
+        const shp = document.getElementById('shpKegiatan');
+        if (shp) shp.value = val.toUpperCase();
+      } else if (field === 'tahun') {
+        const kop = document.getElementById('kopTahun');
+        if (kop) kop.innerText = val;
+        const shp = document.getElementById('shpTahun');
+        if (shp) shp.value = val;
+      } else if (field === 'pubName') {
+        const kop = document.getElementById('kopPublisherNameInput');
+        if (kop) { kop.value = val; handlePublisherChange(); }
+      } else if (field === 'pubInfo') {
+        const kop = document.getElementById('kopPublisherInfoInput');
+        if (kop) { kop.value = val; handlePublisherChange(); }
+      }
+    }
+
+    function setupKopMagnifierClickListeners() {
+      const kopTitleBox = document.querySelector('.print-kop-box:nth-child(1)');
+      const kopWilayahBox = document.querySelector('.print-kop-box:nth-child(2)');
+      const kopSkalaBox = document.querySelector('.print-kop-box:nth-child(3)');
+      const kopKegiatanBox = document.querySelector('.print-kop-box:nth-child(5)');
+      const kopPubBox = document.getElementById('kopPublisherBox');
+
+      const scrollToMag = () => {
+        const mag = document.getElementById('printMobileMagnifier');
+        if (mag && isMobileDevice()) {
+          mag.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      if (kopTitleBox && !kopTitleBox._magBound) {
+        kopTitleBox._magBound = true;
+        kopTitleBox.addEventListener('click', () => {
+          const btn = document.querySelectorAll('.mag-tab-btn')[1];
+          switchMagnifierTab('judul', btn);
+          scrollToMag();
+        });
+      }
+      if (kopWilayahBox && !kopWilayahBox._magBound) {
+        kopWilayahBox._magBound = true;
+        kopWilayahBox.addEventListener('click', () => {
+          const btn = document.querySelectorAll('.mag-tab-btn')[0];
+          switchMagnifierTab('wilayah', btn);
+          scrollToMag();
+        });
+      }
+      if (kopSkalaBox && !kopSkalaBox._magBound) {
+        kopSkalaBox._magBound = true;
+        kopSkalaBox.addEventListener('click', () => {
+          const btn = document.querySelectorAll('.mag-tab-btn')[3];
+          switchMagnifierTab('skala', btn);
+          scrollToMag();
+        });
+      }
+      if (kopKegiatanBox && !kopKegiatanBox._magBound) {
+        kopKegiatanBox._magBound = true;
+        kopKegiatanBox.addEventListener('click', () => {
+          const btn = document.querySelectorAll('.mag-tab-btn')[2];
+          switchMagnifierTab('kegiatan', btn);
+          scrollToMag();
+        });
+      }
+      if (kopPubBox && !kopPubBox._magBound) {
+        kopPubBox._magBound = true;
+        kopPubBox.addEventListener('click', () => {
+          const btn = document.querySelectorAll('.mag-tab-btn')[4];
+          switchMagnifierTab('penerbit', btn);
+          scrollToMag();
+        });
       }
     }
 
