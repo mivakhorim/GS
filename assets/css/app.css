@@ -519,6 +519,47 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 0.5rem;
     }
+    .card-equal-grid.tri-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.35rem;
+    }
+    .card-equal-grid.tri-grid .stat-card {
+      min-height: 56px;
+      padding: 5px 6px;
+    }
+    .export-grid-2x2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.35rem;
+    }
+    .export-sub-btn {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-decoration: none;
+    }
+    .coord-action-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.35rem;
+    }
+    .coord-act-btn {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 5px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+    }
     .stat-card {
       background-color: var(--bg-subtle);
       border: 1px solid var(--border-light);

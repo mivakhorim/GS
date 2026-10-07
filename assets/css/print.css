@@ -627,7 +627,41 @@
     }
     @page {
       size: A4 landscape;
-      margin: 10mm;
+      margin: 0 !important;
+    }
+    .modal-print-overlay.mobile-direct-print-mode {
+      position: fixed !important;
+      left: -9999px !important;
+      top: 0 !important;
+      width: 1200px !important;
+      height: 860px !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      z-index: -100 !important;
+      display: block !important;
+    }
+    .modal-print-overlay.mobile-direct-print-mode .modal-print-dialog {
+      width: 1200px !important;
+      height: 860px !important;
+      max-width: none !important;
+      max-height: none !important;
+      transform: none !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .modal-print-overlay.mobile-direct-print-mode .print-preview-scroll {
+      width: 1200px !important;
+      height: 860px !important;
+      overflow: visible !important;
+    }
+    .modal-print-overlay.mobile-direct-print-mode .print-sheet-scale-wrapper {
+      height: auto !important;
+      overflow: visible !important;
+    }
+    .modal-print-overlay.mobile-direct-print-mode .print-sheet-paper {
+      transform: none !important;
+      box-shadow: none !important;
+      margin: 0 !important;
     }
     @media print {
       * {
@@ -706,7 +740,7 @@
         max-height: 190mm !important;
         box-shadow: none !important;
         padding: 0 !important;
-        margin: 0 auto !important;
+        margin: 10mm auto !important;
         box-sizing: border-box !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
@@ -722,7 +756,7 @@
         max-width: 400mm !important;
         max-height: 277mm !important;
         padding: 0 !important;
-        margin: 0 auto !important;
+        margin: 10mm auto !important;
       }
       .print-sheet-frame {
         width: 100% !important;

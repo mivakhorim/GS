@@ -363,8 +363,8 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         activePolygonLayer = L.polygon(latlngs, {
           color: '#ea580c',
           weight: 3.5,
-          fillColor: '#ffffff',
-          fillOpacity: 0.8,
+          fillColor: '#ea580c',
+          fillOpacity: 0.15,
           interactive: false
         }).addTo(map);
       } else {
@@ -372,8 +372,8 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         activePolygonLayer.setStyle({
           color: '#ea580c',
           weight: 3.5,
-          fillColor: '#ffffff',
-          fillOpacity: 0.8
+          fillColor: '#ea580c',
+          fillOpacity: 0.15
         });
       }
       const liveAreaHa = liveAreaM2 / 10000;
@@ -1648,3 +1648,47 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       cleanActiveVerticesManual();
       showToast('Titik sudut batas berhasil dirapikan.', 'success');
     }
+
+    function loadTestParcel(type) {
+      clearCanvasRebuilderLayers();
+      if (type === 'large' || type === 'pro') {
+        activeVertices = [
+          { lat: -6.188400, lng: 106.832000 },
+          { lat: -6.188400, lng: 106.832180 },
+          { lat: -6.188535, lng: 106.832180 },
+          { lat: -6.188535, lng: 106.832000 }
+        ];
+        showToast('Memuat poligon uji 300 m² (Melebihi kuota gratis 150 m²).', 'info');
+      } else {
+        activeVertices = [
+          { lat: -6.188400, lng: 106.832000 },
+          { lat: -6.188400, lng: 106.832090 },
+          { lat: -6.188490, lng: 106.832090 },
+          { lat: -6.188490, lng: 106.832000 }
+        ];
+        showToast('Memuat poligon uji 100 m² (Masuk kuota gratis <= 150 m²).', 'success');
+      }
+      isParcelLocked = true;
+      if (map) {
+        const bounds = L.latLngBounds(activeVertices.map(p => [p.lat, p.lng]));
+        map.fitBounds(bounds, { padding: [60, 60] });
+      }
+      renderCanvasPolygon(true);
+      renderVertexHandles();
+      renderEdgeDistanceLabels();
+      const area = calculatePolygonArea(activeVertices);
+      const hudBpn = document.getElementById('hudBpnArea');
+      if (hudBpn) hudBpn.innerText = `${Math.round(area).toLocaleString('id-ID')} m²`;
+      if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
+      switchTab('tab-bidang');
+    }
+
+    function clearTestParcel() {
+      clearCanvasRebuilderLayers();
+      const hudBpn = document.getElementById('hudBpnArea');
+      if (hudBpn) hudBpn.innerText = '0 m²';
+      showToast('Data pengujian telah dibersihkan.', 'info');
+    }
+
+    window.loadTestParcel = loadTestParcel;
+    window.clearTestParcel = clearTestParcel;

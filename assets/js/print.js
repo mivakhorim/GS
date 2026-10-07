@@ -88,6 +88,10 @@ function togglePrintDimensions(show) {
     }
 
     function openMapPrintModal() {
+      if (typeof isMobileDevice === 'function' && isMobileDevice()) {
+        processDirectMobilePdfPrint();
+        return;
+      }
       const modal = document.getElementById('modalPrintMap');
       if (!modal) return;
       modal.style.display = 'flex';
@@ -128,10 +132,10 @@ function togglePrintDimensions(show) {
       }
       if (size === 'a3') {
         sheet.classList.add('a3');
-        dynStyle.textContent = '@media print { @page { size: A3 landscape; margin: 10mm; } .print-sheet-paper { width: 400mm !important; height: 277mm !important; } }';
+        dynStyle.textContent = '@media print { @page { size: A3 landscape; margin: 0 !important; } .print-sheet-paper.a3 { width: 400mm !important; height: 277mm !important; margin: 10mm auto !important; } }';
       } else {
         sheet.classList.remove('a3');
-        dynStyle.textContent = '@media print { @page { size: A4 landscape; margin: 10mm; } .print-sheet-paper { width: 277mm !important; height: 190mm !important; } }';
+        dynStyle.textContent = '@media print { @page { size: A4 landscape; margin: 0 !important; } .print-sheet-paper { width: 277mm !important; height: 190mm !important; margin: 10mm auto !important; } }';
       }
       setTimeout(() => {
         if (printMapInstance) {
@@ -651,8 +655,8 @@ function togglePrintDimensions(show) {
           const poly = L.polygon(latlngs, {
             color: '#ea580c',
             weight: 3.5,
-            fillColor: '#ffffff',
-            fillOpacity: 0.85,
+            fillColor: '#ea580c',
+            fillOpacity: 0.15,
             zIndexOffset: 500
           }).addTo(printMapInstance);
 
@@ -872,7 +876,7 @@ function togglePrintDimensions(show) {
       sheet.style.margin = '0';
 
       const opt = {
-        margin: [10, 10, 10, 10],
+        margin: 0,
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
@@ -912,6 +916,51 @@ function togglePrintDimensions(show) {
       }
     }
 
+    async function processDirectMobilePdfPrint() {
+      ensureActiveVerticesFromDraw();
+      if (!activeVertices || activeVertices.length < 3) {
+        showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn');
+        return;
+      }
+      const modal = document.getElementById('modalPrintMap');
+      const sheet = document.getElementById('printMapSheet');
+      if (!modal || !sheet) return;
+
+      showToast('Menyiapkan dan memproses dokumen PDF peta...', 'info');
+
+      const prevDisplay = modal.style.display;
+      modal.classList.add('mobile-direct-print-mode');
+      modal.style.display = 'block';
+
+      updatePrintKopContent();
+      initPublisherKop();
+      initOrUpdatePrintMaps();
+
+      await new Promise(r => setTimeout(r, 650));
+
+      try {
+        await generateExportPdfDirect();
+      } catch (err) {
+        showToast('Gagal memproses PDF otomatis.', 'error');
+      } finally {
+        modal.classList.remove('mobile-direct-print-mode');
+        modal.style.display = prevDisplay || 'none';
+      }
+    }
+
+    function handlePrintMapTrigger() {
+      ensureActiveVerticesFromDraw();
+      if (!activeVertices || activeVertices.length < 3) {
+        showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn');
+        return;
+      }
+      if (isMobileDevice()) {
+        processDirectMobilePdfPrint();
+      } else {
+        openMapPrintModal();
+      }
+    }
+
     function executeMapPrint() {
       if (isMobileDevice()) {
         generateExportPdfDirect();
@@ -919,6 +968,9 @@ function togglePrintDimensions(show) {
         window.print();
       }
     }
+
+    window.handlePrintMapTrigger = handlePrintMapTrigger;
+    window.processDirectMobilePdfPrint = processDirectMobilePdfPrint;
 
   
     function switchMagnifierTab(tabKey, btnEl) {
