@@ -365,6 +365,24 @@ function latLngToUtm(lat, lon) {
       return total;
     }
 
+    function formatAreaM2(val) {
+      const num = Number(val) || 0;
+      return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
+    }
+
+    function formatAreaHa(val) {
+      const num = (Number(val) || 0) / 10000.0;
+      return num.toLocaleString('id-ID', { minimumFractionDigits: 6, maximumFractionDigits: 6 }) + ' ha';
+    }
+
+    function roundArea2(val) {
+      return Number((Number(val) || 0).toFixed(2));
+    }
+
+    function roundAreaHa6(val) {
+      return Number(((Number(val) || 0) / 10000.0).toFixed(6));
+    }
+
     function updateShpLuasDisplay() {
       const el = document.getElementById('shpLuasHa') || document.getElementById('shpLuas');
       if (!el) return;
@@ -381,8 +399,7 @@ function latLngToUtm(lat, lon) {
           }
         });
       }
-      const ha = (areaM2 / 10000.0).toFixed(4);
-      el.value = `${ha} Ha`;
+      el.value = `${formatAreaM2(areaM2)} (${formatAreaHa(areaM2)})`;
     }
 
     
@@ -446,16 +463,15 @@ function latLngToUtm(lat, lon) {
 
     function getStandardScale(rawRatio) {
       const std = [100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000, 15000, 20000, 25000, 50000];
-      let closest = std[0];
-      let minDiff = Math.abs(rawRatio - closest);
       for (let s of std) {
-        const diff = Math.abs(rawRatio - s);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closest = s;
-        }
+        if (s >= rawRatio * 0.95) return s;
       }
-      return closest;
+      return std[std.length - 1];
+    }
+
+    function getExactZoomForScale(scale, lat) {
+      const metersPerPx = scale * 0.0002645833333333333;
+      return Math.log2((156543.03392 * Math.cos(lat * Math.PI / 180)) / metersPerPx);
     }
     function isMobileDevice() {
       return (
@@ -548,4 +564,8 @@ function latLngToUtm(lat, lon) {
     window.clearTestParcel = function() {};
     window.handlePrintMapTrigger = function() {};
     window.processDirectMobilePdfPrint = function() {};
+    window.formatAreaM2 = formatAreaM2;
+    window.formatAreaHa = formatAreaHa;
+    window.roundArea2 = roundArea2;
+    window.roundAreaHa6 = roundAreaHa6;
 

@@ -378,10 +378,10 @@ async function geocodeAndFly(query, zoomLevel = 14) {
         }
       });
 
-      const luasM2 = Math.round(calculatePolygonArea(activeVertices));
+      const luasM2 = calculatePolygonArea(activeVertices);
       if (statCount) statCount.innerText = activeVertices.length;
-      if (statKeliling) statKeliling.innerText = `${totalPerimeter.toFixed(1)} m`;
-      if (statLuas) statLuas.innerText = `${luasM2.toLocaleString('id-ID')} m²`;
+      if (statKeliling) statKeliling.innerText = `${totalPerimeter.toFixed(2)} m`;
+      if (statLuas) statLuas.innerText = formatAreaM2(luasM2);
     }
 
     function copySingleVertexCoords(idx) {
@@ -425,7 +425,7 @@ async function geocodeAndFly(query, zoomLevel = 14) {
       const kec = activePinData?.kecamatan || '-';
       const kab = activePinData?.kabkot || '-';
       const prov = activePinData?.provinsi || '-';
-      const luasM2 = Math.round(calculatePolygonArea(activeVertices));
+      const luasM2 = calculatePolygonArea(activeVertices);
 
       let lines = [];
       lines.push('DAFTAR TITIK KOORDINAT PATOK BIDANG TANAH KADASTRAL');
@@ -436,7 +436,7 @@ async function geocodeAndFly(query, zoomLevel = 14) {
       lines.push(`Kabupaten / Kota         : ${kab}`);
       lines.push(`Provinsi                 : ${prov}`);
       lines.push(`Total Patok Batas        : ${activeVertices.length} Titik`);
-      lines.push(`Total Luas Ukur          : ${luasM2.toLocaleString('id-ID')} m² (${(luasM2 / 10000).toFixed(4)} Ha)`);
+      lines.push(`Total Luas Ukur          : ${formatAreaM2(luasM2)} (${formatAreaHa(luasM2)})`);
       lines.push('----------------------------------------------------');
       lines.push('Patok\tLatitude\tLongitude\tJarak Sisi\tUTM (X, Y)');
       lines.push('----------------------------------------------------');

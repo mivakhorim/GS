@@ -132,10 +132,10 @@ function togglePrintDimensions(show) {
       }
       if (size === 'a3') {
         sheet.classList.add('a3');
-        dynStyle.textContent = '@media print { @page { size: A3 landscape; margin: 0 !important; } .print-sheet-paper.a3 { width: 400mm !important; height: 277mm !important; margin: 10mm auto !important; } }';
+        dynStyle.textContent = '@media print { @page { size: A3 landscape; margin: 0 !important; } html, body { width: 420mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; } .print-sheet-paper.a3 { width: 420mm !important; height: 297mm !important; margin: 0 auto !important; padding: 10mm !important; } }';
       } else {
         sheet.classList.remove('a3');
-        dynStyle.textContent = '@media print { @page { size: A4 landscape; margin: 0 !important; } .print-sheet-paper { width: 277mm !important; height: 190mm !important; margin: 10mm auto !important; } }';
+        dynStyle.textContent = '@media print { @page { size: A4 landscape; margin: 0 !important; } html, body { width: 297mm !important; height: 210mm !important; margin: 0 !important; padding: 0 !important; } .print-sheet-paper { width: 297mm !important; height: 210mm !important; margin: 0 auto !important; padding: 8mm !important; } }';
       }
       setTimeout(() => {
         if (printMapInstance) {
@@ -194,9 +194,7 @@ function togglePrintDimensions(show) {
           }
         });
         if (totalM2 > 0) {
-          const m2 = Math.round(totalM2);
-          const ha = (totalM2 / 10000).toFixed(4);
-          elLuas.innerText = `${m2.toLocaleString('id-ID')} m² (${ha} Ha)`;
+          elLuas.innerText = `${formatAreaM2(totalM2)} (${formatAreaHa(totalM2)})`;
         } else {
           elLuas.innerText = '-';
         }
@@ -213,17 +211,20 @@ function togglePrintDimensions(show) {
       const barContainer = document.getElementById('kopScaleBar');
       if (!barContainer) return;
 
-      const targetMeters = metersPerPx * 100;
-      let totalDist = 100;
-      const distSteps = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
-      for (let s of distSteps) {
-        if (s >= targetMeters * 0.75) {
-          totalDist = s;
-          break;
-        }
-      }
+      let totalDist = 20;
+      if (stdScale <= 100) totalDist = 5;
+      else if (stdScale <= 250) totalDist = 10;
+      else if (stdScale <= 500) totalDist = 20;
+      else if (stdScale <= 1000) totalDist = 50;
+      else if (stdScale <= 1500) totalDist = 75;
+      else if (stdScale <= 2000) totalDist = 100;
+      else if (stdScale <= 2500) totalDist = 100;
+      else if (stdScale <= 5000) totalDist = 200;
+      else if (stdScale <= 10000) totalDist = 500;
+      else if (stdScale <= 25000) totalDist = 1000;
+      else totalDist = 2000;
 
-      const barWidthPx = Math.min(130, Math.max(75, Math.round(totalDist / metersPerPx)));
+      const barWidthPx = Math.round(totalDist / metersPerPx);
       const fmt = (val) => val >= 1000 ? `${(val / 1000).toLocaleString('id-ID')} km` : `${val.toLocaleString('id-ID')} m`;
 
       barContainer.innerHTML = `
@@ -560,7 +561,19 @@ function togglePrintDimensions(show) {
         });
       }
       if (bounds && bounds.isValid()) {
-        printMapInstance.fitBounds(bounds, { padding: [40, 40] });
+        printMapInstance.fitBounds(bounds, { padding: [40, 40], animate: false });
+        setTimeout(() => {
+          const centerLat = printMapInstance.getCenter().lat;
+          const curZoom = printMapInstance.getZoom();
+          const currentMetersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
+          const rawRatio = currentMetersPerPx / 0.0002645833333333333;
+          const stdScale = getStandardScale(rawRatio);
+          const exactZoom = getExactZoomForScale(stdScale, centerLat);
+          printMapInstance.setView(bounds.getCenter(), exactZoom, { animate: false });
+          const metersPerPx = stdScale * 0.0002645833333333333;
+          updatePrintScaleBar(metersPerPx, stdScale);
+          updatePrintMapGraticule();
+        }, 150);
       } else if (map) {
         printMapInstance.setView(map.getCenter(), map.getZoom());
       }
@@ -576,6 +589,8 @@ function togglePrintDimensions(show) {
           zoomControl: false,
           attributionControl: false,
           fadeAnimation: false,
+          zoomSnap: 0,
+          zoomDelta: 0.25,
           dragging: true,
           touchZoom: true,
           scrollWheelZoom: true,
@@ -588,7 +603,7 @@ function togglePrintDimensions(show) {
           const curZoom = printMapInstance.getZoom();
           const centerLat = printMapInstance.getCenter().lat;
           const metersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
-          const rawRatio = metersPerPx / 0.000264583;
+          const rawRatio = metersPerPx / 0.0002645833333333333;
           const stdScale = getStandardScale(rawRatio);
           updatePrintScaleBar(metersPerPx, stdScale);
         });
@@ -723,25 +738,27 @@ function togglePrintDimensions(show) {
       printMapInstance.invalidateSize();
 
       if (bounds && bounds.isValid()) {
-        printMapInstance.fitBounds(bounds, { padding: [40, 40] });
+        printMapInstance.fitBounds(bounds, { padding: [40, 40], animate: false });
+        setTimeout(() => {
+          const centerLat = printMapInstance.getCenter().lat;
+          const curZoom = printMapInstance.getZoom();
+          const currentMetersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
+          const rawRatio = currentMetersPerPx / 0.0002645833333333333;
+          const stdScale = getStandardScale(rawRatio);
+          const exactZoom = getExactZoomForScale(stdScale, centerLat);
+          printMapInstance.setView(bounds.getCenter(), exactZoom, { animate: false });
+          const metersPerPx = stdScale * 0.0002645833333333333;
+
+          updatePrintScaleBar(metersPerPx, stdScale);
+          updatePrintMapGraticule();
+          updatePrintLegend();
+
+          const pb = printMapInstance.getBounds();
+          initOrUpdatePrintInset(bounds || pb);
+        }, 200);
       } else {
         printMapInstance.setView(map.getCenter(), map.getZoom());
       }
-
-      setTimeout(() => {
-        const curZoom = printMapInstance.getZoom();
-        const centerLat = printMapInstance.getCenter().lat;
-        const metersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
-        const rawRatio = metersPerPx / 0.000264583;
-        const stdScale = getStandardScale(rawRatio);
-
-        updatePrintScaleBar(metersPerPx, stdScale);
-        updatePrintMapGraticule();
-        updatePrintLegend();
-
-        const pb = printMapInstance.getBounds();
-        initOrUpdatePrintInset(bounds || pb);
-      }, 300);
     }
 
     function initOrUpdatePrintInset(mainBounds) {
@@ -802,8 +819,8 @@ function togglePrintDimensions(show) {
       const wrapper = document.getElementById('printSheetScaleWrapper');
       if (!scroll || !sheet) return;
       const isA3 = sheet.classList.contains('a3');
-      const sheetW = isA3 ? 1680 : 1188;
-      const sheetH = isA3 ? 1188 : 840;
+      const sheetW = isA3 ? 1587 : 1123;
+      const sheetH = isA3 ? 1123 : 794;
       const containerW = scroll.clientWidth || window.innerWidth;
       if (containerW < sheetW + 24) {
         const scale = Math.max(0.18, Math.min((containerW - 16) / sheetW, 0.98));
@@ -884,10 +901,10 @@ function togglePrintDimensions(show) {
           useCORS: true,
           allowTaint: true,
           logging: false,
-          width: isA3 ? 1680 : 1188,
-          height: isA3 ? 1188 : 840,
-          windowWidth: isA3 ? 1680 : 1188,
-          windowHeight: isA3 ? 1188 : 840
+          width: isA3 ? 1587.4 : 1122.52,
+          height: isA3 ? 1122.52 : 793.7,
+          windowWidth: isA3 ? 1587.4 : 1122.52,
+          windowHeight: isA3 ? 1122.52 : 793.7
         },
         jsPDF: {
           unit: 'mm',

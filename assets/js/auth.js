@@ -500,6 +500,32 @@ function closeServerModal() {
       } catch (e) {}
     }
 
+    var _qrisPollTimer = null;
+
+    async function pollPaymentStatusSilently() {
+      const email = currentMemberSession?.user?.email;
+      if (!email || !supabaseClient) return;
+      try {
+        const { data } = await supabaseClient
+          .from('members')
+          .select('role, status')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (data && data.role === 'pro' && data.status === 'active') {
+          if (_qrisPollTimer) {
+            clearInterval(_qrisPollTimer);
+            _qrisPollTimer = null;
+          }
+          setMemberSecureData({ role: 'pro', status: 'active' });
+          updateMemberUI();
+          showToast('Selamat! Pembayaran terverifikasi otomatis, Akun Anda telah menjadi PRO MEMBER!', 'success');
+          closeQrisPaymentModal();
+          closeMemberModal();
+        }
+      } catch (e) {}
+    }
+
     function openQrisPaymentModal() {
       if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) {
         showToast('Wajib login dengan Akun Google terlebih dahulu sebelum aktivasi status PRO.', 'warn');
@@ -510,9 +536,18 @@ function closeServerModal() {
       generateQrisPayment(userEmail);
       const modal = document.getElementById('qrisPaymentModal');
       if (modal) modal.style.display = 'flex';
+      if (_qrisPollTimer) {
+        clearInterval(_qrisPollTimer);
+        _qrisPollTimer = null;
+      }
+      _qrisPollTimer = setInterval(pollPaymentStatusSilently, 5000);
     }
 
     function closeQrisPaymentModal() {
+      if (_qrisPollTimer) {
+        clearInterval(_qrisPollTimer);
+        _qrisPollTimer = null;
+      }
       const modal = document.getElementById('qrisPaymentModal');
       if (modal) modal.style.display = 'none';
     }

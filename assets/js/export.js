@@ -1,3 +1,28 @@
+function getExportVerticesWithOssAdjustment(parts) {
+      const chk = document.getElementById('chkExportOssAdjust');
+      if (!chk || !chk.checked || !parts || parts.length === 0) {
+        return parts;
+      }
+      return parts.map(pts => {
+        if (!pts || pts.length < 3) return pts;
+        const a0 = calculatePolygonArea(pts);
+        if (a0 <= 0.05) return pts;
+        const aTarget = Math.max(0.01, a0 - 0.01);
+        const scale = Math.sqrt(aTarget / a0);
+        let sumLat = 0, sumLng = 0;
+        pts.forEach(p => {
+          sumLat += p.lat;
+          sumLng += p.lng;
+        });
+        const cLat = sumLat / pts.length;
+        const cLng = sumLng / pts.length;
+        return pts.map(p => ({
+          lat: cLat + scale * (p.lat - cLat),
+          lng: cLng + scale * (p.lng - cLng)
+        }));
+      });
+    }
+
 function exportCoordinatesXls() {
       if (!isMemberProActive()) {
         showToast('Fitur Ekspor Koordinat Excel khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
@@ -5,11 +30,12 @@ function exportCoordinatesXls() {
         return;
       }
       ensureActiveVerticesFromDraw();
-      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      if (!parts[0] || parts[0].length < 3) {
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      if (!rawParts[0] || rawParts[0].length < 3) {
         showToast('Pilih atau gambar bidang tanah pada peta terlebih dahulu.', 'warn');
         return;
       }
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
 
       const pemrakarsa = (document.getElementById('shpPemrakarsa')?.value.trim() || 'PEMOHON OSS RBA').toUpperCase();
       const kegiatan = (document.getElementById('shpKegiatan')?.value.trim() || 'KKPR / PERIZINAN BERUSAHA').toUpperCase();
@@ -21,8 +47,8 @@ function exportCoordinatesXls() {
 
       let totalM2 = 0;
       parts.forEach(p => { totalM2 += calculatePolygonArea(p); });
-      const luasM2 = Math.round(totalM2);
-      const luasHa = (totalM2 / 10000).toFixed(4);
+      const luasM2 = totalM2.toFixed(2);
+      const luasHa = (totalM2 / 10000).toFixed(6);
 
       const rowsData = [];
       parts.forEach((pList, pIdx) => {
@@ -53,7 +79,7 @@ function exportCoordinatesXls() {
           [],
           ['Pemrakarsa', pemrakarsa, '', 'Kabupaten / Kota', kab],
           ['Kegiatan', kegiatan, '', 'Provinsi', prov],
-          ['Tahun', tahun, '', 'Luas Terhitung', `${luasM2.toLocaleString('id-ID')} m² (${luasHa} Ha)`],
+          ['Tahun', tahun, '', 'Luas Terhitung', `${formatAreaM2(totalM2)} (${formatAreaHa(totalM2 / 10000)})`],
           [],
           ['PATOK', 'LATITUDE (DD)', 'LONGITUDE (DD)', 'UTM X (TIMUR)', 'UTM Y (UTARA)', 'ZONA UTM', 'JARAK BATAS (M)'],
           ...rowsData,
@@ -80,7 +106,7 @@ function exportCoordinatesXls() {
       csvContent += `Pengembang: Duta Digital Agensi (dutamik.id) | Tagline: Duta Media Informasi berKarya | Sukoharjo, Jawa Tengah\r\n\r\n`;
       csvContent += `Pemrakarsa,${pemrakarsa},,Kabupaten / Kota,${kab}\r\n`;
       csvContent += `Kegiatan,${kegiatan},,Provinsi,${prov}\r\n`;
-      csvContent += `Tahun,${tahun},,Luas Terhitung,"${luasM2.toLocaleString('id-ID')} m² (${luasHa} Ha)"\r\n\r\n`;
+      csvContent += `Tahun,${tahun},,Luas Terhitung,"${formatAreaM2(totalM2)} (${formatAreaHa(totalM2 / 10000)})"\r\n\r\n`;
       csvContent += `PATOK,LATITUDE (DD),LONGITUDE (DD),UTM X (TIMUR),UTM Y (UTARA),ZONA UTM,JARAK BATAS (M)\r\n`;
       rowsData.forEach(r => {
         csvContent += `${r[0]},${r[1]},${r[2]},${r[3]},${r[4]},${r[5]},${r[6]}\r\n`;
@@ -120,15 +146,16 @@ function exportCoordinatesXls() {
         return;
       }
       ensureActiveVerticesFromDraw();
-      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      if (!parts[0] || parts[0].length < 3) return;
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      if (!rawParts[0] || rawParts[0].length < 3) return;
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
 
       const kab = activePinData?.kabkot || '-';
       const prov = activePinData?.provinsi || '-';
       let totalM2 = 0;
       parts.forEach(p => { totalM2 += calculatePolygonArea(p); });
-      const luasM2 = Math.round(totalM2);
-      const luasHa = (totalM2 / 10000).toFixed(4);
+      const luasM2 = totalM2.toFixed(2);
+      const luasHa = (totalM2 / 10000).toFixed(6);
 
       if (fmt === 'csv') {
         let csv = 'Patok,Latitude,Longitude,UTM_X,UTM_Y,Zona_UTM,Jarak_Meter,Kabupaten,Provinsi\n';
@@ -149,7 +176,7 @@ function exportCoordinatesXls() {
         txt += '# Domain     : https://geospasi.dutamik.id/SHP-Builder\n';
         txt += '# Pengembang : Duta Digital Agensi (dutamik.id)\n';
         txt += `# Lokasi     : Kabupaten ${kab}, Provinsi ${prov}\n`;
-        txt += `# Luas Ukur  : ${luasM2.toLocaleString('id-ID')} m² (${luasHa} Ha)\n`;
+        txt += `# Luas Ukur  : ${formatAreaM2(totalM2)} (${formatAreaHa(totalM2 / 10000)})\n`;
         txt += '# ====================================================\n\n';
         txt += 'PATOK\tLATITUDE\tLONGITUDE\tUTM_X\tUTM_Y\tZONA\tJARAK(M)\n';
         parts.forEach((pList, pIdx) => {
@@ -168,8 +195,9 @@ function exportCoordinatesXls() {
 
     function copyCoordsMapClipboard() {
       ensureActiveVerticesFromDraw();
-      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      if (!parts[0] || parts[0].length < 3) return;
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      if (!rawParts[0] || rawParts[0].length < 3) return;
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
       let txt = 'PATOK\tLATITUDE\tLONGITUDE\tUTM_X\tUTM_Y\tJARAK(M)\n';
       parts.forEach((pList, pIdx) => {
         const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
@@ -191,8 +219,9 @@ function exportCoordinatesXls() {
         return;
       }
       ensureActiveVerticesFromDraw();
-      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      if (!parts[0] || parts[0].length < 3) return;
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      if (!rawParts[0] || rawParts[0].length < 3) return;
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
 
       if (mode === 'scr') {
         let scr = '; AutoCAD Script File generated by DutaGeoSpasi (dutamik.id)\n';
@@ -253,16 +282,19 @@ function exportCoordinatesXls() {
       const provinsi = (document.getElementById('shpProvinsi')?.value.trim() || activePinData?.provinsi || '-').toUpperCase();
       const keterangan = (document.getElementById('shpKeterangan')?.value.trim() || activePinData?.alamat_lengkap || activePinData?.alamat || '-').toUpperCase();
 
-      if (activeMultiParts && activeMultiParts.length > 1) {
-        const coords = activeMultiParts.map(part => {
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : (activeVertices && activeVertices.length >= 3 ? [activeVertices] : []);
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
+
+      if (parts.length > 1) {
+        const coords = parts.map(part => {
           const closed = [...part];
           if (closed.length > 0 && (closed[0].lat !== closed[closed.length-1].lat || closed[0].lng !== closed[closed.length-1].lng)) {
             closed.push(closed[0]);
           }
           return [closed.map(p => [p.lng, p.lat])];
         });
-        const areaM2 = activeMultiParts.reduce((sum, p) => sum + calculatePolygonArea(p), 0);
-        const luasHa = Number((areaM2 / 10000.0).toFixed(4));
+        const areaM2 = parts.reduce((sum, p) => sum + calculatePolygonArea(p), 0);
+        const luasHa = Number((areaM2 / 10000.0).toFixed(6));
         geojsonObj = {
           type: "FeatureCollection",
           properties: {
@@ -289,13 +321,13 @@ function exportCoordinatesXls() {
             }
           }]
         };
-      } else if (activeVertices && activeVertices.length >= 3) {
-        const closed = [...activeVertices];
+      } else if (parts.length === 1 && parts[0].length >= 3) {
+        const closed = [...parts[0]];
         if (closed.length > 0 && (closed[0].lat !== closed[closed.length-1].lat || closed[0].lng !== closed[closed.length-1].lng)) {
           closed.push(closed[0]);
         }
-        const areaM2 = calculatePolygonArea(activeVertices);
-        const luasHa = Number((areaM2 / 10000.0).toFixed(4));
+        const areaM2 = calculatePolygonArea(parts[0]);
+        const luasHa = Number((areaM2 / 10000.0).toFixed(6));
         geojsonObj = {
           type: "FeatureCollection",
           properties: {
@@ -434,7 +466,7 @@ function exportCoordinatesXls() {
       addCustomAttrRow('PEMILIK', 'C', pemilik);
       addCustomAttrRow('HAK_TANAH', 'C', hak);
       addCustomAttrRow('DESA', 'C', desa);
-      addCustomAttrRow('LUAS_M2', 'N', Math.round(areaM2));
+      addCustomAttrRow('LUAS_M2', 'N', Number(areaM2.toFixed(2)));
     }
 
     function getCustomFieldsFromTable() {
@@ -471,19 +503,15 @@ function exportCoordinatesXls() {
 
       const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
 
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
       let areaM2 = 0;
-      let partsCoords = [];
-      if (activeMultiParts && activeMultiParts.length > 1) {
-        partsCoords = activeMultiParts.map(part => part.map(v => [v.lng, v.lat]));
-        areaM2 = activeMultiParts.reduce((sum, p) => sum + calculatePolygonArea(p), 0);
-      } else {
-        partsCoords = [activeVertices.map(v => [v.lng, v.lat])];
-        areaM2 = calculatePolygonArea(activeVertices);
-      }
-      const luasHa = Number((areaM2 / 10000.0).toFixed(4));
+      parts.forEach(p => { areaM2 += calculatePolygonArea(p); });
+      const partsCoords = parts.map(part => part.map(v => [v.lng, v.lat]));
+      const luasHa = Number((areaM2 / 10000.0).toFixed(6));
 
       if (!isPro && areaM2 > 150) {
-        showToast(`Ekspor Shapefile akun Gratis dibatasi maksimal luas 150 m². Luas bidang saat ini: ${Math.round(areaM2).toLocaleString('id-ID')} m². Silakan upgrade ke Member PRO untuk luas tanpa batas.`, 'warn');
+        showToast(`Ekspor Shapefile akun Gratis dibatasi maksimal luas 150 m². Luas bidang saat ini: ${formatAreaM2(areaM2)}. Silakan upgrade ke Member PRO untuk luas tanpa batas.`, 'warn');
         openMemberModal();
         return;
       }
@@ -642,7 +670,7 @@ function exportCoordinatesXls() {
               { name: "PROVINSI", type: "C", len: 100, dec: 0, val: attrs.PROVINSI || '-' },
               { name: "KETERANGAN", type: "C", len: 254, dec: 0, val: attrs.KETERANGAN || '-' },
               { name: "LAYER", type: "C", len: 100, dec: 0, val: attrs.LAYER || 'TAPAK PROYEK' },
-              { name: "LUAS", type: "N", len: 16, dec: 4, val: attrs.LUAS }
+              { name: "LUAS", type: "N", len: 16, dec: 6, val: attrs.LUAS }
             ];
           }
 
@@ -731,8 +759,11 @@ function exportCoordinatesXls() {
         return;
       }
       let features = [];
-      if (activeMultiParts && activeMultiParts.length > 1) {
-        features = activeMultiParts.map((part, pIdx) => {
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : (activeVertices && activeVertices.length >= 3 ? [activeVertices] : []);
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
+
+      if (parts.length > 1) {
+        features = parts.map((part, pIdx) => {
           const closed = [...part];
           if (closed.length > 0 && (closed[0].lat !== closed[closed.length-1].lat || closed[0].lng !== closed[closed.length-1].lng)) {
             closed.push(closed[0]);
@@ -742,8 +773,8 @@ function exportCoordinatesXls() {
             coords: closed.map(c => `${c.lng},${c.lat},0`).join(' ')
           };
         });
-      } else if (activeVertices && activeVertices.length >= 3) {
-        const closed = [...activeVertices];
+      } else if (parts.length === 1 && parts[0].length >= 3) {
+        const closed = [...parts[0]];
         if (closed[0].lat !== closed[closed.length-1].lat || closed[0].lng !== closed[closed.length-1].lng) {
           closed.push(closed[0]);
         }
@@ -863,3 +894,25 @@ function exportCoordinatesXls() {
       };
       reader.readAsText(file);
     }
+
+    window.getExportVerticesWithOssAdjustment = getExportVerticesWithOssAdjustment;
+    window.exportCoordinatesXls = exportCoordinatesXls;
+    window.exportCoordinatesOnly = exportCoordinatesOnly;
+    window.openExportCoordsModal = openExportCoordsModal;
+    window.closeExportCoordsModal = closeExportCoordsModal;
+    window.downloadCoordsMap = downloadCoordsMap;
+    window.copyCoordsMapClipboard = copyCoordsMapClipboard;
+    window.downloadCoordsCad = downloadCoordsCad;
+    window.exportGeoJSON = exportGeoJSON;
+    window.switchAttrTab = switchAttrTab;
+    window.addCustomAttrRow = addCustomAttrRow;
+    window.removeCustomAttrRow = removeCustomAttrRow;
+    window.initDefaultCustomAttrs = initDefaultCustomAttrs;
+    window.getCustomFieldsFromTable = getCustomFieldsFromTable;
+    window.openLegalModal = openLegalModal;
+    window.closeLegalModal = closeLegalModal;
+    window.triggerShpDownloadFromActive = triggerShpDownloadFromActive;
+    window.generateShapefileZipClient = generateShapefileZipClient;
+    window.exportKML = exportKML;
+    window.importSpatialFile = importSpatialFile;
+
