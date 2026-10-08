@@ -54,13 +54,14 @@ function createPolygonFromBatchCoords() {
       if (activePolygonLayer) {
         map.fitBounds(activePolygonLayer.getBounds(), { padding: [40, 40] });
       }
-      const areaM2 = calculatePolygonArea(pts);
+      const areaM2 = Math.round(calculatePolygonArea(pts));
+      const areaHa = (areaM2 / 10000).toFixed(4);
       const shpLuas = document.getElementById('shpLuas');
-      if (shpLuas) shpLuas.value = (areaM2 / 10000.0).toFixed(6);
+      if (shpLuas) shpLuas.value = areaHa;
       const valLuasM2 = document.getElementById('valLuasM2');
-      if (valLuasM2) valLuasM2.innerText = formatAreaM2(areaM2);
+      if (valLuasM2) valLuasM2.innerText = `${areaM2.toLocaleString('id-ID')} m²`;
       const valLuasHa = document.getElementById('valLuasHa');
-      if (valLuasHa) valLuasHa.innerText = formatAreaHa(areaM2);
+      if (valLuasHa) valLuasHa.innerText = `${areaHa} Ha`;
       showToast(`Poligon berhasil dibentuk dari ${pts.length} titik patok dan siap diekspor!`, 'success');
       syncActivePolygonPanel();
       updateCoordsTable();
@@ -379,28 +380,28 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
       const liveM2El = document.getElementById('canvasLiveAreaM2');
       const liveHaEl = document.getElementById('canvasLiveAreaHa');
-      if (liveM2El) liveM2El.innerText = formatAreaM2(liveAreaM2);
+      if (liveM2El) liveM2El.innerText = `${Math.round(liveAreaM2).toLocaleString('id-ID')} m²`;
       const shpLuasEl = document.getElementById('shpLuasHa') || document.getElementById('shpLuas');
-      if (shpLuasEl) shpLuasEl.value = `${(liveAreaM2 / 10000.0).toFixed(6)} Ha`;
+      if (shpLuasEl) shpLuasEl.value = `${liveAreaHa.toFixed(4)} Ha`;
 
-      const elValM2 = document.getElementById('valLuasM2'); if (elValM2) elValM2.innerText = formatAreaM2(liveAreaM2);
-      const elValHa = document.getElementById('valLuasHa'); if (elValHa) elValHa.innerText = formatAreaHa(liveAreaM2);
+      const elValM2 = document.getElementById('valLuasM2'); if (elValM2) elValM2.innerText = `${Math.round(liveAreaM2).toLocaleString('id-ID')} m²`;
+      const elValHa = document.getElementById('valLuasHa'); if (elValHa) elValHa.innerText = `${liveAreaHa.toFixed(4)} Ha`;
       const peri = calculatePolygonPerimeter(activeVertices.map(v => L.latLng(v.lat, v.lng)));
-      const elValKel = document.getElementById('valKeliling'); if (elValKel) elValKel.innerText = `${peri.toFixed(2)} m`;
+      const elValKel = document.getElementById('valKeliling'); if (elValKel) elValKel.innerText = `${Math.round(peri).toLocaleString('id-ID')} m`;
       const elValTitik = document.getElementById('valTitik'); if (elValTitik) elValTitik.innerText = activeVertices.length;
 
       const hudLive = document.getElementById('hudLiveArea');
-      if (hudLive) hudLive.innerText = formatAreaM2(liveAreaM2);
+      if (hudLive) hudLive.innerText = `${Math.round(liveAreaM2).toLocaleString('id-ID')} m²`;
 
       const targetBpnArea = activePinData?.luas_m2 || 0;
       if (targetBpnArea > 0) {
         const diff = liveAreaM2 - targetBpnArea;
         const pct = Math.max(0, 100 - (Math.abs(diff) / targetBpnArea * 100));
-        const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
+        const diffText = diff >= 0 ? `+${diff.toFixed(1)} m²` : `${diff.toFixed(1)} m²`;
         const diffPctEl = document.getElementById('diffPercentText');
         const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
-        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(targetBpnArea);
+        if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(1)}%)`;
+        if (diffBpnEl) diffBpnEl.innerText = `${Math.round(targetBpnArea)} m²`;
       }
 
       if (updateHandles) {
@@ -1256,7 +1257,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         const _elLok = document.getElementById('pinLokasiUtamaText');
         if (_elLok) _elLok.innerText = (activePinData.desa !== '-' && activePinData.kecamatan !== '-') ? `${activePinData.desa}, ${activePinData.kecamatan}` : (activePinData.desa !== '-' ? activePinData.desa : 'Bidang Tanah');
         const _elLuas = document.getElementById('pinLuasBpnText');
-        if (_elLuas) _elLuas.innerText = formatAreaM2(activePinData.luas_m2);
+        if (_elLuas) _elLuas.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
       }
 
       const hud = document.getElementById('canvasHud');
@@ -1265,19 +1266,19 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         const elHudNib = document.getElementById('hudNib');
         if (elHudNib) elHudNib.innerText = activePinData?.fid || 'Gabungan Bidang';
         const elHudArea = document.getElementById('hudBpnArea');
-        if (elHudArea) elHudArea.innerText = formatAreaM2(result.area_m2);
+        if (elHudArea) elHudArea.innerText = `${Math.round(result.area_m2).toLocaleString('id-ID')} m²`;
       }
 
       const elShpLuas = document.getElementById('shpLuasHa');
       if (elShpLuas) {
-        elShpLuas.value = `${(result.area_m2 / 10000.0).toFixed(6)} Ha`;
+        elShpLuas.value = `${(result.area_m2 / 10000).toFixed(4)} Ha`;
       }
 
       isParcelLocked = true;
       renderCanvasPolygon(true);
       cancelMergeMode();
       switchTab('tab-bidang');
-      showToast(`Penggabungan berhasil: ${result.total_parcels_merged} bidang digabung menjadi 1 poligon utuh (Luas: ${formatAreaM2(result.area_m2)}, ${result.total_vertices} patok batas).`, 'success');
+      showToast(`Penggabungan berhasil: ${result.total_parcels_merged} bidang digabung menjadi 1 poligon utuh (Luas: ${Math.round(result.area_m2).toLocaleString('id-ID')} m², ${result.total_vertices} patok batas).`, 'success');
     }
 
     function setupDrawing() {
@@ -1442,12 +1443,11 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       activeVertices = finalPts.map(p => ({ lat: p.lat, lng: p.lng }));
       activeMultiParts = null;
       if (!activePinData) {
-        const areaM2 = roundArea2(calculatePolygonArea(activeVertices));
+        const areaM2 = Math.round(calculatePolygonArea(activeVertices));
         activePinData = {
           fid: 'Digitasi Mandiri',
           tipe_hak: 'Hasil Pengukuran',
           luas_m2: areaM2,
-          luas_ha: roundAreaHa6(areaM2),
           desa: '-',
           kecamatan: '-',
           kabkot: '-',
@@ -1536,9 +1536,9 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
     }
 
     function resetMeasurementLabels() {
-      const elM2 = document.getElementById('valLuasM2'); if (elM2) elM2.innerText = '0,00 m²';
-      const elHa = document.getElementById('valLuasHa'); if (elHa) elHa.innerText = '0,000000 ha';
-      const elKel = document.getElementById('valKeliling'); if (elKel) elKel.innerText = '0,00 m';
+      const elM2 = document.getElementById('valLuasM2'); if (elM2) elM2.innerText = '0 m²';
+      const elHa = document.getElementById('valLuasHa'); if (elHa) elHa.innerText = '0 Ha';
+      const elKel = document.getElementById('valKeliling'); if (elKel) elKel.innerText = '0 m';
       const elTitik = document.getElementById('valTitik'); if (elTitik) elTitik.innerText = '0';
     }
 
@@ -1547,22 +1547,23 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         const latlngs = layer.getLatLngs()[0];
         const areaM2 = calculatePolygonArea(latlngs);
         const perimeterM = calculatePolygonPerimeter(latlngs);
+        const areaHa = areaM2 / 10000;
 
-        const elValM2 = document.getElementById('valLuasM2'); if (elValM2) elValM2.innerText = formatAreaM2(areaM2);
-        const elValHa = document.getElementById('valLuasHa'); if (elValHa) elValHa.innerText = formatAreaHa(areaM2);
-        const elValKel = document.getElementById('valKeliling'); if (elValKel) elValKel.innerText = `${perimeterM.toFixed(2)} m`;
+        const elValM2 = document.getElementById('valLuasM2'); if (elValM2) elValM2.innerText = `${Math.round(areaM2).toLocaleString('id-ID')} m²`;
+        const elValHa = document.getElementById('valLuasHa'); if (elValHa) elValHa.innerText = `${areaHa.toFixed(4)} Ha`;
+        const elValKel = document.getElementById('valKeliling'); if (elValKel) elValKel.innerText = `${Math.round(perimeterM).toLocaleString('id-ID')} m`;
         const elValTitik = document.getElementById('valTitik'); if (elValTitik) elValTitik.innerText = latlngs.length;
 
         const elLiveM2 = document.getElementById('canvasLiveAreaM2');
-        if (elLiveM2) elLiveM2.innerText = formatAreaM2(areaM2);
+        if (elLiveM2) elLiveM2.innerText = `${Math.round(areaM2).toLocaleString('id-ID')} m²`;
         const elLiveHa = document.getElementById('canvasLiveAreaHa');
-        if (elLiveHa) elLiveHa.innerText = formatAreaHa(areaM2);
+        if (elLiveHa) elLiveHa.innerText = `${areaHa.toFixed(4)} Ha`;
 
         layer.bindPopup(`
           <div style="font-size:0.8rem; font-family:'Plus Jakarta Sans',sans-serif;">
             <strong style="color:#0a2e5c;">Hasil Pengukuran Bidang:</strong><br>
-            <strong>Luas:</strong> ${formatAreaM2(areaM2)} (${formatAreaHa(areaM2)})<br>
-            <strong>Keliling:</strong> ${perimeterM.toFixed(2)} m<br>
+            <strong>Luas:</strong> ${Math.round(areaM2).toLocaleString('id-ID')} m² (${areaHa.toFixed(4)} Ha)<br>
+            <strong>Keliling:</strong> ${Math.round(perimeterM).toLocaleString('id-ID')} m<br>
             <strong>Titik Batas:</strong> ${latlngs.length} koordinat
           </div>
         `).openPopup();
@@ -1677,7 +1678,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       renderEdgeDistanceLabels();
       const area = calculatePolygonArea(activeVertices);
       const hudBpn = document.getElementById('hudBpnArea');
-      if (hudBpn) hudBpn.innerText = formatAreaM2(area);
+      if (hudBpn) hudBpn.innerText = `${Math.round(area).toLocaleString('id-ID')} m²`;
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
       switchTab('tab-bidang');
     }
@@ -1685,7 +1686,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
     function clearTestParcel() {
       clearCanvasRebuilderLayers();
       const hudBpn = document.getElementById('hudBpnArea');
-      if (hudBpn) hudBpn.innerText = '0,00 m²';
+      if (hudBpn) hudBpn.innerText = '0 m²';
       showToast('Data pengujian telah dibersihkan.', 'info');
     }
 

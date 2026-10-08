@@ -237,22 +237,22 @@
     .print-sheet-paper {
       background-color: #ffffff;
       color: #000000;
-      width: 297mm;
-      height: 210mm;
+      width: 1188px;
+      height: 840px;
       box-sizing: border-box;
       box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
       display: flex;
       flex-direction: column;
-      padding: 8mm;
+      padding: 10px;
       position: relative;
       font-family: 'Inter', sans-serif;
       margin: auto;
       flex-shrink: 0;
     }
     .print-sheet-paper.a3 {
-      width: 420mm;
-      height: 297mm;
-      padding: 10mm;
+      width: 1680px;
+      height: 1188px;
+      padding: 12px;
     }
     #kopInsetBox {
       height: 155px;
@@ -734,13 +734,13 @@
         position: relative !important;
         display: flex !important;
         flex-direction: column !important;
-        width: 297mm !important;
-        height: 210mm !important;
-        max-width: 297mm !important;
-        max-height: 210mm !important;
+        width: 277mm !important;
+        height: 190mm !important;
+        max-width: 277mm !important;
+        max-height: 190mm !important;
         box-shadow: none !important;
-        padding: 8mm !important;
-        margin: 0 auto !important;
+        padding: 0 !important;
+        margin: 10mm auto !important;
         box-sizing: border-box !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
@@ -751,12 +751,12 @@
         transform-origin: unset !important;
       }
       .print-sheet-paper.a3 {
-        width: 420mm !important;
-        height: 297mm !important;
-        max-width: 420mm !important;
-        max-height: 297mm !important;
-        padding: 10mm !important;
-        margin: 0 auto !important;
+        width: 400mm !important;
+        height: 277mm !important;
+        max-width: 400mm !important;
+        max-height: 277mm !important;
+        padding: 0 !important;
+        margin: 10mm auto !important;
       }
       .print-sheet-frame {
         width: 100% !important;
