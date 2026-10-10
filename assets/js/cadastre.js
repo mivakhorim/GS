@@ -419,7 +419,8 @@ function getBpnGatewayBase() {
         lsd: 'Non-LSD (Bebas Alih Fungsi)',
         lbs: 'Bukan Lahan Baku Sawah',
         hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
-        znt: 'Zona Nilai Pasar Wajar'
+        znt: 'Zona Nilai Pasar Wajar',
+        znt_range: 'Belum Dipetakan ZNT Nasional'
       };
 
       try {
@@ -428,11 +429,13 @@ function getBpnGatewayBase() {
         const minLng = (lng - delta).toFixed(6);
         const maxLat = (lat + delta).toFixed(6);
         const maxLng = (lng + delta).toFixed(6);
-        const bbox = `${minLat},${minLng},${maxLat},${maxLng}`;
+        const bboxLatLng = `${minLat},${minLng},${maxLat},${maxLng}`;
+        const bboxLngLat = `${minLng},${minLat},${maxLng},${maxLat}`;
         const wmsBase = 'https://atlas.atrbpn.go.id/geoserver/wms';
 
-        const queryWms = async (layerName) => {
-          const directUrl = `${wmsBase}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=${encodeURIComponent(layerName)}&QUERY_LAYERS=${encodeURIComponent(layerName)}&SRS=EPSG:4326&BBOX=${bbox}&WIDTH=101&HEIGHT=101&X=50&Y=50&INFO_FORMAT=application/json&FEATURE_COUNT=5`;
+        const queryWms = async (layerName, useLngLatBbox = false) => {
+          const curBbox = useLngLatBbox ? bboxLngLat : bboxLatLng;
+          const directUrl = `${wmsBase}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=${encodeURIComponent(layerName)}&QUERY_LAYERS=${encodeURIComponent(layerName)}&SRS=EPSG:4326&BBOX=${curBbox}&WIDTH=101&HEIGHT=101&X=50&Y=50&INFO_FORMAT=application/json&FEATURE_COUNT=5`;
           const ctrl = new AbortController();
           const tid = setTimeout(() => ctrl.abort(), 2000);
           try {
@@ -473,11 +476,11 @@ function getBpnGatewayBase() {
         };
 
         const [resRtrw, resRdtr, resLsd, resLbs, resZnt, resHutan] = await Promise.allSettled([
-          queryWms('rtr-online:rtrw_kabkot'),
-          queryWms('rtr-online:rdtr_kabkot'),
-          queryWms('umum:lsd_merge'),
-          queryWms('geonode:lbs_parsial'),
-          queryWms('petabpn:ZNT_Nasional'),
+          queryWms('rtr-online:rtrw_kabkot', false),
+          queryWms('rtr-online:rdtr_kabkot', false),
+          queryWms('umum:lsd_merge', false),
+          queryWms('geonode:lbs_parsial', false),
+          queryWms('umum:ZNT', true),
           queryKlhk()
         ]);
 
@@ -501,8 +504,29 @@ function getBpnGatewayBase() {
         }
         if (resZnt.status === 'fulfilled' && resZnt.value && resZnt.value.features && resZnt.value.features.length > 0) {
           const props = resZnt.value.features[0].properties || {};
-          const val = props.nir || props.nilairp;
-          statusRes.znt = val ? `Zona ${props.zonanilai || 'A'} (Rp ${Number(val).toLocaleString('id-ID')} / m²)` : (props.zonanilai ? `Zona ${props.zonanilai}` : 'Zona Nilai Pasar Wajar');
+          const nirVal = props.NILAI || props.MEAN || props.nir || props.nilairp;
+          const zoneNum = props.NOMORZONE || props.zonanilai || 'Resmi';
+          const rangeText = props.RANGENILAI || props.rentang || '';
+          const kelasNum = props.KELASNILAI || props.kelas || '';
+
+          statusRes.znt = nirVal
+            ? `Zona ${zoneNum} (NIR: Rp ${Number(nirVal).toLocaleString('id-ID')} / m²)`
+            : `Zona ${zoneNum}`;
+
+          if (rangeText) {
+            const cleanRange = rangeText.includes('>') ? rangeText.replace('>', '> Rp ') : (rangeText.includes('Rp') ? rangeText : `Rp ${rangeText}`);
+            statusRes.znt_range = `${cleanRange} / m²${kelasNum ? ` (Kelas ${kelasNum})` : ''}`;
+          } else if (nirVal) {
+            const num = Number(nirVal);
+            const minR = Math.round(num * 0.85 / 10000) * 10000;
+            const maxR = Math.round(num * 1.20 / 10000) * 10000;
+            statusRes.znt_range = `Rp ${minR.toLocaleString('id-ID')} - Rp ${maxR.toLocaleString('id-ID')} / m²${kelasNum ? ` (Kelas ${kelasNum})` : ''}`;
+          } else {
+            statusRes.znt_range = 'Nilai Pasar Sesuai Zona Terdaftar';
+          }
+        } else {
+          statusRes.znt = 'Zona Nilai Pasar Wajar';
+          statusRes.znt_range = 'Belum Dipetakan ZNT Nasional';
         }
         if (resHutan.status === 'fulfilled' && resHutan.value && resHutan.value.results && resHutan.value.results.length > 0) {
           statusRes.hutan = resHutan.value.results[0].attributes?.FUNGSIKWS || resHutan.value.results[0].value || 'Kawasan Hutan Negara';
@@ -527,17 +551,8 @@ function getBpnGatewayBase() {
           const elNib = document.getElementById('pinNibText');
           if (elNib) elNib.innerText = activePinData.nib_lengkap || activePinData.nib || '-';
 
-          const elNosu = document.getElementById('pinNosuText');
-          if (elNosu) elNosu.innerText = activePinData.nosu || '-';
-
           const elNomorHak = document.getElementById('pinNomorHakText');
           if (elNomorHak) elNomorHak.innerText = activePinData.nomor_hak || '-';
-
-          const elDesa = document.getElementById('pinDesaText');
-          if (elDesa) elDesa.innerText = activePinData.desa || '-';
-
-          const elKec = document.getElementById('pinKecamatanText');
-          if (elKec) elKec.innerText = activePinData.kecamatan || '-';
 
           const elKantah = document.getElementById('pinKantahText');
           if (elKantah) elKantah.innerText = activePinData.kantah || '-';
@@ -565,6 +580,9 @@ function getBpnGatewayBase() {
 
           const elZnt = document.getElementById('pinZntText');
           if (elZnt) elZnt.innerText = activePinData.znt || 'Zona Nilai Pasar Wajar';
+
+          const elZntRange = document.getElementById('pinZntRangeText');
+          if (elZntRange) elZntRange.innerText = activePinData.znt_range || 'Belum Dipetakan ZNT Nasional';
         }
       } else {
         proRows.forEach(row => { row.style.display = 'none'; });
@@ -688,7 +706,8 @@ function getBpnGatewayBase() {
             lbs: 'Bukan Lahan Baku Sawah',
             hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
             znt: 'Zona Nilai Pasar Wajar',
-            alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : `${decoded ? decoded.desa : 'Desa'}, ${decoded ? decoded.kecamatan : 'Kecamatan'}, ${decoded ? decoded.kabkot : 'Kabupaten'}`
+            znt_range: 'Belum Dipetakan ZNT Nasional',
+            alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : [decoded?.desa, decoded?.kecamatan, decoded?.kabkot].filter(v => v && v !== '-').join(', ') || 'Lokasi Titik Bidang'
           };
 
           const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
@@ -737,7 +756,7 @@ function getBpnGatewayBase() {
 
           const elAlamatGmaps = document.getElementById('pinAlamatGmapsText');
           if (elAlamatGmaps) {
-            elAlamatGmaps.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.desa}, ${activePinData.kecamatan}, ${activePinData.kabkot}, ${activePinData.provinsi}`;
+            elAlamatGmaps.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.kabkot}, ${activePinData.provinsi}`;
           }
 
           const elShpProv = document.getElementById('shpProvinsi');
@@ -745,13 +764,11 @@ function getBpnGatewayBase() {
 
           const elShpKeterangan = document.getElementById('shpKeterangan');
           if (elShpKeterangan) {
-            const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Desa ${activePinData.desa}, Kec. ${activePinData.kecamatan}, ${activePinData.kabkot}`;
+            const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Bidang ${activePinData.kabkot}`;
             elShpKeterangan.value = rawKet.toUpperCase();
           }
           updateShpLuasDisplay();
 
-          const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = activePinData.desa;
-          const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
           const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
           const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
           const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
@@ -827,6 +844,7 @@ function getBpnGatewayBase() {
             lbs: 'Bukan Lahan Baku Sawah',
             hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
             znt: 'Zona Nilai Pasar Wajar',
+            znt_range: '-',
             alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
           };
 
@@ -964,11 +982,12 @@ function getBpnGatewayBase() {
       if (typeof normalizeIndonesianProvince === 'function') {
         prov = normalizeIndonesianProvince(prov) || prov;
       }
-      if (kabkot !== '-' && !/^Kabupaten|^Kota/i.test(kabkot)) {
-        kabkot = `Kabupaten ${kabkot}`;
-      }
-      if (kec === '-' && desa === 'Gatak' && kabkot.includes('Klaten')) {
-        kec = 'Klaten Utara';
+      if (kabkot !== '-') {
+        if (kabkot.toLowerCase().includes('jakarta')) {
+          kabkot = `Kota ${kabkot.replace(/^(Kabupaten|Kota|Kota Administrasi)\s*/i, '').trim()}`;
+        } else if (!/^Kabupaten|^Kota/i.test(kabkot)) {
+          kabkot = `Kabupaten ${kabkot}`;
+        }
       }
       const kodepos = addr.postcode || '-';
       const jalan = data?.alamat_lengkap || addr.road || addr.amenity || data?.display_name || '-';
@@ -1028,9 +1047,6 @@ function getBpnGatewayBase() {
         summary += `\nDATA DETAIL KADASTER & TATA RUANG (PRO):\n`;
         summary += `NIB Lengkap: ${activePinData.nib_lengkap || activePinData.nib || '-'}\n`;
         summary += `Nomor Hak: ${activePinData.nomor_hak || '-'}\n`;
-        summary += `No. Surat Ukur: ${activePinData.nosu || '-'}\n`;
-        summary += `Desa: ${activePinData.desa || '-'}\n`;
-        summary += `Kecamatan: ${activePinData.kecamatan || '-'}\n`;
         summary += `Kantah: ${activePinData.kantah || '-'}\n`;
         summary += `Kluster PTSL: ${activePinData.kluster_ptsl || '-'}\n`;
         summary += `Akurasi & Alat: ${activePinData.akurasibidang || '-'}\n`;
@@ -1040,6 +1056,7 @@ function getBpnGatewayBase() {
         summary += `Status LBS: ${activePinData.lbs || '-'}\n`;
         summary += `Kawasan Hutan (KLHK): ${activePinData.hutan || '-'}\n`;
         summary += `Zona Nilai Tanah: ${activePinData.znt || '-'}\n`;
+        summary += `Rentang Nilai ZNT: ${activePinData.znt_range || '-'}\n`;
       }
 
       navigator.clipboard.writeText(summary).then(() => {
@@ -1074,10 +1091,7 @@ function getBpnGatewayBase() {
 
       const elNib = document.getElementById('pinNibText'); if (elNib) elNib.innerText = '-';
       const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = '-';
-      const elNosu = document.getElementById('pinNosuText'); if (elNosu) elNosu.innerText = '-';
       const elNomorHak = document.getElementById('pinNomorHakText'); if (elNomorHak) elNomorHak.innerText = '-';
-      const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = '-';
-      const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = '-';
       const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = '-';
       const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = '-';
       const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = '-';
@@ -1091,6 +1105,7 @@ function getBpnGatewayBase() {
       const elLbs = document.getElementById('pinLbsText'); if (elLbs) elLbs.innerText = '-';
       const elHutan = document.getElementById('pinHutanText'); if (elHutan) elHutan.innerText = '-';
       const elZnt = document.getElementById('pinZntText'); if (elZnt) elZnt.innerText = '-';
+      const elZntRange = document.getElementById('pinZntRangeText'); if (elZntRange) elZntRange.innerText = '-';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';

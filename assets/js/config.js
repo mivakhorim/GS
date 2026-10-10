@@ -265,23 +265,87 @@
         tipeHak = 'Hak Milik';
       }
 
+      let provNama = normalizeIndonesianProvince(props.provinsi || (geoData && geoData.provinsi) || '');
+      if (!provNama && kodeprov === '11') provNama = 'Jawa Tengah';
+      if (!provNama && kodeprov === '31') provNama = 'DKI Jakarta';
+      if (!provNama) provNama = '-';
+
+      let kabNama = String(props.kabupaten || props.kabkot || (geoData && geoData.kabkot) || '').trim();
+      if (!kabNama || kabNama === '-') {
+        kabNama = '-';
+      } else {
+        if (kabNama.toLowerCase().includes('jakarta')) {
+          kabNama = `Kota ${kabNama.replace(/^(Kabupaten|Kota|Kota Administrasi)\s*/i, '').trim()}`;
+        } else if (!/^Kabupaten|^Kota/i.test(kabNama)) {
+          kabNama = `Kabupaten ${kabNama}`;
+        }
+      }
+
+      let desaNama = String(props.desa || props.kelurahan || (geoData && geoData.desa) || '').trim();
+      if (!desaNama || desaNama === '') desaNama = '-';
+
+      let kecNama = String(props.kecamatan || (geoData && geoData.kecamatan) || '').trim();
+      if (!kecNama || kecNama === '') kecNama = '-';
+
       let rawNib = String(props.nib || props.nomor_identifikasi_bidang || props.id_persil || '').replace(/[^0-9]/g, '');
       let nib5 = '';
       if (rawNib) {
         nib5 = rawNib.slice(-5).padStart(5, '0');
       } else if (nomorHakBuku) {
-        nib5 = nomorHakBuku;
+        nib5 = nomorHakBuku.slice(-5).padStart(5, '0');
       } else {
-        nib5 = '00001';
+        nib5 = '01234';
+      }
+
+      let effProvCode = kodeprov || '';
+      let effKabCode = kodekab || '';
+      let effDesaCode = (kodekec && kodedesa) ? `${String(kodekec).padStart(2, '0')}${String(kodedesa).padStart(2, '0')}` : '';
+
+      if (!effProvCode || !effKabCode || !effDesaCode) {
+        if (provNama.includes('Jakarta') || (geoData && geoData.provinsi && geoData.provinsi.includes('Jakarta'))) {
+          effProvCode = effProvCode || '31';
+          if (kabNama.includes('Pusat')) effKabCode = effKabCode || '71';
+          else if (kabNama.includes('Utara')) effKabCode = effKabCode || '72';
+          else if (kabNama.includes('Barat')) effKabCode = effKabCode || '73';
+          else if (kabNama.includes('Selatan')) effKabCode = effKabCode || '74';
+          else if (kabNama.includes('Timur')) effKabCode = effKabCode || '75';
+          else effKabCode = effKabCode || '71';
+          effDesaCode = effDesaCode || '1001';
+        } else if (provNama.includes('Jawa Tengah') || provNama.includes('Jateng')) {
+          effProvCode = effProvCode || '11';
+          if (kabNama.includes('Klaten')) effKabCode = effKabCode || '08';
+          else if (kabNama.includes('Sukoharjo')) effKabCode = effKabCode || '11';
+          else if (kabNama.includes('Surakarta') || kabNama.includes('Solo')) effKabCode = effKabCode || '72';
+          else effKabCode = effKabCode || '08';
+          effDesaCode = effDesaCode || '2004';
+        } else if (provNama.includes('Jawa Barat') || provNama.includes('Jabar')) {
+          effProvCode = effProvCode || '32';
+          effKabCode = effKabCode || '01';
+          effDesaCode = effDesaCode || '1002';
+        } else if (provNama.includes('Banten')) {
+          effProvCode = effProvCode || '36';
+          effKabCode = effKabCode || '03';
+          effDesaCode = effDesaCode || '1001';
+        } else if (provNama.includes('Jawa Timur') || provNama.includes('Jatim')) {
+          effProvCode = effProvCode || '35';
+          effKabCode = effKabCode || '78';
+          effDesaCode = effDesaCode || '1001';
+        } else if (provNama.includes('Yogyakarta') || provNama.includes('DIY')) {
+          effProvCode = effProvCode || '34';
+          effKabCode = effKabCode || '04';
+          effDesaCode = effDesaCode || '2001';
+        } else {
+          effProvCode = effProvCode || '11';
+          effKabCode = effKabCode || '08';
+          effDesaCode = effDesaCode || '2004';
+        }
       }
 
       let nibLengkap = '';
-      if (kodeprov && kodekab && kodekec && kodedesa && nib5) {
-        nibLengkap = `${kodeprov}.${kodekab}.${kodekec}.${kodedesa}.${nib5}`;
-      } else if (rawNib && rawNib.length >= 8) {
-        nibLengkap = rawNib;
+      if (rawNib && rawNib.length >= 13) {
+        nibLengkap = `${rawNib.slice(0, 2)}.${rawNib.slice(2, 4)}.${rawNib.slice(4, 8)}.${rawNib.slice(8, 13)}`;
       } else {
-        nibLengkap = nib5;
+        nibLengkap = `${effProvCode}.${effKabCode}.${effDesaCode}.${nib5}`;
       }
 
       let nomorHak = '';
@@ -293,46 +357,14 @@
         nomorHak = `${tipeHak} No. ${nib5}`;
       }
 
-      let provNama = normalizeIndonesianProvince(props.provinsi || (geoData && geoData.provinsi) || '');
-      if (!provNama && kodeprov === '11') provNama = 'Jawa Tengah';
-      if (!provNama) provNama = 'Jawa Tengah';
-
-      let kabNama = String(props.kabupaten || props.kabkot || (geoData && geoData.kabkot) || '').trim();
-      if (!kabNama || kabNama === '-') {
-        if (kodeprov === '11' && kodekab === '19') kabNama = 'Kabupaten Klaten';
-      }
-      if (kabNama && !/^Kabupaten|^Kota/i.test(kabNama)) {
-        kabNama = `Kabupaten ${kabNama}`;
-      }
-      if (!kabNama) kabNama = 'Kabupaten Klaten';
-
-      let desaNama = String(props.desa || props.kelurahan || (geoData && geoData.desa) || '').trim();
-      if ((!desaNama || desaNama === '-') && kodedesa === '09' && kodekec === '11') {
-        desaNama = 'Gatak';
-      }
-      if (!desaNama || desaNama === '-') desaNama = 'Gatak';
-
-      let kecNama = String(props.kecamatan || (geoData && geoData.kecamatan) || '').trim();
-      if (!kecNama || kecNama === '-') {
-        if (kodekec === '11' && kabNama.includes('Klaten')) {
-          kecNama = 'Klaten Utara';
-        } else if (desaNama === 'Gatak' && kabNama.includes('Klaten')) {
-          kecNama = 'Klaten Utara';
-        } else if (geoData && geoData.subdistrict && geoData.subdistrict !== '-') {
-          kecNama = geoData.subdistrict;
-        } else {
-          kecNama = 'Klaten Utara';
-        }
-      }
-
       const tahun = String(props.tahun || '2026').trim();
       let nosu = String(props.nosu || props.surat_ukur || props.suratukur || '').trim();
       if (!nosu || nosu === '-') {
-        nosu = `No. ${nib5}/${desaNama}/${tahun}`;
+        nosu = (desaNama !== '-' && desaNama !== '') ? `No. ${nib5}/${desaNama}/${tahun}` : `No. ${nib5}/${tahun}`;
       }
 
-      const cleanKab = kabNama.replace(/^Kabupaten\s*/i, '').replace(/^Kota\s*/i, '').trim();
-      const kantah = String(props.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : 'Kantor Pertanahan')).trim();
+      const cleanKab = (kabNama && kabNama !== '-') ? kabNama.replace(/^Kabupaten\s*/i, '').replace(/^Kota\s*/i, '').trim() : '';
+      const kantah = String(props.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : '-')).trim();
 
       const klusterPtsl = 'Kluster K1 (Sertifikat Hak Terbit)';
       const akurasiBidang = 'Kadaster Digital Presisi (PTSL Terverifikasi)';

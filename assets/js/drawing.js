@@ -197,10 +197,7 @@ Server Sumber Data: ${serverName}`;
 
       const elNib = document.getElementById('pinNibText'); if (elNib) elNib.innerText = '-';
       const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = '-';
-      const elNosu = document.getElementById('pinNosuText'); if (elNosu) elNosu.innerText = '-';
       const elNomorHak = document.getElementById('pinNomorHakText'); if (elNomorHak) elNomorHak.innerText = '-';
-      const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = '-';
-      const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = '-';
       const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = '-';
       const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = '-';
       const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = '-';
@@ -214,6 +211,7 @@ Server Sumber Data: ${serverName}`;
       const elLbs = document.getElementById('pinLbsText'); if (elLbs) elLbs.innerText = '-';
       const elHutan = document.getElementById('pinHutanText'); if (elHutan) elHutan.innerText = '-';
       const elZnt = document.getElementById('pinZntText'); if (elZnt) elZnt.innerText = '-';
+      const elZntRange = document.getElementById('pinZntRangeText'); if (elZntRange) elZntRange.innerText = '-';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';
@@ -421,7 +419,7 @@ Server Sumber Data: ${serverName}`;
           weight: 3.5,
           fillColor: '#ea580c',
           fillOpacity: 0.15,
-          interactive: false
+          interactive: true
         }).addTo(map);
       } else {
         activePolygonLayer.setLatLngs(latlngs);
@@ -954,7 +952,8 @@ Server Sumber Data: ${serverName}`;
 
       mergeParcelsList.push({
         coords: activeVertices.map(v => ({ lat: Number(v.lat.toFixed(7)), lng: Number(v.lng.toFixed(7)) })),
-        fid: activePinData?.fid || 'Bidang 1',
+        fid: 'Bidang 1',
+        _internalFid: activePinData?.fid || null,
         luas: firstParcelArea
       });
 
@@ -1086,12 +1085,12 @@ Server Sumber Data: ${serverName}`;
         }
 
         const isAlreadyAdded = mergeParcelsList.some(p => {
-          if (persilData.fid && persilData.fid !== '-' && p.fid === persilData.fid) return true;
+          if (persilData.fid && persilData.fid !== '-' && p._internalFid === persilData.fid) return true;
           return false;
         });
         if (isAlreadyAdded) {
           if (statusBanner) {
-            statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--amber);"></span> Bidang ${persilData.fid || ''} sudah ada dalam daftar gabung.`;
+            statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--amber);"></span> Bidang tanah ini sudah ada dalam daftar gabung.`;
           }
           showToast('Bidang tanah ini sudah terpilih sebelumnya.', 'info');
           return;
@@ -1109,11 +1108,12 @@ Server Sumber Data: ${serverName}`;
         const newParcelLuas = (persilData.luas_m2 && persilData.luas_m2 > 0)
           ? roundArea2(persilData.luas_m2)
           : roundArea2(calculatePolygonArea(snappedCoords));
-        const newParcelFid = persilData.fid && persilData.fid !== '-' ? persilData.fid : `Bidang ${mergeParcelsList.length + 1}`;
+        const newParcelLabel = `Bidang ${mergeParcelsList.length + 1}`;
 
         mergeParcelsList.push({
           coords: snappedCoords,
-          fid: newParcelFid,
+          fid: newParcelLabel,
+          _internalFid: persilData.fid || null,
           luas: newParcelLuas
         });
 
@@ -1125,6 +1125,12 @@ Server Sumber Data: ${serverName}`;
           fillColor: '#0a2e5c',
           fillOpacity: 0.22
         }).addTo(map);
+        previewLayer.bindPopup(`
+          <div style="font-size:0.78rem; font-family:'Plus Jakarta Sans',sans-serif;">
+            <strong style="color:var(--text-main);">${newParcelLabel}</strong><br>
+            <strong>Luas:</strong> ${formatAreaM2(newParcelLuas)}
+          </div>
+        `);
         mergePreviewLayers.push(previewLayer);
 
         const countBadge = document.getElementById('mergeCountBadge');
@@ -1132,9 +1138,9 @@ Server Sumber Data: ${serverName}`;
 
         const currentTotalEst = roundArea2(mergeParcelsList.reduce((acc, p) => acc + (p.luas || 0), 0));
         if (statusBanner) {
-          statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--emerald);"></span> Terpilih: ${newParcelFid} (${formatAreaM2(newParcelLuas)}). Total ${mergeParcelsList.length} bidang (Estimasi Total: ${formatAreaM2(currentTotalEst)}). Siap digabung.`;
+          statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--emerald);"></span> Terpilih: ${newParcelLabel} (${formatAreaM2(newParcelLuas)}). Total ${mergeParcelsList.length} bidang (Estimasi Total: ${formatAreaM2(currentTotalEst)}). Siap digabung.`;
         }
-        showToast(`Bidang ke-${mergeParcelsList.length} (${newParcelFid} : ${formatAreaM2(newParcelLuas)}) ditambahkan. Klik 'Selesai Gabung' untuk memproses.`, 'success');
+        showToast(`Bidang ke-${mergeParcelsList.length} (${newParcelLabel} : ${formatAreaM2(newParcelLuas)}) ditambahkan. Klik 'Selesai Gabung' untuk memproses.`, 'success');
       } catch (err) {
         if (statusBanner) {
           statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--crimson);"></span> Gagal memuat bidang: ${err.message}`;
@@ -1753,12 +1759,27 @@ Server Sumber Data: ${serverName}`;
         const elLiveHa = document.getElementById('canvasLiveAreaHa');
         if (elLiveHa) elLiveHa.innerText = formatAreaHa(areaM2);
 
+        let shpAttrSnippet = '';
+        if (window.lastImportedShpData && window.lastImportedShpData.records && window.lastImportedShpData.records.length > 0) {
+          const rec = window.lastImportedShpData.records[0];
+          const keys = Object.keys(rec).slice(0, 4);
+          const rows = keys.map(k => `<div><span style="color:#64748b;">${escapeHtml(k)}:</span> <strong>${rec[k] !== null && rec[k] !== undefined ? escapeHtml(String(rec[k])) : '-'}</strong></div>`).join('');
+          shpAttrSnippet = `
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;font-size:0.72rem;">
+              <div style="font-weight:700;margin-bottom:3px;color:#0a2e5c;">Atribut Shapefile (${window.lastImportedShpData.fields.length} Kolom):</div>
+              ${rows}
+              <button type="button" class="btn btn-primary btn-sm" onclick="openShpAttributesModal()" style="margin-top:6px;width:100%;font-size:0.69rem;padding:3px 6px;">Buka Tabel Atribut</button>
+            </div>
+          `;
+        }
+
         layer.bindPopup(`
           <div style="font-size:0.8rem; font-family:'Plus Jakarta Sans',sans-serif;">
             <strong style="color:#0a2e5c;">Hasil Pengukuran Bidang:</strong><br>
             <strong>Luas:</strong> ${formatAreaM2(areaM2)} (${formatAreaHa(areaM2)})<br>
             <strong>Keliling:</strong> ${perimeterM.toFixed(2)} m<br>
             <strong>Titik Batas:</strong> ${latlngs.length} koordinat
+            ${shpAttrSnippet}
           </div>
         `).openPopup();
       }
