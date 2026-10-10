@@ -86,10 +86,28 @@ function createPolygonFromBatchCoords() {
       activePinData = activePinData || {};
       activePinData.lat = lat;
       activePinData.lng = lng;
-      activePinData.luas_m2 = estArea;
+      activePinData.luas_m2 = 0;
       activePinData.tipe_hak = 'Delineasi Mandiri';
       rawInitialBboxCoords = manualBox;
       initCanvasRebuilder(lat, lng, estArea, manualBox);
+      const elLuasBpn = document.getElementById('pinLuasBpnText');
+      if (elLuasBpn) {
+        elLuasBpn.className = 'stat-value offline';
+        elLuasBpn.innerText = 'Belum Terhubung Server';
+      }
+      const elStatusValidasi = document.getElementById('pinStatusValidasiText');
+      if (elStatusValidasi) {
+        elStatusValidasi.className = 'status-offline-tag';
+        elStatusValidasi.innerText = 'Belum Terhubung Server';
+      }
+      const elHudArea = document.getElementById('hudBpnArea');
+      if (elHudArea) {
+        elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+      }
+      const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
+      if (elPinServer && typeof getCadastreServerMode === 'function') {
+        elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2 (BPN PRO)' : 'Server 1 (Cloud)';
+      }
       const notFoundBox = document.getElementById('persilNotFoundBox');
       const foundBox = document.getElementById('persilFoundBox');
       if (notFoundBox) notFoundBox.style.display = 'none';
@@ -318,6 +336,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
       const rotLabel = document.getElementById('rotDegLabel');
       if (rotLabel) rotLabel.innerText = `${currentRotationAngle}°`;
+      isGeometryManuallyEdited = true;
       renderCanvasPolygon(true);
     }
 
@@ -340,6 +359,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         showToast('Poligon minimal membutuhkan 3 titik sudut patok.', 'warn');
         return;
       }
+      isGeometryManuallyEdited = true;
       activeVertices.splice(idx, 1);
       renderCanvasPolygon(true);
     }
@@ -392,15 +412,43 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       const hudLive = document.getElementById('hudLiveArea');
       if (hudLive) hudLive.innerText = formatAreaM2(liveAreaM2);
 
-      const targetBpnArea = activePinData?.luas_m2 || 0;
-      if (targetBpnArea > 0) {
-        const diff = liveAreaM2 - targetBpnArea;
-        const pct = Math.max(0, 100 - (Math.abs(diff) / targetBpnArea * 100));
-        const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
+      if (isGeometryManuallyEdited) {
+        if (activePinData) {
+          activePinData.luas_m2 = roundArea2(liveAreaM2);
+          activePinData.luas_ha = roundAreaHa6(liveAreaM2);
+        }
+        const elLuasBpn = document.getElementById('pinLuasBpnText');
+        if (elLuasBpn) {
+          elLuasBpn.className = 'stat-value emerald';
+          elLuasBpn.innerText = formatAreaM2(liveAreaM2);
+        }
+        const elStatusValidasi = document.getElementById('pinStatusValidasiText');
+        if (elStatusValidasi) {
+          elStatusValidasi.className = 'spec-value emerald';
+          elStatusValidasi.innerText = 'Kalkulasi Geometri Real';
+        }
+        const elHudArea = document.getElementById('hudBpnArea');
+        if (elHudArea) elHudArea.innerText = formatAreaM2(liveAreaM2);
         const diffPctEl = document.getElementById('diffPercentText');
         const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
-        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(targetBpnArea);
+        if (diffPctEl) diffPctEl.innerText = '0.00 m² (Kalkulasi Real)';
+        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(liveAreaM2);
+      } else {
+        const targetBpnArea = activePinData?.luas_m2 || 0;
+        if (targetBpnArea > 0) {
+          const diff = liveAreaM2 - targetBpnArea;
+          const pct = Math.max(0, 100 - (Math.abs(diff) / targetBpnArea * 100));
+          const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
+          const diffPctEl = document.getElementById('diffPercentText');
+          const diffBpnEl = document.getElementById('diffTargetBpnText');
+          if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
+          if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(targetBpnArea);
+        } else {
+          const diffPctEl = document.getElementById('diffPercentText');
+          const diffBpnEl = document.getElementById('diffTargetBpnText');
+          if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+          if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+        }
       }
 
       if (updateHandles) {
@@ -485,6 +533,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
           });
 
           marker.on('drag', function(e) {
+            isGeometryManuallyEdited = true;
             const pos = e.target.getLatLng();
             partList[idx] = { lat: pos.lat, lng: pos.lng };
             if (parts.length === 1) activeVertices[idx] = { lat: pos.lat, lng: pos.lng };
@@ -492,6 +541,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
           });
 
           marker.on('dragend', function() {
+            isGeometryManuallyEdited = true;
             renderCanvasPolygon(true);
           });
 
@@ -528,6 +578,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
             addMarker.on('click', function(e) {
               L.DomEvent.stopPropagation(e);
+              isGeometryManuallyEdited = true;
               if (parts.length === 1) {
                 activeVertices.splice(idx + 1, 0, { lat: midLat, lng: midLng });
               } else {
@@ -778,23 +829,31 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
           }
         }
 
-        const scale = Math.sqrt(targetArea / curTotalArea);
-
-        activeMultiParts = activeMultiParts.map(part => {
-          let cLat = 0, cLng = 0;
-          part.forEach(v => { cLat += v.lat; cLng += v.lng; });
-          cLat /= part.length;
-          cLng /= part.length;
-
-          return part.map(v => ({
-            lat: Number((cLat + (v.lat - cLat) * scale).toFixed(7)),
-            lng: Number((cLng + (v.lng - cLng) * scale).toFixed(7))
-          }));
-        });
+        targetArea = roundArea2(targetArea);
+        for (let iter = 0; iter < 2; iter++) {
+          const curA = activeMultiParts.reduce((sum, part) => sum + calculatePolygonArea(part), 0);
+          if (curA <= 0 || Math.abs(curA - targetArea) < 0.0001) break;
+          const s = Math.sqrt(targetArea / curA);
+          activeMultiParts = activeMultiParts.map(part => {
+            let cLat = 0, cLng = 0;
+            part.forEach(v => { cLat += v.lat; cLng += v.lng; });
+            cLat /= part.length;
+            cLng /= part.length;
+            return part.map(v => ({
+              lat: cLat + (v.lat - cLat) * s,
+              lng: cLng + (v.lng - cLng) * s
+            }));
+          });
+        }
 
         activeVertices = activeMultiParts[0];
+        if (activePinData) {
+          activePinData.luas_m2 = targetArea;
+          activePinData.luas_ha = roundAreaHa6(targetArea);
+        }
+        isGeometryManuallyEdited = false;
         renderCanvasPolygon(true);
-        showToast(`Presisi Batas berhasil: Seluruh ${activeMultiParts.length} bagian bidang poligon disesuaikan ukurannya ke ${Math.round(targetArea).toLocaleString('id-ID')} m².`, 'success');
+        showToast(`Presisi Batas berhasil: Seluruh ${activeMultiParts.length} bagian bidang poligon disesuaikan ukurannya ke ${formatAreaM2(targetArea)}.`, 'success');
         return;
       }
 
@@ -814,19 +873,28 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         }
       }
 
-      const scale = Math.sqrt(targetArea / curArea);
-      let cLat = 0, cLng = 0;
-      activeVertices.forEach(v => { cLat += v.lat; cLng += v.lng; });
-      cLat /= activeVertices.length;
-      cLng /= activeVertices.length;
+      targetArea = roundArea2(targetArea);
+      for (let iter = 0; iter < 2; iter++) {
+        const curA = calculatePolygonArea(activeVertices);
+        if (curA <= 0 || Math.abs(curA - targetArea) < 0.0001) break;
+        const s = Math.sqrt(targetArea / curA);
+        let cLat = 0, cLng = 0;
+        activeVertices.forEach(v => { cLat += v.lat; cLng += v.lng; });
+        cLat /= activeVertices.length;
+        cLng /= activeVertices.length;
+        activeVertices = activeVertices.map(v => ({
+          lat: cLat + (v.lat - cLat) * s,
+          lng: cLng + (v.lng - cLng) * s
+        }));
+      }
 
-      activeVertices = activeVertices.map(v => ({
-        lat: Number((cLat + (v.lat - cLat) * scale).toFixed(7)),
-        lng: Number((cLng + (v.lng - cLng) * scale).toFixed(7))
-      }));
-
+      if (activePinData) {
+        activePinData.luas_m2 = targetArea;
+        activePinData.luas_ha = roundAreaHa6(targetArea);
+      }
+      isGeometryManuallyEdited = false;
       renderCanvasPolygon(true);
-      showToast(`Presisi Batas berhasil: Ukuran poligon disesuaikan ke ${Math.round(targetArea).toLocaleString('id-ID')} m² sesuai catatan luas resmi.`, 'success');
+      showToast(`Presisi Batas berhasil: Ukuran poligon disesuaikan ke ${formatAreaM2(targetArea)} sesuai catatan luas resmi.`, 'success');
     }
 
     function toggleMergeMode() {
@@ -843,10 +911,14 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       mergePreviewLayers.forEach(l => map.removeLayer(l));
       mergePreviewLayers = [];
 
+      const firstParcelArea = (activePinData && activePinData.luas_m2 > 0)
+        ? roundArea2(activePinData.luas_m2)
+        : roundArea2(calculatePolygonArea(activeVertices));
+
       mergeParcelsList.push({
         coords: activeVertices.map(v => ({ lat: Number(v.lat.toFixed(7)), lng: Number(v.lng.toFixed(7)) })),
         fid: activePinData?.fid || 'Bidang 1',
-        luas: activePinData?.luas_m2 || 0
+        luas: firstParcelArea
       });
 
       const banner = document.getElementById('mergeModeBanner');
@@ -855,7 +927,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         document.getElementById('mergeCountBadge').innerText = '1';
         const txt = document.getElementById('mergeBannerText');
         if (txt) {
-          txt.innerHTML = `<span class="dot-indicator" style="background-color: var(--amber);"></span> <strong>Mode Tambah Bidang (Gabung) Aktif</strong>: Klik bidang tanah tetangga di peta.`;
+          txt.innerHTML = `<span class="dot-indicator" style="background-color: var(--amber);"></span> <strong>Mode Tambah Bidang (Gabung) Aktif</strong>: Bidang 1 (${formatAreaM2(firstParcelArea)}) terpilih. Klik bidang tanah tetangga di peta.`;
         }
       }
       const btn = document.getElementById('btnToggleMerge');
@@ -942,7 +1014,31 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Sedang membaca data batas bidang tanah di titik klik...';
       }
       try {
-        const persilData = await fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
+        let persilData = null;
+        if (drawnItems) {
+          drawnItems.eachLayer(layer => {
+            if (!persilData && layer.getLatLngs) {
+              const lls = layer.getLatLngs();
+              const ring = Array.isArray(lls[0]) ? lls[0] : lls;
+              if (ring && ring.length >= 3) {
+                const pts = ring.map(p => ({ lat: Number(p.lat.toFixed(7)), lng: Number(p.lng.toFixed(7)) }));
+                if (isPointInsideOrNearPolygon(lat, lng, pts, 0.5)) {
+                  const a = roundArea2(calculatePolygonArea(pts));
+                  persilData = {
+                    found: true,
+                    fid: 'Bidang Gambar ' + (mergeParcelsList.length + 1),
+                    polygon_coords: pts,
+                    luas_m2: a
+                  };
+                }
+              }
+            }
+          });
+        }
+
+        if (!persilData) {
+          persilData = await fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
+        }
 
         if (!persilData || !persilData.found || !persilData.polygon_coords || persilData.polygon_coords.length < 3) {
           if (statusBanner) {
@@ -973,7 +1069,9 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         const existingPolys = [activeVertices, ...mergeParcelsList.map(p => p.coords)];
         const snappedCoords = snapSharedBoundaryVertices(rawCoords, existingPolys, 2.5);
 
-        const newParcelLuas = persilData.luas_m2 || Math.round(calculatePolygonArea(snappedCoords));
+        const newParcelLuas = (persilData.luas_m2 && persilData.luas_m2 > 0)
+          ? roundArea2(persilData.luas_m2)
+          : roundArea2(calculatePolygonArea(snappedCoords));
         const newParcelFid = persilData.fid && persilData.fid !== '-' ? persilData.fid : `Bidang ${mergeParcelsList.length + 1}`;
 
         mergeParcelsList.push({
@@ -995,10 +1093,11 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         const countBadge = document.getElementById('mergeCountBadge');
         if (countBadge) countBadge.innerText = mergeParcelsList.length;
 
+        const currentTotalEst = roundArea2(mergeParcelsList.reduce((acc, p) => acc + (p.luas || 0), 0));
         if (statusBanner) {
-          statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--emerald);"></span> Terpilih: ${newParcelFid} (${Math.round(newParcelLuas).toLocaleString('id-ID')} m²). Total ${mergeParcelsList.length} bidang siap digabung.`;
+          statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--emerald);"></span> Terpilih: ${newParcelFid} (${formatAreaM2(newParcelLuas)}). Total ${mergeParcelsList.length} bidang (Estimasi Total: ${formatAreaM2(currentTotalEst)}). Siap digabung.`;
         }
-        showToast(`Bidang ke-${mergeParcelsList.length} (${newParcelFid}) berhasil ditambahkan. Klik 'Selesai' untuk menggabungkan.`, 'success');
+        showToast(`Bidang ke-${mergeParcelsList.length} (${newParcelFid} : ${formatAreaM2(newParcelLuas)}) ditambahkan. Klik 'Selesai Gabung' untuk memproses.`, 'success');
       } catch (err) {
         if (statusBanner) {
           statusBanner.innerHTML = `<span class="dot-indicator" style="background-color: var(--crimson);"></span> Gagal memuat bidang: ${err.message}`;
@@ -1006,7 +1105,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       }
     }
 
-        function clientSideMergeParcels(polygonsList) {
+    function clientSideMergeParcels(polygonsList) {
       if (!polygonsList || polygonsList.length === 0) {
         return { success: false, error: 'Tidak ada poligon untuk digabungkan.' };
       }
@@ -1018,10 +1117,41 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         return Math.hypot(dlat, dlng);
       }
 
-      const normPolys = polygonsList.map(poly => {
+      function distToSegmentM(p, a, b) {
+        const dlat = (b.lat - a.lat) * 111320;
+        const midLat = (a.lat + b.lat) * 0.5;
+        const dlng = (b.lng - a.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
+        const segLen2 = dlat * dlat + dlng * dlng;
+        if (segLen2 === 0) return { dist: distM(p, a), pt: a };
+        const pLat = (p.lat - a.lat) * 111320;
+        const pLng = (p.lng - a.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
+        const t = Math.max(0, Math.min(1, (pLat * dlat + pLng * dlng) / segLen2));
+        const projLat = a.lat + (t * (b.lat - a.lat));
+        const projLng = a.lng + (t * (b.lng - a.lng));
+        return { dist: distM(p, { lat: projLat, lng: projLng }), pt: { lat: projLat, lng: projLng } };
+      }
+
+      function signedArea(pts) {
+        let s = 0;
+        const n = pts.length;
+        for (let i = 0; i < n; i++) {
+          const j = (i + 1) % n;
+          s += pts[i].lng * pts[j].lat - pts[j].lng * pts[i].lat;
+        }
+        return s;
+      }
+
+      function ensureCcw(pts) {
+        if (signedArea(pts) < 0) {
+          return pts.slice().reverse();
+        }
+        return pts;
+      }
+
+      let normPolys = polygonsList.map(poly => {
         return poly.map(p => {
-          if (Array.isArray(p)) return { lat: p[1], lng: p[0] };
-          return { lat: p.lat, lng: p.lng };
+          if (Array.isArray(p)) return { lat: Number(p[1]), lng: Number(p[0]) };
+          return { lat: Number(p.lat), lng: Number(p.lng) };
         });
       }).filter(p => p.length >= 3);
 
@@ -1042,6 +1172,33 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         };
       }
 
+      const snapThreshold = 3.5;
+      normPolys = normPolys.map(p => ensureCcw(p));
+
+      for (let i = 0; i < normPolys.length; i++) {
+        for (let j = 0; j < normPolys.length; j++) {
+          if (i === j) continue;
+          for (let vIdx = 0; vIdx < normPolys[j].length; vIdx++) {
+            const v = normPolys[j][vIdx];
+            let k = 0;
+            while (k < normPolys[i].length) {
+              const a = normPolys[i][k];
+              const b = normPolys[i][(k + 1) % normPolys[i].length];
+              const dA = distM(v, a);
+              const dB = distM(v, b);
+              if (dA > 0.5 && dB > 0.5) {
+                const res = distToSegmentM(v, a, b);
+                if (res.dist <= snapThreshold) {
+                  normPolys[i].splice(k + 1, 0, { lat: res.pt.lat, lng: res.pt.lng });
+                  k++;
+                }
+              }
+              k++;
+            }
+          }
+        }
+      }
+
       const edges = [];
       normPolys.forEach((poly, pIdx) => {
         const n = poly.length;
@@ -1056,7 +1213,6 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         }
       });
 
-      const snapThreshold = 3.5;
       for (let i = 0; i < edges.length; i++) {
         if (edges[i].shared) continue;
         for (let j = i + 1; j < edges.length; j++) {
@@ -1147,7 +1303,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
           polygon_coords: normPolys[0],
           area_m2: sumArea,
           total_parcels_merged: normPolys.length,
-          total_vertices: normPolys[0].length
+          total_vertices: normPolys.reduce((acc, p) => acc + p.length, 0)
         };
       }
 
@@ -1182,46 +1338,14 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         showToast('Minimal harus ada 2 bidang tanah untuk digabungkan.', 'warn');
         return;
       }
-      const persilApiBase = getBpnGatewayBase();
       const statusBanner = document.getElementById('mergeBannerText');
       if (statusBanner) {
-        statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Menggabungkan topologi geometri bidang...';
+        statusBanner.innerHTML = '<span class="dot-indicator" style="background-color: var(--amber);"></span> Menggabungkan geometri bidang tanah terpilih...';
       }
 
-      let result = null;
-      try {
-        const payload = {
-          polygons: mergeParcelsList.map(p => p.coords)
-        };
-        const sbRes = await fetch('https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=merge-parcels', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (sbRes.ok) {
-          result = await sbRes.json();
-        }
-      } catch (sbErr) {}
+      const targetTotalArea = roundArea2(mergeParcelsList.reduce((acc, p) => acc + (p.luas || 0), 0));
 
-      if ((!result || !result.success) && isProxyActive && persilApiBase && persilApiBase.startsWith('https://')) {
-        try {
-          const payload = {
-            polygons: mergeParcelsList.map(p => p.coords)
-          };
-          const res = await fetch(`${persilApiBase}/api/merge-parcels`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (res.ok) {
-            result = await res.json();
-          }
-        } catch (netErr) {}
-      }
-
-      if (!result || !result.success) {
-        result = clientSideMergeParcels(mergeParcelsList.map(p => p.coords));
-      }
+      const result = clientSideMergeParcels(mergeParcelsList.map(p => p.coords));
 
       if (!result || !result.success || (!result.merged_polygon && !result.polygon_coords && !result.all_parts_coords)) {
         showToast('Gagal menggabungkan bidang: ' + (result?.error || 'Geometri tidak bersinggungan.'), 'error');
@@ -1233,30 +1357,62 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
       if (result.is_multipart && result.all_parts_coords && result.all_parts_coords.length > 1) {
         activeMultiParts = result.all_parts_coords.map(part =>
-          part.map(p => (Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng }))
+          part.map(p => (Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) }))
         );
+        for (let iter = 0; iter < 2; iter++) {
+          const curGeomArea = activeMultiParts.reduce((sum, part) => sum + calculatePolygonArea(part), 0);
+          if (curGeomArea <= 0 || Math.abs(curGeomArea - targetTotalArea) < 0.0001) break;
+          const scale = Math.sqrt(targetTotalArea / curGeomArea);
+          activeMultiParts = activeMultiParts.map(part => {
+            let cLat = 0, cLng = 0;
+            part.forEach(v => { cLat += v.lat; cLng += v.lng; });
+            cLat /= part.length;
+            cLng /= part.length;
+            return part.map(v => ({
+              lat: cLat + (v.lat - cLat) * scale,
+              lng: cLng + (v.lng - cLng) * scale
+            }));
+          });
+        }
         activeVertices = activeMultiParts[0];
       } else {
         activeMultiParts = null;
+        let mergedPts = [];
         if (result.polygon_coords && result.polygon_coords.length >= 3) {
-          activeVertices = result.polygon_coords.map(p => (Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng }));
+          mergedPts = result.polygon_coords.map(p => (Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) }));
         } else if (result.merged_polygon && result.merged_polygon.length > 0) {
           const mergedRing = result.merged_polygon[0];
-          activeVertices = mergedRing.map(p => ({ lat: p[1], lng: p[0] }));
+          mergedPts = mergedRing.map(p => ({ lat: Number(p[1]), lng: Number(p[0]) }));
         }
-        activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.2, 14.0);
+        mergedPts = cleanAndDeduplicateVertices(mergedPts, 1.2, 14.0);
+        for (let iter = 0; iter < 2; iter++) {
+          const curGeomArea = calculatePolygonArea(mergedPts);
+          if (curGeomArea <= 0 || Math.abs(curGeomArea - targetTotalArea) < 0.0001) break;
+          const scale = Math.sqrt(targetTotalArea / curGeomArea);
+          let cLat = 0, cLng = 0;
+          mergedPts.forEach(v => { cLat += v.lat; cLng += v.lng; });
+          cLat /= mergedPts.length;
+          cLng /= mergedPts.length;
+          mergedPts = mergedPts.map(v => ({
+            lat: cLat + (v.lat - cLat) * scale,
+            lng: cLng + (v.lng - cLng) * scale
+          }));
+        }
+        activeVertices = mergedPts;
       }
 
-      
       if (activePinData) {
-        activePinData.fid = 'Gabungan Bidang';
-        activePinData.luas_m2 = result.area_m2;
+        activePinData.fid = 'Gabungan ' + mergeParcelsList.length + ' Bidang';
+        activePinData.luas_m2 = targetTotalArea;
+        activePinData.luas_ha = roundAreaHa6(targetTotalArea);
         const _elNib = document.getElementById('pinNibText');
-        if (_elNib) _elNib.innerText = 'Gabungan ' + (result.total_parcels_merged || mergeParcelsList.length) + ' Bidang';
+        if (_elNib) _elNib.innerText = 'Gabungan ' + mergeParcelsList.length + ' Bidang';
         const _elLok = document.getElementById('pinLokasiUtamaText');
         if (_elLok) _elLok.innerText = (activePinData.desa !== '-' && activePinData.kecamatan !== '-') ? `${activePinData.desa}, ${activePinData.kecamatan}` : (activePinData.desa !== '-' ? activePinData.desa : 'Bidang Tanah');
         const _elLuas = document.getElementById('pinLuasBpnText');
-        if (_elLuas) _elLuas.innerText = formatAreaM2(activePinData.luas_m2);
+        if (_elLuas) _elLuas.innerText = formatAreaM2(targetTotalArea);
+        const _elStatus = document.getElementById('pinStatusValidasiText');
+        if (_elStatus) _elStatus.innerText = 'Penjumlahan Bidang Terpilih';
       }
 
       const hud = document.getElementById('canvasHud');
@@ -1265,19 +1421,20 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         const elHudNib = document.getElementById('hudNib');
         if (elHudNib) elHudNib.innerText = activePinData?.fid || 'Gabungan Bidang';
         const elHudArea = document.getElementById('hudBpnArea');
-        if (elHudArea) elHudArea.innerText = formatAreaM2(result.area_m2);
+        if (elHudArea) elHudArea.innerText = formatAreaM2(targetTotalArea);
       }
 
-      const elShpLuas = document.getElementById('shpLuasHa');
+      const elShpLuas = document.getElementById('shpLuasHa') || document.getElementById('shpLuas');
       if (elShpLuas) {
-        elShpLuas.value = `${(result.area_m2 / 10000.0).toFixed(6)} Ha`;
+        elShpLuas.value = `${(targetTotalArea / 10000.0).toFixed(6)} Ha`;
       }
 
       isParcelLocked = true;
+      isGeometryManuallyEdited = false;
       renderCanvasPolygon(true);
       cancelMergeMode();
       switchTab('tab-bidang');
-      showToast(`Penggabungan berhasil: ${result.total_parcels_merged} bidang digabung menjadi 1 poligon utuh (Luas: ${formatAreaM2(result.area_m2)}, ${result.total_vertices} patok batas).`, 'success');
+      showToast(`Penggabungan berhasil: ${mergeParcelsList.length} bidang digabung menjadi 1 poligon utuh (Luas: ${formatAreaM2(targetTotalArea)}, ${activeVertices.length} patok batas).`, 'success');
     }
 
     function setupDrawing() {
@@ -1455,6 +1612,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         };
       }
       isParcelLocked = true;
+      isGeometryManuallyEdited = true;
       renderCanvasPolygon(true);
 
       switchTab('tab-bidang');
@@ -1576,6 +1734,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
     window.deleteVertexMarker = function(pIdx, vIdx) {
       if (map) map.closePopup();
+      isGeometryManuallyEdited = true;
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       if (parts.length > 1) {
         const targetPart = parts[pIdx];
@@ -1612,6 +1771,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         showToast('Hanya ada satu bidang aktif.', 'info');
         return;
       }
+      isGeometryManuallyEdited = true;
       activeMultiParts.splice(pIdx, 1);
       if (activeMultiParts.length === 1) {
         activeVertices = activeMultiParts[0];
@@ -1624,6 +1784,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
     };
 
     function cleanInternalDanglingVertices() {
+      isGeometryManuallyEdited = true;
       if (activeMultiParts && activeMultiParts.length > 1) {
         let maxA = 0;
         activeMultiParts.forEach(p => {
@@ -1648,46 +1809,3 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       showToast('Titik sudut batas berhasil dirapikan.', 'success');
     }
 
-    function loadTestParcel(type) {
-      clearCanvasRebuilderLayers();
-      if (type === 'large' || type === 'pro') {
-        activeVertices = [
-          { lat: -6.188400, lng: 106.832000 },
-          { lat: -6.188400, lng: 106.832180 },
-          { lat: -6.188535, lng: 106.832180 },
-          { lat: -6.188535, lng: 106.832000 }
-        ];
-        showToast('Memuat poligon uji 300 m² (Melebihi kuota gratis 150 m²).', 'info');
-      } else {
-        activeVertices = [
-          { lat: -6.188400, lng: 106.832000 },
-          { lat: -6.188400, lng: 106.832090 },
-          { lat: -6.188490, lng: 106.832090 },
-          { lat: -6.188490, lng: 106.832000 }
-        ];
-        showToast('Memuat poligon uji 100 m² (Masuk kuota gratis <= 150 m²).', 'success');
-      }
-      isParcelLocked = true;
-      if (map) {
-        const bounds = L.latLngBounds(activeVertices.map(p => [p.lat, p.lng]));
-        map.fitBounds(bounds, { padding: [60, 60] });
-      }
-      renderCanvasPolygon(true);
-      renderVertexHandles();
-      renderEdgeDistanceLabels();
-      const area = calculatePolygonArea(activeVertices);
-      const hudBpn = document.getElementById('hudBpnArea');
-      if (hudBpn) hudBpn.innerText = formatAreaM2(area);
-      if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
-      switchTab('tab-bidang');
-    }
-
-    function clearTestParcel() {
-      clearCanvasRebuilderLayers();
-      const hudBpn = document.getElementById('hudBpnArea');
-      if (hudBpn) hudBpn.innerText = '0,00 m²';
-      showToast('Data pengujian telah dibersihkan.', 'info');
-    }
-
-    window.loadTestParcel = loadTestParcel;
-    window.clearTestParcel = clearTestParcel;

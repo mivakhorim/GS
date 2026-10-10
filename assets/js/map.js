@@ -366,7 +366,7 @@ async function geocodeAndFly(query, zoomLevel = 14) {
             <td style="font-weight:700; color:var(--accent);">P${idx + 1}</td>
             <td>${v.lat.toFixed(7)}</td>
             <td>${v.lng.toFixed(7)}</td>
-            <td style="font-size:0.67rem;">${utm.zone} ${utm.easting}, ${utm.northing}</td>
+            <td style="font-size:0.67rem;">${utm.zone} ${utm.easting.toFixed(2)}, ${utm.northing.toFixed(2)}</td>
             <td>${dist.toFixed(2)} m</td>
             <td><button class="copy-chip-btn" onclick="copySingleVertexCoords(${idx})" title="Salin koordinat P${idx + 1}">Salin</button></td>
           `;
@@ -388,7 +388,7 @@ async function geocodeAndFly(query, zoomLevel = 14) {
       if (!activeVertices || !activeVertices[idx]) return;
       const v = activeVertices[idx];
       const utm = latLngToUtm(v.lat, v.lng);
-      const text = `Patok P${idx + 1}\nLatitude: ${v.lat.toFixed(7)}\nLongitude: ${v.lng.toFixed(7)}\nUTM: ${utm.zone} ${utm.easting} E, ${utm.northing} N`;
+      const text = `Patok P${idx + 1}\nLatitude: ${v.lat.toFixed(7)}\nLongitude: ${v.lng.toFixed(7)}\nUTM: ${utm.zone} ${utm.easting.toFixed(2)} E, ${utm.northing.toFixed(2)} N`;
       navigator.clipboard.writeText(text).then(() => {
         showToast(`Koordinat Patok P${idx + 1} disalin ke clipboard!`, 'success');
       });
@@ -407,7 +407,7 @@ async function geocodeAndFly(query, zoomLevel = 14) {
         const nextV = activeVertices[nextIdx];
         const dist = map.distance([v.lat, v.lng], [nextV.lat, nextV.lng]);
         const utm = latLngToUtm(v.lat, v.lng);
-        csv += `P${idx + 1},${v.lat.toFixed(7)},${v.lng.toFixed(7)},${utm.zone},${utm.easting},${utm.northing},${dist.toFixed(2)}\n`;
+        csv += `P${idx + 1},${v.lat.toFixed(7)},${v.lng.toFixed(7)},${utm.zone},${utm.easting.toFixed(2)},${utm.northing.toFixed(2)},${dist.toFixed(2)}\n`;
       });
       navigator.clipboard.writeText(csv).then(() => {
         showToast(`Daftar ${activeVertices.length} patok berhasil disalin ke CSV!`, 'success');
@@ -446,7 +446,7 @@ async function geocodeAndFly(query, zoomLevel = 14) {
         const nextV = activeVertices[nextIdx];
         const dist = map.distance([v.lat, v.lng], [nextV.lat, nextV.lng]);
         const utm = latLngToUtm(v.lat, v.lng);
-        lines.push(`P${idx + 1}\t${v.lat.toFixed(7)}\t${v.lng.toFixed(7)}\t${dist.toFixed(2)} m\t${utm.zone} ${utm.easting} E, ${utm.northing} N`);
+        lines.push(`P${idx + 1}\t${v.lat.toFixed(7)}\t${v.lng.toFixed(7)}\t${dist.toFixed(2)} m\t${utm.zone} ${utm.easting.toFixed(2)} E, ${utm.northing.toFixed(2)} N`);
       });
       lines.push('----------------------------------------------------');
       lines.push('Sistem Koordinat: WGS 84 (EPSG:4326) / UTM');

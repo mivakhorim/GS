@@ -140,19 +140,7 @@ function togglePrintDimensions(show) {
       setTimeout(() => {
         if (printMapInstance) {
           printMapInstance.invalidateSize();
-          const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-          let bounds = null;
-          if (parts[0] && parts[0].length >= 3) {
-            parts.forEach(pList => {
-              const poly = L.polygon(pList.map(v => [v.lat, v.lng]));
-              if (!bounds) bounds = poly.getBounds();
-              else bounds.extend(poly.getBounds());
-            });
-          }
-          if (bounds && bounds.isValid()) {
-            printMapInstance.fitBounds(bounds, { padding: [40, 40] });
-          }
-          updatePrintMapGraticule();
+          fitPrintMapBounds();
         }
         if (printInsetInstance) {
           printInsetInstance.invalidateSize();
@@ -885,12 +873,8 @@ function togglePrintDimensions(show) {
 
       const prevTransform = sheet.style.transform;
       const prevOrigin = sheet.style.transformOrigin;
-      const prevPadding = sheet.style.padding;
-      const prevMargin = sheet.style.margin;
       sheet.style.transform = 'none';
       sheet.style.transformOrigin = 'unset';
-      sheet.style.padding = '0';
-      sheet.style.margin = '0';
 
       const opt = {
         margin: 0,
@@ -927,8 +911,6 @@ function togglePrintDimensions(show) {
         }
         sheet.style.transform = prevTransform;
         sheet.style.transformOrigin = prevOrigin;
-        sheet.style.padding = prevPadding;
-        sheet.style.margin = prevMargin;
         adjustMobilePrintScale();
       }
     }

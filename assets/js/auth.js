@@ -318,17 +318,16 @@ function closeServerModal() {
           tabBtnOss.style.cursor = 'default';
         }
         if (attrModeBadge) {
-          attrModeBadge.className = 'badge-pill';
-          attrModeBadge.style.backgroundColor = '#f1f5f9';
-          attrModeBadge.style.color = '#475569';
-          attrModeBadge.innerText = 'GRATIS: LAYER ONLY (MAKS 150 M²)';
+          attrModeBadge.className = '';
+          attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--text-sub);';
+          attrModeBadge.innerText = 'Ekspor Dasar (Maksimal 150 m²)';
         }
         let freeNotice = document.getElementById('shpFreeAttrNotice');
         if (!freeNotice && boxEkspor) {
           freeNotice = document.createElement('div');
           freeNotice.id = 'shpFreeAttrNotice';
-          freeNotice.style.cssText = 'font-size:0.71rem;background:#f8fafc;border:1px solid #cbd5e1;padding:6px 10px;border-radius:4px;color:#334155;margin:6px 0;line-height:1.4;';
-          freeNotice.innerHTML = '<b>Mode Akun Gratis:</b> Atribut terkunci pada <code>LAYER: geospasi.dutamik.id</code> (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color:#0284c7;font-weight:600;text-decoration:none;">Upgrade ke PRO</a> untuk atribut kustom &amp; luas tanpa batas.';
+          freeNotice.style.cssText = 'font-size: 0.71rem; color: var(--text-sub); margin: 4px 0 6px 0; line-height: 1.45;';
+          freeNotice.innerHTML = 'Mode Akun Gratis: Terkunci pada <code>LAYER: geospasi.dutamik.id</code> (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
           const tabNav = boxEkspor.querySelector('div[style*="border-bottom"]');
           if (tabNav) {
             boxEkspor.insertBefore(freeNotice, tabNav);
@@ -355,10 +354,9 @@ function closeServerModal() {
           tabBtnOss.style.cursor = 'pointer';
         }
         if (attrModeBadge) {
-          attrModeBadge.className = 'badge-pill blue';
-          attrModeBadge.style.backgroundColor = '';
-          attrModeBadge.style.color = '';
-          attrModeBadge.innerText = 'PRO: OSS & KUSTOM';
+          attrModeBadge.className = '';
+          attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--emerald);';
+          attrModeBadge.innerText = 'Ekspor PRO: Akses Kustom & Luas Tanpa Batas';
         }
         const freeNotice = document.getElementById('shpFreeAttrNotice');
         if (freeNotice) {
@@ -401,7 +399,7 @@ function closeServerModal() {
           }
           if (alertEl) {
             alertEl.style.display = 'block';
-            alertEl.innerHTML = 'Akun Anda saat ini berstatus <strong>FREE TIER</strong>. Hak akses ekspor Shapefile dibatasi maksimal luas 150 m² dengan atribut LAYER: geospasi.dutamik.id. Lakukan pembayaran via QRIS untuk aktivasi status PRO Lifetime.';
+            alertEl.innerHTML = 'Mode Akun Gratis: Terkunci pada LAYER: geospasi.dutamik.id (Maks luas 150 m²). Berkas: geospasi.zip. Upgrade ke PRO untuk akses kustom & luas tanpa batas.';
           }
           if (thankYouCard) thankYouCard.style.display = 'none';
           if (qrisBtn) qrisBtn.style.display = 'flex';
@@ -636,6 +634,99 @@ function closeServerModal() {
         closeQrisPaymentModal();
       }
     }
+
+    function initSecurityShield() {
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+      }, true);
+
+      document.addEventListener('keydown', function(e) {
+        if (
+          e.key === 'F12' ||
+          e.keyCode === 123 ||
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) ||
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) ||
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) ||
+          ((e.ctrlKey || e.metaKey) && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) ||
+          ((e.ctrlKey || e.metaKey) && (e.key === 'S' || e.key === 's' || e.keyCode === 83))
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      }, true);
+
+      const securityObserver = new MutationObserver(function(mutations) {
+        for (let i = 0; i < mutations.length; i++) {
+          const m = mutations[i];
+          if (m.removedNodes && m.removedNodes.length > 0) {
+            for (let j = 0; j < m.removedNodes.length; j++) {
+              const node = m.removedNodes[j];
+              const tag = node.nodeName ? node.nodeName.toUpperCase() : '';
+              if (tag === 'SCRIPT' || tag === 'LINK' || (node.id && (node.id === 'map' || node.id === 'sidebar' || node.id === 'boxEkspor'))) {
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#ffffff;font-family:sans-serif;text-align:center;padding:2rem;"><div><h2 style="color:#ef4444;margin-bottom:0.75rem;">Peringatan Keamanan</h2><p>Komponen sistem terdeteksi dimanipulasi atau dihapus. Memuat ulang sistem...</p></div></div>';
+                setTimeout(() => { window.location.reload(); }, 400);
+                return;
+              }
+            }
+          }
+        }
+      });
+      securityObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+      setInterval(function() {
+        const scripts = document.querySelectorAll('script[src*="assets/js/"]');
+        if (scripts.length < 5) {
+          window.location.reload();
+        }
+      }, 2000);
+
+      setInterval(function() {
+        const start = Date.now();
+        (function() {}.constructor('debugger')());
+        if (Date.now() - start > 100) {
+          try {
+            console.clear();
+            console.warn('%cPERINGATAN KEAMANAN: Sistem Duta GeoSpasi dilindungi oleh Security Shield. Segala tindakan inspeksi kode atau injeksi skrip dilarang keras.', 'color:#dc2626;font-size:14px;font-weight:bold;');
+          } catch (e) {}
+        }
+      }, 3000);
+
+      const criticalGlobals = [
+        'isMemberProActive',
+        'verifyProLicenseIntegrity',
+        'exportCurrentPersilToShp',
+        'exportCurrentPersilToCad',
+        'exportCurrentPersilToGeoJson',
+        'exportCurrentPersilToExcel',
+        'switchCadastreServer',
+        'getCadastreServerMode',
+        'updateCadastreServerUI',
+        'autoScaleToBpnArea',
+        'autoScaleToOssArea'
+      ];
+
+      function lockGlobals() {
+        criticalGlobals.forEach(name => {
+          if (typeof window[name] === 'function') {
+            try {
+              const fn = window[name];
+              Object.defineProperty(window, name, {
+                value: fn,
+                writable: false,
+                configurable: false
+              });
+            } catch (e) {}
+          }
+        });
+      }
+
+      setTimeout(lockGlobals, 1200);
+      setTimeout(lockGlobals, 3500);
+    }
+
+    initSecurityShield();
 
     window.initSupabase = initSupabase;
     window.ensureSupabaseClient = ensureSupabaseClient;

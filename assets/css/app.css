@@ -596,6 +596,36 @@
     .stat-value.emerald {
       color: var(--emerald);
     }
+    .stat-value.offline {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #92400e;
+      background-color: #fef3c7;
+      border: 1px solid #fde68a;
+      padding: 3px 8px;
+      border-radius: 3px;
+      display: inline-block;
+      line-height: 1.3;
+      letter-spacing: normal;
+      word-break: normal;
+    }
+    .status-offline-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #92400e;
+      background-color: #fef3c7;
+      border: 1px solid #fde68a;
+      padding: 2px 7px;
+      border-radius: 3px;
+      line-height: 1.25;
+      letter-spacing: normal;
+      text-transform: none;
+    }
     .content-box {
       background-color: transparent;
       border: none;

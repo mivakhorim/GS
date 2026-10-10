@@ -1,27 +1,6 @@
 function getExportVerticesWithOssAdjustment(parts) {
-      const chk = document.getElementById('chkExportOssAdjust');
-      if (!chk || !chk.checked || !parts || parts.length === 0) {
-        return parts;
-      }
-      return parts.map(pts => {
-        if (!pts || pts.length < 3) return pts;
-        const a0 = calculatePolygonArea(pts);
-        if (a0 <= 0.05) return pts;
-        const aTarget = Math.max(0.01, a0 - 0.01);
-        const scale = Math.sqrt(aTarget / a0);
-        let sumLat = 0, sumLng = 0;
-        pts.forEach(p => {
-          sumLat += p.lat;
-          sumLng += p.lng;
-        });
-        const cLat = sumLat / pts.length;
-        const cLng = sumLng / pts.length;
-        return pts.map(p => ({
-          lat: cLat + scale * (p.lat - cLat),
-          lng: cLng + scale * (p.lng - cLng)
-        }));
-      });
-    }
+  return parts || [];
+}
 
 function exportCoordinatesXls() {
       if (!isMemberProActive()) {
@@ -140,80 +119,237 @@ function exportCoordinatesXls() {
       if (modal) modal.style.display = 'none';
     }
 
-    function downloadCoordsMap(fmt = 'txt') {
-      if (!window._dgKey || window._dgKey !== 0x7E3A9) {
-        showToast('Validasi struktur koordinat gagal.', 'crimson');
+    function exportDXF() {
+      if (!isMemberProActive()) {
+        showToast('Fitur Ekspor AutoCAD DXF (.dxf) khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        openMemberModal();
         return;
       }
       ensureActiveVerticesFromDraw();
       const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      if (!rawParts[0] || rawParts[0].length < 3) return;
-      const parts = getExportVerticesWithOssAdjustment(rawParts);
-
-      const kab = activePinData?.kabkot || '-';
-      const prov = activePinData?.provinsi || '-';
-      let totalM2 = 0;
-      parts.forEach(p => { totalM2 += calculatePolygonArea(p); });
-      const luasM2 = totalM2.toFixed(2);
-      const luasHa = (totalM2 / 10000).toFixed(6);
-
-      if (fmt === 'csv') {
-        let csv = 'Patok,Latitude,Longitude,UTM_X,UTM_Y,Zona_UTM,Jarak_Meter,Kabupaten,Provinsi\n';
-        parts.forEach((pList, pIdx) => {
-          const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
-          pList.forEach((v, idx) => {
-            const nextV = pList[(idx + 1) % pList.length];
-            const dist = L.latLng(v.lat, v.lng).distanceTo(L.latLng(nextV.lat, nextV.lng));
-            const utm = getUtmCoordinates(v.lat, v.lng);
-            csv += `${pfx}${idx + 1},${v.lat.toFixed(7)},${v.lng.toFixed(7)},${utm.x.toFixed(2)},${utm.y.toFixed(2)},${utm.zone},${dist.toFixed(2)},"${kab}","${prov}"\n`;
-          });
-        });
-        downloadFile(csv, 'DutaGeoSpasi_koordinat_peta.csv', 'text/csv;charset=utf-8');
-        showToast('Koordinat peta (CSV) berhasil diunduh.', 'success');
-      } else {
-        let txt = '# ====================================================\n';
-        txt += '# DUTAGEOSPASI : KOORDINAT PETA WGS84 & UTM\n';
-        txt += '# Domain     : https://geospasi.dutamik.id/SHP-Builder\n';
-        txt += '# Pengembang : Duta Digital Agensi (dutamik.id)\n';
-        txt += `# Lokasi     : Kabupaten ${kab}, Provinsi ${prov}\n`;
-        txt += `# Luas Ukur  : ${formatAreaM2(totalM2)} (${formatAreaHa(totalM2 / 10000)})\n`;
-        txt += '# ====================================================\n\n';
-        txt += 'PATOK\tLATITUDE\tLONGITUDE\tUTM_X\tUTM_Y\tZONA\tJARAK(M)\n';
-        parts.forEach((pList, pIdx) => {
-          const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
-          pList.forEach((v, idx) => {
-            const nextV = pList[(idx + 1) % pList.length];
-            const dist = L.latLng(v.lat, v.lng).distanceTo(L.latLng(nextV.lat, nextV.lng));
-            const utm = getUtmCoordinates(v.lat, v.lng);
-            txt += `${pfx}${idx + 1}\t${v.lat.toFixed(7)}\t${v.lng.toFixed(7)}\t${utm.x.toFixed(2)}\t${utm.y.toFixed(2)}\t${utm.zone}\t${dist.toFixed(2)}\n`;
-          });
-        });
-        downloadFile(txt, 'DutaGeoSpasi_koordinat_peta.txt', 'text/plain;charset=utf-8');
-        showToast('Koordinat peta (TXT) berhasil diunduh.', 'success');
+      if (!rawParts[0] || rawParts[0].length < 3) {
+        showToast('Pilih atau gambar bidang tanah pada peta terlebih dahulu.', 'warn');
+        return;
       }
-    }
 
-    function copyCoordsMapClipboard() {
-      ensureActiveVerticesFromDraw();
-      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      if (!rawParts[0] || rawParts[0].length < 3) return;
-      const parts = getExportVerticesWithOssAdjustment(rawParts);
-      let txt = 'PATOK\tLATITUDE\tLONGITUDE\tUTM_X\tUTM_Y\tJARAK(M)\n';
+      const parts = rawParts;
+      let dxf = '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n';
+      dxf += '0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n3\n';
+      dxf += '0\nLAYER\n2\nBATAS_BIDANG\n70\n0\n62\n1\n6\nCONTINUOUS\n';
+      dxf += '0\nLAYER\n2\nPATOK_BATAS\n70\n0\n62\n3\n6\nCONTINUOUS\n';
+      dxf += '0\nLAYER\n2\nTEKS_PATOK\n70\n0\n62\n7\n6\nCONTINUOUS\n';
+      dxf += '0\nENDTAB\n0\nENDSEC\n';
+      dxf += '0\nSECTION\n2\nENTITIES\n';
+
       parts.forEach((pList, pIdx) => {
         const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
-        pList.forEach((v, idx) => {
-          const nextV = pList[(idx + 1) % pList.length];
-          const dist = L.latLng(v.lat, v.lng).distanceTo(L.latLng(nextV.lat, nextV.lng));
+
+        dxf += '0\nPOLYLINE\n8\nBATAS_BIDANG\n66\n1\n70\n1\n10\n0.0\n20\n0.0\n30\n0.0\n';
+        pList.forEach(v => {
           const utm = getUtmCoordinates(v.lat, v.lng);
-          txt += `${pfx}${idx + 1}\t${v.lat.toFixed(7)}\t${v.lng.toFixed(7)}\t${utm.x.toFixed(2)}\t${utm.y.toFixed(2)}\t${dist.toFixed(2)}\n`;
+          dxf += `0\nVERTEX\n8\nBATAS_BIDANG\n10\n${utm.x.toFixed(3)}\n20\n${utm.y.toFixed(3)}\n30\n0.0\n`;
         });
+        dxf += '0\nSEQEND\n';
+
+        pList.forEach((v, vIdx) => {
+          const utm = getUtmCoordinates(v.lat, v.lng);
+          const label = `${pfx}${vIdx + 1}`;
+          dxf += `0\nPOINT\n8\nPATOK_BATAS\n10\n${utm.x.toFixed(3)}\n20\n${utm.y.toFixed(3)}\n30\n0.0\n`;
+          dxf += `0\nTEXT\n8\nTEKS_PATOK\n10\n${(utm.x + 0.6).toFixed(3)}\n20\n${(utm.y + 0.6).toFixed(3)}\n30\n0.0\n40\n1.2\n1\n${label}\n50\n0.0\n`;
+        });
+
+        let sumX = 0, sumY = 0;
+        pList.forEach(v => {
+          const utm = getUtmCoordinates(v.lat, v.lng);
+          sumX += utm.x;
+          sumY += utm.y;
+        });
+        const cX = sumX / pList.length;
+        const cY = sumY / pList.length;
+        const partArea = calculatePolygonArea(pList);
+        dxf += `0\nTEXT\n8\nTEKS_PATOK\n10\n${cX.toFixed(3)}\n20\n${cY.toFixed(3)}\n30\n0.0\n40\n1.8\n1\nLuas: ${formatAreaM2(partArea)}\n50\n0.0\n`;
       });
-      navigator.clipboard.writeText(txt).then(() => {
-        showToast('Koordinat peta berhasil disalin ke clipboard.', 'success');
-      });
+
+      dxf += '0\nENDSEC\n0\nEOF\n';
+
+      downloadFile(dxf, 'DutaGeoSpasi_bidang_cad.dxf', 'application/dxf;charset=utf-8');
+      showToast('Berkas AutoCAD DXF (.dxf) berhasil diunduh.', 'success');
     }
 
-    function downloadCoordsCad(mode = 'scr') {
+    let currentRescaleMode = 'oss';
+    let currentRescaleInitialM2 = 0;
+
+    function openRescaleModal(mode = 'oss') {
+      ensureActiveVerticesFromDraw();
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      if (!rawParts[0] || rawParts[0].length < 3) {
+        showToast('Pilih atau gambar bidang tanah pada peta terlebih dahulu.', 'warn');
+        return;
+      }
+      currentRescaleMode = mode;
+      let totalM2 = 0;
+      rawParts.forEach(p => { totalM2 += calculatePolygonArea(p); });
+      currentRescaleInitialM2 = totalM2;
+
+      const modal = document.getElementById('modalRescaleParcel');
+      const titleEl = document.getElementById('rescaleModalTitle');
+      const subEl = document.getElementById('rescaleModalSub');
+      const labelEl = document.getElementById('rescaleInputLabel');
+      const inputEl = document.getElementById('rescaleInputValue');
+      const helpEl = document.getElementById('rescaleInputHelp');
+      const initialM2El = document.getElementById('rescaleInitialAreaM2');
+      const initialHaEl = document.getElementById('rescaleInitialAreaHa');
+
+      if (initialM2El) initialM2El.innerText = formatAreaM2(totalM2);
+      if (initialHaEl) initialHaEl.innerText = `(${formatAreaHa(totalM2 / 10000)})`;
+
+      if (mode === 'oss') {
+        if (titleEl) titleEl.innerText = 'PENYESUAIAN LUAS SISTEM OSS';
+        if (subEl) subEl.innerText = 'Reskala geometri kompensasi distorsi geodesik sistem OSS RBA';
+        if (labelEl) labelEl.innerText = 'Luas Terbaca di Sistem OSS (m²)';
+        if (inputEl) {
+          inputEl.placeholder = (totalM2 * 1.018).toFixed(2);
+          inputEl.value = '';
+        }
+        if (helpEl) helpEl.innerText = 'Masukkan angka luas yang tertera saat hasil ekspor pertama kali terbaca di OSS RBA.';
+      } else {
+        if (titleEl) titleEl.innerText = 'PENYESUAIAN LUAS DATA BPN';
+        if (subEl) subEl.innerText = 'Reskala geometri terhadap luas sertifikat atau surat ukur resmi ATR/BPN';
+        if (labelEl) labelEl.innerText = 'Luas Sertifikat / Surat Ukur BPN (m²)';
+        if (inputEl) {
+          inputEl.placeholder = totalM2.toFixed(2);
+          inputEl.value = '';
+        }
+        if (helpEl) helpEl.innerText = 'Masukkan angka luas resmi yang tertera pada sertifikat tanah / Surat Ukur BPN.';
+      }
+
+      updateRescalePreview();
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeRescaleModal() {
+      const modal = document.getElementById('modalRescaleParcel');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function updateRescalePreview() {
+      const inputEl = document.getElementById('rescaleInputValue');
+      const targetCleanEl = document.getElementById('rescaleTargetCleanM2');
+      const newAreaEl = document.getElementById('rescalePreviewNewM2');
+      const scaleRatioEl = document.getElementById('rescalePreviewScaleRatio');
+      const btnConfirm = document.getElementById('btnConfirmRescale');
+
+      const val = parseFloat(inputEl?.value);
+      if (!val || isNaN(val) || val <= 0 || currentRescaleInitialM2 <= 0) {
+        if (targetCleanEl) targetCleanEl.innerText = '-';
+        if (newAreaEl) newAreaEl.innerText = '-';
+        if (scaleRatioEl) scaleRatioEl.innerText = '-';
+        if (btnConfirm) btnConfirm.disabled = true;
+        return;
+      }
+
+      let targetClean = 0;
+      let newArea = 0;
+      let s = 1;
+
+      if (currentRescaleMode === 'oss') {
+        targetClean = Math.max(0.01, currentRescaleInitialM2 - 0.10);
+        newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
+        s = Math.sqrt(newArea / currentRescaleInitialM2);
+      } else {
+        targetClean = Math.max(0.01, val - 0.10);
+        newArea = targetClean;
+        s = Math.sqrt(newArea / currentRescaleInitialM2);
+      }
+
+      if (targetCleanEl) targetCleanEl.innerText = formatAreaM2(targetClean);
+      if (newAreaEl) newAreaEl.innerText = formatAreaM2(newArea);
+      if (scaleRatioEl) scaleRatioEl.innerText = `${s.toFixed(6)}x`;
+      if (btnConfirm) btnConfirm.disabled = false;
+    }
+
+    function applyRescaleAndDownload() {
+      const inputEl = document.getElementById('rescaleInputValue');
+      const val = parseFloat(inputEl?.value);
+      if (!val || isNaN(val) || val <= 0 || currentRescaleInitialM2 <= 0) {
+        showToast('Masukkan nilai luas yang valid terlebih dahulu.', 'warn');
+        return;
+      }
+
+      ensureActiveVerticesFromDraw();
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      if (!rawParts[0] || rawParts[0].length < 3) {
+        showToast('Pilih atau gambar bidang tanah pada peta terlebih dahulu.', 'warn');
+        return;
+      }
+
+      let targetClean = 0;
+      let newArea = 0;
+      let s = 1;
+
+      if (currentRescaleMode === 'oss') {
+        targetClean = Math.max(0.01, currentRescaleInitialM2 - 0.10);
+        newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
+        s = Math.sqrt(newArea / currentRescaleInitialM2);
+      } else {
+        targetClean = Math.max(0.01, val - 0.10);
+        newArea = targetClean;
+        s = Math.sqrt(newArea / currentRescaleInitialM2);
+      }
+
+      const newParts = rawParts.map(part => {
+        let sumLat = 0, sumLng = 0;
+        part.forEach(v => { sumLat += v.lat; sumLng += v.lng; });
+        const cLat = sumLat / part.length;
+        const cLng = sumLng / part.length;
+        return part.map(v => ({
+          lat: Number((cLat + s * (v.lat - cLat)).toFixed(7)),
+          lng: Number((cLng + s * (v.lng - cLng)).toFixed(7))
+        }));
+      });
+
+      if (activeMultiParts && activeMultiParts.length > 1) {
+        activeMultiParts = newParts;
+        activeVertices = activeMultiParts[0];
+      } else {
+        activeVertices = newParts[0];
+        activeMultiParts = null;
+      }
+
+      let updatedTotalM2 = 0;
+      newParts.forEach(p => { updatedTotalM2 += calculatePolygonArea(p); });
+
+      if (!activePinData) {
+        activePinData = {
+          fid: 'Reskala Mandiri',
+          tipe_hak: 'Hasil Pengukuran',
+          luas_m2: roundArea2(updatedTotalM2),
+          luas_ha: roundAreaHa6(updatedTotalM2),
+          desa: '-',
+          kecamatan: '-',
+          kabkot: '-',
+          provinsi: '-'
+        };
+      } else {
+        activePinData.luas_m2 = roundArea2(updatedTotalM2);
+        activePinData.luas_ha = roundAreaHa6(updatedTotalM2);
+      }
+
+      if (typeof isGeometryManuallyEdited !== 'undefined') isGeometryManuallyEdited = false;
+      renderCanvasPolygon(true);
+      closeRescaleModal();
+      showToast(`Geometri berhasil diskala ulang (${formatAreaM2(updatedTotalM2)}). Mengunduh paket Shapefile...`, 'success');
+      setTimeout(() => {
+        triggerShpDownloadFromActive();
+      }, 350);
+    }
+
+    function downloadCoordsCad(mode = 'scr_scale100') {
+      if (!isMemberProActive()) {
+        showToast('Fitur Ekspor Format CAD & Koordinat khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        openMemberModal();
+        return;
+      }
       if (!window._dgKey || window._dgKey !== 0x7E3A9) {
         showToast('Validasi format CAD gagal.', 'crimson');
         return;
@@ -223,20 +359,100 @@ function exportCoordinatesXls() {
       if (!rawParts[0] || rawParts[0].length < 3) return;
       const parts = getExportVerticesWithOssAdjustment(rawParts);
 
-      if (mode === 'scr') {
-        let scr = '; AutoCAD Script File generated by DutaGeoSpasi (dutamik.id)\n';
-        scr += '; Sistem: UTM WGS84 Cartesian (X Easting, Y Northing)\n';
-        scr += '_PLINE\n';
+      if (mode === 'scr_scale100' || mode === 'scr_scale100_m' || mode === 'scr_scale100_cm') {
+        const isCm = (mode === 'scr_scale100_cm');
+        const scaleMult = isCm ? 100.0 : 1.0;
+        const unitName = isCm ? 'Centimeter (1 unit = 1 cm)' : 'Meter (1 unit = 1 m / 100 cm lapangan)';
+        
+        let p1Utm = null;
+        for (let pIdx = 0; pIdx < parts.length; pIdx++) {
+          if (parts[pIdx] && parts[pIdx].length > 0) {
+            p1Utm = getUtmCoordinates(parts[pIdx][0].lat, parts[pIdx][0].lng);
+            break;
+          }
+        }
+        if (!p1Utm) return;
+        const originX = p1Utm.x;
+        const originY = p1Utm.y;
+
+        let scr = '; ==============================================================================\n';
+        scr += '; AUTOCAD SCRIPT FILE (.SCR) : SKALA 1cm : 100cm (SKALA 1:100)\n';
+        scr += '; Aplikasi: Duta GeoSpasi (geospasi.dutamik.id)\n';
+        scr += '; Pengembang: Duta Digital Agensi (dutamik.id) : Sukoharjo, Jawa Tengah\n';
+        scr += '; Tagline: Duta Media Informasi berKarya\n';
+        scr += '; Mode: Gambar Bidang Langsung Skala 1cm : 100cm (Skala 1:100)\n';
+        scr += `; Satuan CAD: ${unitName}\n`;
+        scr += '; Titik Acuan: Origin Lokal (P1 = 0.000, 0.000)\n';
+        scr += '; Cara Pakai: Buka AutoCAD / Civil 3D, seret file .SCR ini langsung ke layar kerja\n';
+        scr += '; ==============================================================================\n';
+
         parts.forEach((pList) => {
+          if (!pList || pList.length < 3) return;
+          scr += '_PLINE\n';
+          pList.forEach((v) => {
+            const utm = getUtmCoordinates(v.lat, v.lng);
+            const dx = (utm.x - originX) * scaleMult;
+            const dy = (utm.y - originY) * scaleMult;
+            scr += `${dx.toFixed(isCm ? 2 : 3)},${dy.toFixed(isCm ? 2 : 3)}\n`;
+          });
+          scr += '_C\n';
+        });
+
+        parts.forEach((pList) => {
+          if (!pList) return;
+          pList.forEach((v) => {
+            const utm = getUtmCoordinates(v.lat, v.lng);
+            const dx = (utm.x - originX) * scaleMult;
+            const dy = (utm.y - originY) * scaleMult;
+            scr += `_POINT ${dx.toFixed(isCm ? 2 : 3)},${dy.toFixed(isCm ? 2 : 3)}\n`;
+          });
+        });
+
+        scr += '_ZOOM\n_E\n';
+        const fn = isCm ? 'DutaGeoSpasi_bidang_skala_1_100_cm.scr' : 'DutaGeoSpasi_bidang_skala_1_100_meter.scr';
+        downloadFile(scr, fn, 'application/x-cad-script;charset=utf-8');
+        showToast(`Script AutoCAD (.SCR) Skala 1cm : 100cm (${isCm ? 'Centimeter' : 'Meter'}) berhasil diunduh. Seret berkas ke AutoCAD!`, 'success');
+      } else if (mode === 'scr_utm' || mode === 'scr') {
+        let firstUtm = null;
+        for (let pIdx = 0; pIdx < parts.length; pIdx++) {
+          if (parts[pIdx] && parts[pIdx].length > 0) {
+            firstUtm = getUtmCoordinates(parts[pIdx][0].lat, parts[pIdx][0].lng);
+            break;
+          }
+        }
+        const zoneStr = firstUtm ? firstUtm.zone : 'UTM WGS84';
+
+        let scr = '; ==============================================================================\n';
+        scr += '; AUTOCAD SCRIPT FILE (.SCR) : KOORDINAT SISTEM SHP (UTM WGS84)\n';
+        scr += '; Aplikasi: Duta GeoSpasi (geospasi.dutamik.id)\n';
+        scr += '; Pengembang: Duta Digital Agensi (dutamik.id) : Sukoharjo, Jawa Tengah\n';
+        scr += '; Tagline: Duta Media Informasi berKarya\n';
+        scr += '; Mode: Gambar Bidang Sesuai Koordinat Sistem SHP ke AutoCAD\n';
+        scr += `; Sistem Koordinat: UTM WGS84 Cartesian (X Easting, Y Northing meter) Zona ${zoneStr}\n`;
+        scr += '; Cara Pakai: Buka AutoCAD / Civil 3D, seret file .SCR ini langsung ke layar kerja\n';
+        scr += '; ==============================================================================\n';
+
+        parts.forEach((pList) => {
+          if (!pList || pList.length < 3) return;
+          scr += '_PLINE\n';
           pList.forEach((v) => {
             const utm = getUtmCoordinates(v.lat, v.lng);
             scr += `${utm.x.toFixed(3)},${utm.y.toFixed(3)}\n`;
           });
+          scr += '_C\n';
         });
-        scr += '_C\n';
+
+        parts.forEach((pList) => {
+          if (!pList) return;
+          pList.forEach((v) => {
+            const utm = getUtmCoordinates(v.lat, v.lng);
+            scr += `_POINT ${utm.x.toFixed(3)},${utm.y.toFixed(3)}\n`;
+          });
+        });
+
         scr += '_ZOOM\n_E\n';
-        downloadFile(scr, 'DutaGeoSpasi_gambar_cad.scr', 'application/x-cad-script;charset=utf-8');
-        showToast('Script AutoCAD (.SCR) berhasil diunduh. Seret berkas langsung ke layar AutoCAD!', 'success');
+        downloadFile(scr, 'DutaGeoSpasi_bidang_koordinat_shp.scr', 'application/x-cad-script;charset=utf-8');
+        showToast('Script AutoCAD (.SCR) Koordinat Sistem SHP (UTM WGS84) berhasil diunduh. Seret berkas ke AutoCAD!', 'success');
       } else if (mode === 'penz') {
         let penz = 'Point,Easting,Northing,Elevation,Description\n';
         let ptNum = 1;
@@ -371,7 +587,7 @@ function exportCoordinatesXls() {
 
     function switchAttrTab(tab) {
       if (tab === 'custom' && !(typeof isMemberProActive === 'function' && isMemberProActive())) {
-        showToast('Pengaturan atribut terkunci untuk akun Gratis (Atribut: LAYER: geospasi.dutamik.id). Upgrade ke PRO untuk mengaktifkan.', 'warn');
+        showToast('Pengaturan terkunci untuk akun Gratis (LAYER: geospasi.dutamik.id). Upgrade ke PRO untuk mengaktifkan.', 'warn');
         openMemberModal();
         return;
       }
@@ -900,8 +1116,11 @@ function exportCoordinatesXls() {
     window.exportCoordinatesOnly = exportCoordinatesOnly;
     window.openExportCoordsModal = openExportCoordsModal;
     window.closeExportCoordsModal = closeExportCoordsModal;
-    window.downloadCoordsMap = downloadCoordsMap;
-    window.copyCoordsMapClipboard = copyCoordsMapClipboard;
+    window.openRescaleModal = openRescaleModal;
+    window.closeRescaleModal = closeRescaleModal;
+    window.updateRescalePreview = updateRescalePreview;
+    window.applyRescaleAndDownload = applyRescaleAndDownload;
+    window.exportDXF = exportDXF;
     window.downloadCoordsCad = downloadCoordsCad;
     window.exportGeoJSON = exportGeoJSON;
     window.switchAttrTab = switchAttrTab;

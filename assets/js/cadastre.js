@@ -248,11 +248,105 @@ function getBpnGatewayBase() {
       if (label) label.innerText = `${val}%`;
     }
 
+    function getCadastreServerMode() {
+      const mode = localStorage.getItem('cadastre_server_mode');
+      if (mode === 'server2' && typeof isMemberProActive === 'function' && isMemberProActive()) {
+        return 'server2';
+      }
+      return 'server1';
+    }
+
+    function switchCadastreServer(mode) {
+      if (mode === 'server2') {
+        if (typeof isMemberProActive !== 'function' || !isMemberProActive()) {
+          showToast('Server 2 (Pengambilan data langsung di BPN) khusus untuk Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+          if (typeof openMemberModal === 'function') openMemberModal();
+          return false;
+        }
+        localStorage.setItem('cadastre_server_mode', 'server2');
+        showToast('Mode Server 2 Aktif: Mengambil data langsung dari BPN tanpa melalui server Supabase.', 'success');
+      } else {
+        localStorage.setItem('cadastre_server_mode', 'server1');
+        showToast('Mode Server 1 Aktif: Menggunakan Supabase Gateway Cloud resmi.', 'info');
+      }
+      updateCadastreServerUI();
+      return true;
+    }
+
+    function updateCadastreServerUI() {
+      const mode = getCadastreServerMode();
+      const badge = document.getElementById('badgeServerKadaster');
+      const badgeBidang = document.getElementById('badgeServerKadasterBidang');
+      const btn1 = document.getElementById('btnServer1');
+      const btn2 = document.getElementById('btnServer2');
+      const btn1Bidang = document.getElementById('btnServer1Bidang');
+      const btn2Bidang = document.getElementById('btnServer2Bidang');
+      const desc = document.getElementById('serverDescText');
+      const descBidang = document.getElementById('serverDescBidangText');
+      const pinServerText = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
+
+      if (mode === 'server2') {
+        if (badge) {
+          badge.className = 'badge-pill green';
+          badge.innerText = 'SERVER 2 (BPN PRO)';
+        }
+        if (badgeBidang) {
+          badgeBidang.className = 'badge-pill green';
+          badgeBidang.innerText = 'SERVER 2 (BPN PRO)';
+        }
+        if (btn1) btn1.classList.remove('active');
+        if (btn2) btn2.classList.add('active');
+        if (btn1Bidang) btn1Bidang.classList.remove('active');
+        if (btn2Bidang) btn2Bidang.classList.add('active');
+        if (desc) desc.innerText = 'Server 2 Aktif: Pengambilan data langsung dari BPN dan diproses di browser.';
+        if (descBidang) descBidang.innerText = 'Server 2 Aktif: Pengambilan data langsung dari BPN dan diproses di browser.';
+        if (pinServerText) pinServerText.innerText = 'Server 2 (BPN PRO)';
+      } else {
+        if (badge) {
+          badge.className = 'badge-pill blue';
+          badge.innerText = 'SERVER 1 (CLOUD)';
+        }
+        if (badgeBidang) {
+          badgeBidang.className = 'badge-pill blue';
+          badgeBidang.innerText = 'SERVER 1 (CLOUD)';
+        }
+        if (btn1) btn1.classList.add('active');
+        if (btn2) btn2.classList.remove('active');
+        if (btn1Bidang) btn1Bidang.classList.add('active');
+        if (btn2Bidang) btn2Bidang.classList.remove('active');
+        if (desc) desc.innerText = 'Server 1: Supabase Gateway Cloud resmi.';
+        if (descBidang) descBidang.innerText = 'Server 1: Supabase Gateway Cloud resmi.';
+        if (pinServerText) pinServerText.innerText = 'Server 1 (Cloud)';
+      }
+    }
+
     async function fetchPersilCadastreData(lat, lng, zoom = 19) {
       const cacheKey = `${lat.toFixed(6)},${lng.toFixed(6)}`;
       const cached = persilClientCache.get(cacheKey);
       if (cached && cached.data && cached.data.found && (Date.now() - cached.time < 600000)) {
         return cached.data;
+      }
+
+      const sMode = getCadastreServerMode();
+      if (sMode === 'server2') {
+        const delta = 0.0006;
+        const bpnDirectUrl = `https://atlas.atrbpn.go.id/geoserver/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=bhumi:Persil&QUERY_LAYERS=bhumi:Persil&BBOX=${(lng - delta).toFixed(6)},${(lat - delta).toFixed(6)},${(lng + delta).toFixed(6)},${(lat + delta).toFixed(6)}&WIDTH=101&HEIGHT=101&X=50&Y=50&SRS=EPSG:4326&INFO_FORMAT=application/json`;
+        try {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 7000);
+          const res = await fetch(bpnDirectUrl, { signal: controller.signal, mode: 'cors' });
+          clearTimeout(tid);
+          if (res.ok) {
+            const data = await res.json();
+            const parsed = parseGeoServerPersilGeoJson(data, lat, lng);
+            if (parsed && parsed.found && Array.isArray(parsed.polygon_coords) && parsed.polygon_coords.length >= 3) {
+              persilClientCache.set(cacheKey, { data: parsed, time: Date.now() });
+              return parsed;
+            }
+          }
+        } catch (e) {
+          showToast('Server 2 BPN langsung gagal merespons, beralih ke Server 1.', 'info');
+        }
       }
 
       const endpointsToTry = [];
@@ -366,6 +460,7 @@ function getBpnGatewayBase() {
 
         const effectivePersil = persilData;
         if (effectivePersil && effectivePersil.found && effectivePersil.polygon_coords && effectivePersil.polygon_coords.length >= 3) {
+          isGeometryManuallyEdited = false;
           activePinData = {
             lat: lat,
             lng: lng,
@@ -389,11 +484,26 @@ function getBpnGatewayBase() {
           if (elLokasi) elLokasi.innerText = lokasiUtama;
 
           const elLuasBpn = document.getElementById('pinLuasBpnText');
-          if (elLuasBpn) elLuasBpn.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : '-';
+          if (elLuasBpn) {
+            if (activePinData.luas_m2 > 0) {
+              elLuasBpn.className = 'stat-value emerald';
+              elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+            } else {
+              elLuasBpn.className = 'stat-value offline';
+              elLuasBpn.innerText = 'Belum Terhubung Server';
+            }
+          }
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-          if (elStatusValidasi) elStatusValidasi.innerText = effectivePersil.status_validasi || 'Terverifikasi Resmi';
+          if (elStatusValidasi) {
+            elStatusValidasi.className = 'spec-value emerald';
+            elStatusValidasi.innerText = effectivePersil.status_validasi || 'Terverifikasi Resmi';
+          }
+          const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
+          if (elPinServer) {
+            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2 (BPN PRO)' : 'Server 1 (Cloud)';
+          }
 
           const badgeEl = document.getElementById('badgeTipeHak');
           if (badgeEl) badgeEl.innerText = activePinData.tipe_hak;
@@ -467,7 +577,7 @@ function getBpnGatewayBase() {
             { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
           ];
           const estArea = Math.round(calculatePolygonArea(defaultBox));
-
+          isGeometryManuallyEdited = false;
           activePinData = {
             lat: lat,
             lng: lng,
@@ -491,11 +601,21 @@ function getBpnGatewayBase() {
           if (elLokasi) elLokasi.innerText = lokasiFallback;
 
           const elLuasBpn = document.getElementById('pinLuasBpnText');
-          if (elLuasBpn) elLuasBpn.innerText = `${estArea.toLocaleString('id-ID')} m² (Estimasi)`;
+          if (elLuasBpn) {
+            elLuasBpn.className = 'stat-value offline';
+            elLuasBpn.innerText = 'Belum Terhubung Server';
+          }
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-          if (elStatusValidasi) elStatusValidasi.innerText = 'Delineasi Mandiri Aktif';
+          if (elStatusValidasi) {
+            elStatusValidasi.className = 'status-offline-tag';
+            elStatusValidasi.innerText = 'Belum Terhubung Server';
+          }
+          const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
+          if (elPinServer) {
+            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2 (BPN PRO)' : 'Server 1 (Cloud)';
+          }
 
           const badgeEl = document.getElementById('badgeTipeHak');
           if (badgeEl) badgeEl.innerText = 'DELINEASI MANDIRI';
@@ -528,7 +648,9 @@ function getBpnGatewayBase() {
             const elHudNib = document.getElementById('hudNib');
             if (elHudNib) elHudNib.innerText = lokasiFallback;
             const elHudArea = document.getElementById('hudBpnArea');
-            if (elHudArea) elHudArea.innerText = `${estArea.toLocaleString('id-ID')} m²`;
+            if (elHudArea) {
+              elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+            }
           }
 
           rawInitialBboxCoords = defaultBox;
@@ -714,6 +836,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
 
     function clearCanvasRebuilderLayers() {
       isParcelLocked = false;
+      isGeometryManuallyEdited = false;
       activeMultiParts = null;
       if (activePolygonLayer) {
         map.removeLayer(activePolygonLayer);
@@ -838,3 +961,7 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
         text.innerText = 'Gateway Online: Aktif';
       }
     }
+
+    window.getCadastreServerMode = getCadastreServerMode;
+    window.switchCadastreServer = switchCadastreServer;
+    window.updateCadastreServerUI = updateCadastreServerUI;

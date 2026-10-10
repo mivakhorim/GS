@@ -66,6 +66,7 @@
     var isMergeMode = false;
     var mergeParcelsList = [];
     var mergePreviewLayers = [];
+    var isGeometryManuallyEdited = false;
 
     var DEFAULT_LAT = -6.1884;
     var DEFAULT_LON = 106.8320;
@@ -340,7 +341,7 @@ function latLngToUtm(lat, lon) {
       if (lat < 0) {
         utmNorthing += 10000000.0;
       }
-      return { zone: zone + (lat >= 0 ? 'N' : 'S'), easting: Math.round(utmEasting), northing: Math.round(utmNorthing) };
+      return { zone: zone + (lat >= 0 ? 'N' : 'S'), easting: utmEasting, northing: utmNorthing };
     }
 
     function calculatePolygonArea(coords) {
@@ -520,17 +521,16 @@ function latLngToUtm(lat, lon) {
           tabBtnOss.style.cursor = 'default';
         }
         if (attrModeBadge) {
-          attrModeBadge.className = 'badge-pill';
-          attrModeBadge.style.backgroundColor = '#f1f5f9';
-          attrModeBadge.style.color = '#475569';
-          attrModeBadge.innerText = 'GRATIS: LAYER ONLY (MAKS 150 M²)';
+          attrModeBadge.className = '';
+          attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--text-sub);';
+          attrModeBadge.innerText = 'Ekspor Dasar (Maksimal 150 m²)';
         }
         let freeNotice = document.getElementById('shpFreeAttrNotice');
         if (!freeNotice && boxEkspor) {
           freeNotice = document.createElement('div');
           freeNotice.id = 'shpFreeAttrNotice';
-          freeNotice.style.cssText = 'font-size:0.71rem;background:#f8fafc;border:1px solid #cbd5e1;padding:6px 10px;border-radius:4px;color:#334155;margin:6px 0;line-height:1.4;';
-          freeNotice.innerHTML = '<b>Mode Akun Gratis:</b> Atribut terkunci pada <code>LAYER: geospasi.dutamik.id</code> (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color:#0284c7;font-weight:600;text-decoration:none;">Upgrade ke PRO</a> untuk atribut kustom &amp; luas tanpa batas.';
+          freeNotice.style.cssText = 'font-size: 0.71rem; color: var(--text-sub); margin: 4px 0 6px 0; line-height: 1.45;';
+          freeNotice.innerHTML = 'Mode Akun Gratis: Terkunci pada <code>LAYER: geospasi.dutamik.id</code> (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
           const tabNav = boxEkspor.querySelector('div[style*="border-bottom"]');
           if (tabNav) {
             boxEkspor.insertBefore(freeNotice, tabNav);
@@ -560,8 +560,7 @@ function latLngToUtm(lat, lon) {
     window.currentMemberProfile = function() {
       return { role: 'free', status: 'none', email: '', name: '', expires_at: null };
     };
-    window.loadTestParcel = function() {};
-    window.clearTestParcel = function() {};
+
     window.handlePrintMapTrigger = function() {};
     window.processDirectMobilePdfPrint = function() {};
     window.formatAreaM2 = formatAreaM2;

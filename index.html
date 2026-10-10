@@ -216,6 +216,27 @@
             <div class="content-box">
               <div class="box-header">
                 <div class="box-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                  Koneksi Data Server
+                </div>
+                <span id="badgeServerKadasterBidang" class="badge-pill blue">SERVER 1 (CLOUD)</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
+                <button type="button" id="btnServer1Bidang" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1: Supabase Cloud Gateway">
+                  <span>Server 1 (Cloud)</span>
+                </button>
+                <button type="button" id="btnServer2Bidang" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2: Langsung BPN (Khusus Member PRO)">
+                  <span>Server 2 (BPN PRO)</span>
+                </button>
+              </div>
+              <div id="serverDescBidangText" style="font-size: 0.69rem; color: var(--text-sub); line-height: 1.4; background-color: var(--bg-subtle); padding: 5px 8px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
+                Server 1: Supabase Gateway Cloud resmi.
+              </div>
+            </div>
+
+            <div class="content-box">
+              <div class="box-header">
+                <div class="box-title">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   Informasi Bidang Tanah
                 </div>
@@ -225,15 +246,23 @@
               <div class="card-equal-grid" style="margin-bottom: 0.65rem;">
                 <div class="stat-card">
                   <span class="stat-label">Luas Data Terdaftar</span>
-                  <span id="pinLuasBpnText" class="stat-value emerald">-</span>
+                  <div style="margin-top: 3px; display: flex; align-items: center; min-height: 24px;">
+                    <span id="pinLuasBpnText" class="stat-value emerald">-</span>
+                  </div>
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">Luas di Gambar</span>
-                  <span id="canvasLiveAreaM2" class="stat-value highlight">-</span>
+                  <div style="margin-top: 3px; display: flex; align-items: center; min-height: 24px;">
+                    <span id="canvasLiveAreaM2" class="stat-value highlight">-</span>
+                  </div>
                 </div>
               </div>
 
               <div class="spec-list" style="margin-bottom: 0.75rem;">
+                <div class="spec-item">
+                  <span class="spec-label">Server Data</span>
+                  <span class="spec-value" id="pinServerDataText">Server 1 (Cloud)</span>
+                </div>
                 <div class="spec-item">
                   <span class="spec-label">Kabupaten / Kota</span>
                   <span class="spec-value" id="pinKabkotText">-</span>
@@ -289,7 +318,7 @@
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Ekspor &amp; Cetak Peta Bidang
                 </div>
-                <span class="badge-pill blue" id="attrModeBadge">OSS &amp; AMDALNET</span>
+                <span id="attrModeBadge" style="font-size: 0.72rem; font-weight: 600; color: var(--text-sub);">Ekspor Dasar (Maksimal 150 m²)</span>
               </div>
 
               <div style="display: flex; border-bottom: 1px solid var(--border-light); margin-bottom: 0.65rem;">
@@ -361,16 +390,15 @@
               </div>
 
               <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-                <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.5rem 0.65rem; border-radius: var(--radius-sm);">
-                  <label style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 0.72rem; color: var(--text-main); font-weight: 600; line-height: 1.35; margin: 0;">
-                    <input type="checkbox" id="chkExportOssAdjust" style="margin-top: 2px; accent-color: var(--accent); cursor: pointer;" onchange="if(this.checked) showToast('Mode Ekspor OSS RBA aktif: skala geometri disusutkan 0,01 m² dari luas sertifikat.', 'info')">
-                    <span>
-                      <span>Mode Ekspor OSS RBA (-0,01 m²)</span>
-                      <span style="display: block; font-size: 0.66rem; color: var(--text-sub); font-weight: 400; margin-top: 1px;">
-                        Menyusutkan geometri 0,01 m² lebih kecil dari luas terukur agar tidak melebihi luas sertifikat (syarat validasi spasial OSS/ATR-BPN).
-                      </span>
-                    </span>
-                  </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem;">
+                  <button type="button" class="btn btn-outline" onclick="openRescaleModal('bpn')" style="font-size: 0.72rem; font-weight: 700; padding: 0.45rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    <span>Penyesuaian Luas BPN</span>
+                  </button>
+                  <button type="button" class="btn btn-outline" onclick="openRescaleModal('oss')" style="font-size: 0.72rem; font-weight: 700; padding: 0.45rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/></svg>
+                    <span>Penyesuaian Luas OSS</span>
+                  </button>
                 </div>
 
                 <button class="btn btn-primary btn-block" onclick="triggerShpDownloadFromActive()" style="background-color: var(--accent); color: #ffffff; border: 1px solid var(--accent); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.45rem;">
@@ -388,7 +416,7 @@
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
                     <span>Excel (.xlsx)</span>
                   </button>
-                  <button type="button" class="btn btn-outline export-sub-btn" onclick="openExportCoordsModal()" title="Konversi Format CAD / DXF / CSV">
+                  <button type="button" class="btn btn-outline export-sub-btn" onclick="openExportCoordsModal()" title="Konversi Format CAD / DXF">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                     <span>Format CAD</span>
                   </button>
@@ -411,18 +439,6 @@
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <span>Google Maps</span>
                   </a>
-                </div>
-
-                <div id="testParcelBox" style="display: flex; flex-direction: column; gap: 0.35rem; background-color: var(--bg-subtle); padding: 0.5rem; border-radius: var(--radius-sm); border: 1px dashed var(--border-strong); margin-top: 0.3rem;">
-                  <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-sub); display: flex; justify-content: space-between; align-items: center;">
-                    <span>PENGUJIAN FITUR EKSPOR</span>
-                    <span style="font-size: 0.62rem; color: var(--text-muted);">Uji Cepat Luas</span>
-                  </div>
-                  <div style="display: flex; gap: 0.35rem;">
-                    <button type="button" class="btn btn-outline" onclick="loadTestParcel('small')" style="flex: 1; font-size: 0.68rem; padding: 4px;">Uji 100 m² (Gratis)</button>
-                    <button type="button" class="btn btn-outline" onclick="loadTestParcel('large')" style="flex: 1; font-size: 0.68rem; padding: 4px;">Uji 300 m² (&gt;150 m²)</button>
-                    <button type="button" class="btn btn-outline" onclick="clearTestParcel()" style="font-size: 0.68rem; padding: 4px 8px; color: var(--crimson);">Bersihkan</button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -556,6 +572,23 @@
             </button>
             <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.35;">
               Sumber: Basis Data Kadastral Geospasial Nasional (memuat mutasi, pemecahan, dan pendaftaran bidang terbaru).
+            </div>
+            <div style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border-light);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-main);">Pilihan Server Kadaster</span>
+                <span id="badgeServerKadaster" class="badge-pill blue">SERVER 1 (CLOUD)</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+                <button type="button" id="btnServer1" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1: Supabase Cloud Gateway">
+                  <span>Server 1 (Cloud)</span>
+                </button>
+                <button type="button" id="btnServer2" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2: Langsung BPN (Khusus Member PRO)">
+                  <span>Server 2 (BPN PRO)</span>
+                </button>
+              </div>
+              <div id="serverDescText" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.35;">
+                Server 1: Supabase Gateway Cloud resmi.
+              </div>
             </div>
           </div>
 
@@ -1171,40 +1204,15 @@
         </div>
 
         <div style="border-top: 1px solid var(--border-light); padding-top: 0.65rem;">
-          <div style="font-weight: 700; font-size: 0.75rem; color: var(--text-main); margin-bottom: 0.45rem;">Perbandingan Hak Akses Fitur:</div>
-          <table class="member-features-table" style="width: 100%; border-collapse: collapse; font-size: 0.72rem;">
-            <thead>
-              <tr>
-                <th style="padding: 7px 10px; background-color: var(--bg-subtle); color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border-light); text-align: left; width: 52%;">Fitur Geospasial</th>
-                <th style="padding: 7px 10px; background-color: var(--bg-subtle); color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border-light); text-align: center; width: 24%;">Tamu / Free</th>
-                <th style="padding: 7px 10px; background-color: var(--bg-subtle); color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border-light); text-align: center; width: 24%;">Member PRO</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Inspeksi Bidang Kadastral &amp; Ukur Luas</td>
-                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
-                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
-              </tr>
-              <tr>
-                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Digitasi Patok Batas CAD</td>
-                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
-                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Aktif</td>
-              </tr>
-              <tr>
-                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Ekspor ESRI Shapefile (.ZIP)</td>
-                <td style="color: var(--crimson); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Terkunci</td>
-                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Unlimited</td>
-              </tr>
-              <tr>
-                <td style="padding: 7px 10px; border-bottom: 1px solid var(--border-light); line-height: 1.35;">Ekspor CAD (.SCR), GeoJSON, Excel</td>
-                <td style="color: var(--crimson); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Terkunci</td>
-                <td style="color: var(--emerald); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--border-light); text-align: center;">Unlimited</td>
-              </tr>
-            </tbody>
-          </table>
-          <div style="margin-top: 0.65rem; background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;">
-            <strong>Dukungan &amp; Saran Fitur:</strong> Jika ada fitur yang memerlukan penyesuaian khusus atau saran fitur baru, pengguna dapat menghubungi Admin Duta Digital Agensi (dutamik.id) untuk penambahan update pada versi berikutnya.
+          <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; font-size: 0.74rem; line-height: 1.5; color: var(--text-main);">
+            <div style="font-weight: 700; color: var(--accent); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Akses Fitur Data Geospasial</span>
+            </div>
+            Mode Akun Gratis: Terkunci pada LAYER: geospasi.dutamik.id (Maks luas 150 m²). Berkas: geospasi.zip. Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
+          </div>
+          <div style="margin-top: 0.6rem; background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;">
+            <strong>Dukungan &amp; Saran Fitur:</strong> Jika ada fitur yang memerlukan penyesuaian khusus atau saran fitur baru, pengguna dapat menghubungi Admin Duta Digital Agensi (dutamik.id) untuk penambahan pembaruan pada versi berikutnya.
           </div>
         </div>
       </div>
@@ -1222,7 +1230,7 @@
         </div>
 
         <div id="memberStatusAlert" style="background-color: var(--bg-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.74rem; line-height: 1.45;">
-          Akun Anda saat ini berstatus <strong>FREE TIER</strong>. Hak akses ekspor Shapefile dan CAD dikunci. Lakukan pembayaran via QRIS untuk aktivasi status PRO Lifetime.
+          Mode Akun Gratis: Terkunci pada LAYER: geospasi.dutamik.id (Maks luas 150 m²). Berkas: geospasi.zip. Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
@@ -1350,6 +1358,20 @@
           Data bidang tanah kadaster diproses melalui koneksi HTTPS berkecepatan tinggi dengan validasi resmi ATR/BPN Republik Indonesia.
         </div>
         <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
+          <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Pilihan Server Kadaster:</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.35rem;">
+            <button type="button" class="btn btn-outline" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;">
+              <span>Server 1 (Cloud)</span>
+            </button>
+            <button type="button" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;">
+              <span>Server 2 (BPN PRO)</span>
+            </button>
+          </div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
+            Server 2 mengambil data langsung dari BPN dan diproses di peramban tanpa perantara server Supabase (khusus Member PRO).
+          </div>
+        </div>
+        <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
           <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Keamanan Otentikasi Google:</span>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
             Sistem otentikasi Google OAuth dikunci secara ketat untuk domain resmi <code>https://geospasi.dutamik.id</code>.
@@ -1403,7 +1425,8 @@
         <div id="printSheetScaleWrapper" class="print-sheet-scale-wrapper">
           <div id="printMapSheet" class="print-sheet-paper">
           <div class="print-sheet-frame">
-            <div class="print-graticule-bar" id="printGraticuleTop">
+            <div class="print-sheet-inner-frame">
+              <div class="print-graticule-bar" id="printGraticuleTop">
               <span id="gratNw">106°49'48"E, 6°11'18"S</span>
               <span id="gratNorth">GRID KOORDINAT GEOGRAFI & UTM WGS 84</span>
               <span id="gratNe">106°50'12"E, 6°11'18"S</span>
@@ -1559,6 +1582,7 @@
               <span id="gratSw">106°49'48"E, 6°11'32"S</span>
               <span id="gratScaleText">DUTA GEOSPASI : SISTEM DIGITALISASI GEOSPASIAL INDONESIA</span>
               <span id="gratSe">106°50'12"E, 6°11'32"S</span>
+            </div>
             </div>
           </div>
         </div>
@@ -1720,57 +1744,75 @@
         <div class="modal-coords-grid">
           <div class="export-type-card">
             <div class="export-type-header">
-              <span class="export-type-badge map-badge">WGS84 &amp; UTM</span>
-              <div class="export-type-name">Koordinat Peta</div>
+              <span class="export-type-badge map-badge">VEKTOR CAD (.DXF)</span>
+              <div class="export-type-name">AutoCAD DXF (.dxf)</div>
               <div class="export-type-desc">
-                Format geodetik geografis standar kadastral nasional berupa Latitude &amp; Longitude (Desimal Derajat) serta Proyeksi UTM Nasional. Cocok untuk GPS Geodetik, Handheld GPS, GIS, dan laporan ukur resmi.
+                Format vektor gambar CAD Drawing Interchange Format (.dxf) standar UTM WGS 84. Menyertakan poligon batas tertutup (layer BATAS_BIDANG), titik patok batas (layer PATOK_BATAS), teks label patok P1..Pn, dan teks luas centroid bidang.
               </div>
             </div>
             <div class="export-type-meta">
-              <div class="meta-row"><span>Format Data:</span><span class="font-mono">Lat, Long, UTM X, UTM Y, Jarak</span></div>
-              <div class="meta-row"><span>Sistem Datum:</span><span>WGS 84 / Zona UTM</span></div>
+              <div class="meta-row"><span>Format Data:</span><span class="font-mono">AC1009 ASCII DXF (Layers: Batas, Patok, Teks)</span></div>
+              <div class="meta-row"><span>Kompatibilitas:</span><span>AutoCAD, Civil 3D, QGIS, ArcGIS</span></div>
             </div>
             <div class="export-type-actions">
-              <button class="btn btn-primary" onclick="downloadCoordsMap('txt')" style="background-color: var(--accent); color: #ffffff; border-color: var(--accent);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span>Unduh TXT Peta</span>
-              </button>
-              <button class="btn btn-outline" onclick="downloadCoordsMap('csv')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-                <span>Unduh CSV Peta</span>
-              </button>
-              <button class="btn btn-outline" onclick="copyCoordsMapClipboard()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                <span>Salin Teks</span>
+              <button class="btn btn-primary" onclick="exportDXF()" style="background-color: var(--accent); color: #ffffff; border-color: var(--accent); width: 100%; justify-content: center; gap: 0.45rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                <span>Unduh Berkas AutoCAD DXF (.dxf)</span>
               </button>
             </div>
           </div>
 
           <div class="export-type-card">
             <div class="export-type-header">
-              <span class="export-type-badge cad-badge">SISTEM CAD</span>
-              <div class="export-type-name">Koordinat Sistem CAD</div>
+              <span class="export-type-badge cad-badge">SCRIPT CAD (.SCR) &amp; KOORDINAT</span>
+              <div class="export-type-name">AutoCAD Script (.scr) &amp; Koordinat</div>
               <div class="export-type-desc">
-                Format Cartesian X (Easting), Y (Northing), Z (0.000) siap impor langsung ke AutoCAD, Civil 3D, Land Desktop, atau Total Station. Tersedia script .SCR otomatis gambar garis poligon.
+                Script otomatis (.SCR) gambar bidang tanah langsung di AutoCAD. Tersedia Opsi 1 skala 1cm : 100cm (origin lokal 0,0) dan Opsi 2 koordinat asli sistem SHP (UTM WGS 84).
               </div>
             </div>
             <div class="export-type-meta">
-              <div class="meta-row"><span>Format Data:</span><span class="font-mono">X (Easting), Y (Northing), Z (0.000)</span></div>
-              <div class="meta-row"><span>Kompatibilitas:</span><span>AutoCAD, Civil 3D, Total Station</span></div>
+              <div class="meta-row"><span>Opsi 1 (Skala):</span><span class="font-mono">1cm : 100cm (Origin Lokal 0,0)</span></div>
+              <div class="meta-row"><span>Opsi 2 (Georeferensi):</span><span class="font-mono">Koordinat Sistem SHP (UTM WGS 84)</span></div>
             </div>
-            <div class="export-type-actions">
-              <button class="btn btn-primary" onclick="downloadCoordsCad('scr')" style="background-color: #0369a1; color: #ffffff; border-color: #0369a1;" title="Drag file .SCR ini ke dalam AutoCAD, poligon batas tanah langsung tergambar otomatis!">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                <span>Unduh Script CAD (.SCR)</span>
-              </button>
-              <button class="btn btn-outline" onclick="downloadCoordsCad('penz')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/></svg>
-                <span>Format P,E,N,Z (.TXT)</span>
-              </button>
-              <button class="btn btn-outline" onclick="downloadCoordsCad('xy')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                <span>Format X,Y Murni</span>
-              </button>
+            <div class="export-type-actions" style="display: flex; flex-direction: column; gap: 0.45rem;">
+              <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--navy); display: flex; align-items: center; justify-content: space-between;">
+                  <span>OPSI 1: SKALA 1cm : 100cm</span>
+                  <span style="font-size: 0.65rem; font-weight: 500; color: var(--text-muted);">Origin Lokal (0,0)</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem;">
+                  <button class="btn btn-primary" onclick="downloadCoordsCad('scr_scale100_m')" style="background-color: #0369a1; color: #ffffff; border-color: #0369a1; font-size: 0.71rem; padding: 6px 8px; justify-content: center; gap: 0.3rem;" title="Script CAD Skala 1cm : 100cm Satuan Meter (1 unit = 1 m / 100 cm lapangan). Drag langsung ke AutoCAD!">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    <span>Skala 1:100 (Meter)</span>
+                  </button>
+                  <button class="btn btn-primary" onclick="downloadCoordsCad('scr_scale100_cm')" style="background-color: #0284c7; color: #ffffff; border-color: #0284c7; font-size: 0.71rem; padding: 6px 8px; justify-content: center; gap: 0.3rem;" title="Script CAD Skala 1cm : 100cm Satuan Centimeter (1 unit = 1 cm). Cocok untuk template arsitektur!">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    <span>Skala 1:100 (Centimeter)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.1rem;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--navy); display: flex; align-items: center; justify-content: space-between;">
+                  <span>OPSI 2: KOORDINAT SISTEM SHP</span>
+                  <span style="font-size: 0.65rem; font-weight: 500; color: var(--text-muted);">UTM WGS 84</span>
+                </div>
+                <button class="btn btn-primary" onclick="downloadCoordsCad('scr_utm')" style="background-color: var(--navy); color: #ffffff; border-color: var(--navy); font-size: 0.73rem; padding: 6px 10px; justify-content: center; gap: 0.4rem; width: 100%;" title="Script CAD sesuai koordinat asli sistem SHP (UTM WGS 84 meter). Drag langsung ke AutoCAD!">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+                  <span>SCR Sesuai Koordinat SHP (UTM)</span>
+                </button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-top: 0.1rem;">
+                <button class="btn btn-outline" onclick="downloadCoordsCad('penz')" style="font-size: 0.71rem; padding: 5px 8px; justify-content: center; gap: 0.3rem;" title="Format P,E,N,Z (Point, Easting, Northing, Elev, Desc)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/></svg>
+                  <span>Format P,E,N,Z</span>
+                </button>
+                <button class="btn btn-outline" onclick="downloadCoordsCad('xy')" style="font-size: 0.71rem; padding: 5px 8px; justify-content: center; gap: 0.3rem;" title="Format X,Y Murni Sistem CAD">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  <span>Format X,Y Murni</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1778,6 +1820,76 @@
 
       <div class="modal-coords-footer" style="justify-content: center; align-items: center; text-align: center;">
         <div style="font-size: 0.69rem; color: var(--text-muted); text-align: center;">
+          Duta Digital Agensi (dutamik.id) : Duta Media Informasi berKarya : Sukoharjo, Jawa Tengah
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalRescaleParcel" class="modal-print-overlay" style="display: none;" onclick="if(event.target===this) closeRescaleModal()">
+    <div class="modal-coords-dialog" role="dialog" aria-labelledby="rescaleModalTitle" style="max-width: 480px;">
+      <div class="modal-coords-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div class="modal-coords-badge-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div>
+            <div id="rescaleModalTitle" class="modal-coords-title">PENYESUAIAN LUAS BIDANG</div>
+            <div id="rescaleModalSub" class="modal-coords-sub">Reskala geometri untuk sinkronisasi sistem pertanahan &amp; perizinan</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeRescaleModal()" aria-label="Tutup" style="padding: 4px 8px; border-color: var(--border-light);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-coords-body" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.85rem;">
+        <div style="background-color: var(--bg-surface); border: 1px solid var(--border-light); padding: 0.75rem 0.85rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.35rem;">
+          <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.05em;">Luas Terukur Awal (Geospasial Saat Ini)</div>
+          <div style="display: flex; align-items: baseline; gap: 0.4rem;">
+            <span id="rescaleInitialAreaM2" style="font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 800; color: var(--text-main);">0,00 m²</span>
+            <span id="rescaleInitialAreaHa" style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-sub);">(0,000000 Ha)</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+          <label id="rescaleInputLabel" for="rescaleInputValue" style="font-size: 0.74rem; font-weight: 700; color: var(--text-main);">Luas Terbaca di Sistem OSS (m²)</label>
+          <div style="position: relative;">
+            <input type="number" step="0.01" min="0.01" id="rescaleInputValue" class="input-base" placeholder="Contoh: 61.08" style="width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; font-weight: 700; padding: 0.55rem 2.5rem 0.55rem 0.75rem; box-sizing: border-box;" oninput="updateRescalePreview()">
+            <span style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.74rem; color: var(--text-muted); font-weight: 700; pointer-events: none;">m²</span>
+          </div>
+          <div id="rescaleInputHelp" style="font-size: 0.66rem; color: var(--text-sub);">Masukkan angka luas yang tertera saat hasil ekspor pertama diunggah ke sistem OSS RBA.</div>
+        </div>
+
+        <div style="background-color: var(--bg-surface); border: 1px solid var(--border-light); padding: 0.75rem 0.85rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.45rem;">
+          <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.05em;">Hasil Kalkulasi Reskala Geometri</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+            <span style="color: var(--text-sub);">Target Luas Bersih (-0,10 m²):</span>
+            <span id="rescaleTargetCleanM2" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-main);">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+            <span style="color: var(--text-sub);">Estimasi Luas Baru di Peta:</span>
+            <span id="rescalePreviewNewM2" style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--accent);">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+            <span style="color: var(--text-sub);">Faktor Skala Centroid:</span>
+            <span id="rescalePreviewScaleRatio" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-sub);">-</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+          <button type="button" class="btn btn-outline" onclick="closeRescaleModal()" style="flex: 1; justify-content: center; font-weight: 700; font-size: 0.75rem; padding: 0.55rem;">
+            Batal
+          </button>
+          <button type="button" id="btnConfirmRescale" class="btn btn-primary" onclick="applyRescaleAndDownload()" style="flex: 2; justify-content: center; background-color: var(--accent); color: #ffffff; border-color: var(--accent); font-weight: 700; font-size: 0.75rem; padding: 0.55rem; gap: 0.4rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Konfirmasi &amp; Unduh (.zip)</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-coords-footer" style="justify-content: center; align-items: center; text-align: center;">
+        <div style="font-size: 0.68rem; color: var(--text-muted); text-align: center;">
           Duta Digital Agensi (dutamik.id) : Duta Media Informasi berKarya : Sukoharjo, Jawa Tengah
         </div>
       </div>
