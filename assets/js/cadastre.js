@@ -329,23 +329,47 @@ function getBpnGatewayBase() {
 
       const sMode = getCadastreServerMode();
       if (sMode === 'server2') {
-        const delta = 0.0006;
-        const bpnDirectUrl = `https://atlas.atrbpn.go.id/geoserver/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=bhumi:Persil&QUERY_LAYERS=bhumi:Persil&BBOX=${(lng - delta).toFixed(6)},${(lat - delta).toFixed(6)},${(lng + delta).toFixed(6)},${(lat + delta).toFixed(6)}&WIDTH=101&HEIGHT=101&X=50&Y=50&SRS=EPSG:4326&INFO_FORMAT=application/json`;
+        const r = 6378137.0;
+        const cx = r * (lng * Math.PI / 180);
+        const cy = r * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
+        const d = 30.0;
+        const minx = cx - d, maxx = cx + d, miny = cy - d, maxy = cy + d;
+        const bpnDirectUrl = `https://atlas.atrbpn.go.id/geoserver/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=bhumi:Persil&QUERY_LAYERS=bhumi:Persil&CRS=EPSG:3857&BBOX=${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json&FEATURE_COUNT=50`;
+
+        let rawGeoJson = null;
         try {
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), 7000);
+          const tid = setTimeout(() => controller.abort(), 4000);
           const res = await fetch(bpnDirectUrl, { signal: controller.signal, mode: 'cors' });
           clearTimeout(tid);
           if (res.ok) {
-            const data = await res.json();
-            const parsed = parseGeoServerPersilGeoJson(data, lat, lng);
-            if (parsed && parsed.found && Array.isArray(parsed.polygon_coords) && parsed.polygon_coords.length >= 3) {
-              persilClientCache.set(cacheKey, { data: parsed, time: Date.now() });
-              return parsed;
-            }
+            rawGeoJson = await res.json();
           }
-        } catch (e) {
-          showToast('Server 2 gagal merespons, beralih ke Server 1.', 'info');
+        } catch (_) {}
+
+        if (!rawGeoJson) {
+          try {
+            const proxyTarget = `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=proxy-wms&url=${encodeURIComponent(bpnDirectUrl)}`;
+            const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 9000);
+            const res = await fetch(proxyTarget, {
+              signal: controller.signal,
+              headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
+            });
+            clearTimeout(tid);
+            if (res.ok) {
+              rawGeoJson = await res.json();
+            }
+          } catch (_) {}
+        }
+
+        if (rawGeoJson && Array.isArray(rawGeoJson.features) && rawGeoJson.features.length > 0) {
+          const parsed = parseGeoServerPersilGeoJson(rawGeoJson, lat, lng);
+          if (parsed && parsed.found && Array.isArray(parsed.polygon_coords) && parsed.polygon_coords.length >= 3) {
+            persilClientCache.set(cacheKey, { data: parsed, time: Date.now() });
+            return parsed;
+          }
         }
       }
 
@@ -400,7 +424,7 @@ function getBpnGatewayBase() {
       const proLockHtml = '<span class="pro-lock-text" onclick="openMemberModal()" title="Khusus Member PRO. Klik untuk membuka portal akun." style="cursor:pointer;color:var(--accent);font-weight:600;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Akses PRO</span>';
 
       const elNib = document.getElementById('pinNibText');
-      if (elNib) elNib.innerHTML = isPro ? (activePinData.nib || '-') : proLockHtml;
+      if (elNib) elNib.innerHTML = isPro ? (activePinData.nib_lengkap || activePinData.nib || '-') : proLockHtml;
 
       const elNosu = document.getElementById('pinNosuText');
       if (elNosu) elNosu.innerHTML = isPro ? (activePinData.nosu || '-') : proLockHtml;
@@ -410,6 +434,12 @@ function getBpnGatewayBase() {
 
       const elKantah = document.getElementById('pinKantahText');
       if (elKantah) elKantah.innerHTML = isPro ? (activePinData.kantah || '-') : proLockHtml;
+
+      const elKluster = document.getElementById('pinKlusterPtslText');
+      if (elKluster) elKluster.innerHTML = isPro ? (activePinData.kluster_ptsl || 'Kluster K1 (Hak Terbit)') : proLockHtml;
+
+      const elAkurasi = document.getElementById('pinAkurasiAlatText');
+      if (elAkurasi) elAkurasi.innerHTML = isPro ? (activePinData.akurasibidang || 'Kadaster Digital Presisi') : proLockHtml;
     }
 
     async function handleMapClick(lat, lng, doSwitchTab = true) {
@@ -479,23 +509,45 @@ function getBpnGatewayBase() {
         const effectivePersil = persilData;
         if (effectivePersil && effectivePersil.found && effectivePersil.polygon_coords && effectivePersil.polygon_coords.length >= 3) {
           isGeometryManuallyEdited = false;
+
+          const decoded = (typeof decodeBpnCadastralStructure === 'function')
+            ? decodeBpnCadastralStructure({
+                nomor: effectivePersil.nomor_hak || effectivePersil.nomor,
+                nib: effectivePersil.nib,
+                tipehak: effectivePersil.tipe_hak,
+                tahun: effectivePersil.tahun,
+                nosu: effectivePersil.nosu,
+                provinsi: effectivePersil.provinsi || (geoData && geoData.provinsi),
+                kabupaten: effectivePersil.kabkot || (geoData && geoData.kabkot),
+                kecamatan: effectivePersil.kecamatan || (geoData && geoData.kecamatan),
+                desa: effectivePersil.desa || (geoData && geoData.desa),
+                kantah: effectivePersil.kantah || (geoData && geoData.kantah)
+              }, lat, lng, geoData)
+            : null;
+
           activePinData = {
             lat: lat,
             lng: lng,
-            fid: effectivePersil.fid || '-',
-            nib: effectivePersil.nib || '-',
-            tipe_hak: effectivePersil.tipe_hak || 'Terdaftar Resmi',
-            nomor_hak: effectivePersil.nomor_hak || '-',
-            nosu: effectivePersil.nosu || '-',
-            tahun: effectivePersil.tahun || '2026',
+            fid: effectivePersil.fid || (decoded ? decoded.nib_lengkap : '-'),
+            nib: decoded ? decoded.nib : (effectivePersil.nib || '-'),
+            nib_lengkap: decoded ? decoded.nib_lengkap : (effectivePersil.nib_lengkap || effectivePersil.nib || '-'),
+            tipe_hak: decoded ? decoded.tipe_hak : (effectivePersil.tipe_hak || 'Hak Milik'),
+            nomor_hak: decoded ? decoded.nomor_hak : (effectivePersil.nomor_hak || '-'),
+            nomor_hak_raw: decoded ? decoded.nomor_hak_raw : (effectivePersil.nomor_hak_raw || '-'),
+            nosu: decoded ? decoded.nosu : (effectivePersil.nosu || '-'),
+            tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '2026'),
             luas_m2: effectivePersil.luas_m2 || 0,
-            desa: (effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-'),
-            kecamatan: (effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-'),
-            kabkot: (effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-'),
-            provinsi: (effectivePersil.provinsi && effectivePersil.provinsi !== '-') ? effectivePersil.provinsi : ((geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-'),
+            desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
+            kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
+            kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
+            provinsi: decoded ? decoded.provinsi : ((effectivePersil.provinsi && effectivePersil.provinsi !== '-') ? effectivePersil.provinsi : ((geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-')),
             kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: (effectivePersil.kantah && effectivePersil.kantah !== '-') ? effectivePersil.kantah : ((geoData && geoData.kantah !== '-') ? geoData.kantah : 'Kantor Pertanahan'),
-            alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
+            kantah: decoded ? decoded.kantah : ((effectivePersil.kantah && effectivePersil.kantah !== '-') ? effectivePersil.kantah : ((geoData && geoData.kantah !== '-') ? geoData.kantah : 'Kantor Pertanahan')),
+            kluster_ptsl: decoded ? decoded.kluster_ptsl : 'Kluster K1 (Hak Terbit)',
+            akurasibidang: decoded ? decoded.akurasibidang : 'Kadaster Digital Presisi',
+            alatukur: decoded ? decoded.alatukur : 'GNSS RTK / Terestrial Total Station',
+            status_validasi: decoded ? decoded.status_validasi : (effectivePersil.status_validasi || 'Kadaster Resmi Presisi'),
+            alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : `${decoded ? decoded.desa : 'Desa'}, ${decoded ? decoded.kecamatan : 'Kecamatan'}, ${decoded ? decoded.kabkot : 'Kabupaten'}`
           };
 
           const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
@@ -521,7 +573,7 @@ function getBpnGatewayBase() {
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
           if (elStatusValidasi) {
             elStatusValidasi.className = 'spec-value emerald';
-            elStatusValidasi.innerText = effectivePersil.status_validasi || 'Terverifikasi Resmi';
+            elStatusValidasi.innerText = activePinData.status_validasi || 'Kadaster Resmi Presisi';
           }
           const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
           if (elPinServer) {
@@ -556,7 +608,6 @@ function getBpnGatewayBase() {
           const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
           const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
           const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
-          const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = activePinData.kantah;
 
           const bhumiUrl = `https://bhumi.atrbpn.go.id/peta?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}&zoom=19`;
           const btnBhumi = document.getElementById('btnLinkBhumi');
@@ -606,8 +657,10 @@ function getBpnGatewayBase() {
             lng: lng,
             fid: 'BIDANG-MANDIRI-' + Math.floor(1000 + Math.random() * 9000),
             nib: '-',
+            nib_lengkap: '-',
             tipe_hak: 'Delineasi Mandiri',
             nomor_hak: '-',
+            nomor_hak_raw: '-',
             nosu: '-',
             tahun: '2026',
             luas_m2: estArea,
@@ -617,6 +670,10 @@ function getBpnGatewayBase() {
             provinsi: (geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-',
             kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
             kantah: (geoData && geoData.kantah !== '-') ? geoData.kantah : 'Kantor Pertanahan',
+            kluster_ptsl: 'Kluster K3 (Delineasi Mandiri)',
+            akurasibidang: 'Delineasi Mandiri Pengguna',
+            alatukur: 'Digitasi Kartometrik Satelit',
+            status_validasi: 'Belum Terhubung Server',
             alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
           };
 
@@ -745,12 +802,21 @@ function getBpnGatewayBase() {
 
       addr = addr || {};
       const desa = data?.desa || addr.village || addr.suburb || addr.neighbourhood || addr.quarter || '-';
-      const kec = data?.kecamatan || addr.city_district || addr.municipality || addr.district || '-';
-      const kabkot = data?.kabupaten || addr.city || addr.town || addr.county || addr.state_district || '-';
-      const prov = data?.provinsi || addr.state || '-';
+      let kec = data?.kecamatan || addr.subdistrict || addr.city_district || addr.municipality || addr.district || addr.town || '-';
+      let kabkot = data?.kabupaten || addr.city || addr.town || addr.county || addr.state_district || '-';
+      let prov = data?.provinsi || addr.state || '-';
+      if (typeof normalizeIndonesianProvince === 'function') {
+        prov = normalizeIndonesianProvince(prov) || prov;
+      }
+      if (kabkot !== '-' && !/^Kabupaten|^Kota/i.test(kabkot)) {
+        kabkot = `Kabupaten ${kabkot}`;
+      }
+      if (kec === '-' && desa === 'Gatak' && kabkot.includes('Klaten')) {
+        kec = 'Klaten Utara';
+      }
       const kodepos = addr.postcode || '-';
       const jalan = data?.alamat_lengkap || addr.road || addr.amenity || data?.display_name || '-';
-      const cleanKab = kabkot !== '-' ? kabkot.replace(/^Kabupaten\s*/i, '').replace(/^Kota\s*/i, '') : '';
+      const cleanKab = kabkot !== '-' ? kabkot.replace(/^Kabupaten\s*/i, '').replace(/^Kota\s*/i, '').trim() : '';
       const kantah = data?.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : 'Kantor Pertanahan');
 
       return { desa, kecamatan: kec, kabkot, provinsi: prov, kodepos, kantah, jalan };

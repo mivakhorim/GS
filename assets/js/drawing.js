@@ -206,6 +206,8 @@ Server Sumber Data: ${serverName}`;
       const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = '-';
       const elCoords = document.getElementById('pinCoordsText'); if (elCoords) elCoords.innerText = '-';
       const elStatusValidasi = document.getElementById('pinStatusValidasiText'); if (elStatusValidasi) elStatusValidasi.innerText = '-';
+      const elKluster = document.getElementById('pinKlusterPtslText'); if (elKluster) elKluster.innerText = '-';
+      const elAkurasiAlat = document.getElementById('pinAkurasiAlatText'); if (elAkurasiAlat) elAkurasiAlat.innerText = '-';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';

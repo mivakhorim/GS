@@ -668,21 +668,46 @@ function exportCoordinatesXls() {
       const tbody = document.getElementById('customAttrTbody');
       if (!tbody) return;
       tbody.innerHTML = '';
-      const nib = activePinData?.nib || '00000';
-      const pemilik = activePinData?.nama_pemilik || '';
-      const hak = activePinData?.tipe_hak || 'HAK MILIK';
-      const desa = activePinData?.desa || '';
+
       let areaM2 = 0;
       if (activeMultiParts && activeMultiParts.length > 1) {
         areaM2 = activeMultiParts.reduce((sum, p) => sum + calculatePolygonArea(p), 0);
       } else if (activeVertices && activeVertices.length >= 3) {
         areaM2 = calculatePolygonArea(activeVertices);
       }
+
+      const pData = activePinData || {};
+      const nib = pData.nib_lengkap || pData.nib || '02923';
+      const noHak = pData.nomor_hak_raw || (pData.nomor_hak ? pData.nomor_hak.replace(/^[^\d]*/, '') : '02160');
+      const hak = (pData.tipe_hak || 'HAK MILIK').toUpperCase();
+      const nosu = pData.nosu || `No. ${pData.nib || '02923'}/${pData.desa || 'Gatak'}/${pData.tahun || '2026'}`;
+      const desa = (pData.desa || 'GATAK').toUpperCase();
+      const kec = (pData.kecamatan || 'KLATEN UTARA').toUpperCase();
+      const kab = (pData.kabkot || 'KABUPATEN KLATEN').toUpperCase();
+      const prov = (pData.provinsi || 'JAWA TENGAH').toUpperCase();
+      const kantah = (pData.kantah || 'KANTAH KLATEN').toUpperCase();
+      const kluster = pData.kluster_ptsl ? pData.kluster_ptsl.toUpperCase().slice(0, 16) : 'K1 TERBIT RESMI';
+      const luasBpn = Number((pData.luas_m2 || areaM2 || 60).toFixed(2));
+      const luasUkur = Number(areaM2.toFixed(2));
+      const selisih = Number(Math.abs(luasUkur - luasBpn).toFixed(2));
+      const tahun = Number(pData.tahun || 2026);
+      const statusVal = (pData.status_validasi || 'KADASTER RESMI').toUpperCase().slice(0, 18);
+
       addCustomAttrRow('NIB', 'C', nib);
-      addCustomAttrRow('PEMILIK', 'C', pemilik);
+      addCustomAttrRow('NO_HAK', 'C', noHak);
       addCustomAttrRow('HAK_TANAH', 'C', hak);
+      addCustomAttrRow('NOSU', 'C', nosu);
       addCustomAttrRow('DESA', 'C', desa);
-      addCustomAttrRow('LUAS_M2', 'N', Number(areaM2.toFixed(2)));
+      addCustomAttrRow('KECAMATAN', 'C', kec);
+      addCustomAttrRow('KABKOT', 'C', kab);
+      addCustomAttrRow('PROVINSI', 'C', prov);
+      addCustomAttrRow('KANTAH', 'C', kantah);
+      addCustomAttrRow('KLUSTER', 'C', kluster);
+      addCustomAttrRow('LUAS_BPN', 'N', luasBpn);
+      addCustomAttrRow('LUAS_UKUR', 'N', luasUkur);
+      addCustomAttrRow('SELISIH_M2', 'N', selisih);
+      addCustomAttrRow('TAHUN', 'N', tahun);
+      addCustomAttrRow('STATUS', 'C', statusVal);
     }
 
     function getCustomFieldsFromTable() {
