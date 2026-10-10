@@ -264,10 +264,10 @@ function getBpnGatewayBase() {
           return false;
         }
         localStorage.setItem('cadastre_server_mode', 'server2');
-        showToast('Mode Server 2 Aktif: Pemrosesan mandiri di peramban.', 'success');
+        showToast('Server 2 Aktif', 'success');
       } else {
         localStorage.setItem('cadastre_server_mode', 'server1');
-        showToast('Mode Server 1 Aktif: Menggunakan Supabase Gateway Cloud resmi.', 'info');
+        showToast('Server 1 Aktif', 'info');
       }
       updateCadastreServerUI();
       return true;
@@ -281,8 +281,6 @@ function getBpnGatewayBase() {
       const btn2 = document.getElementById('btnServer2');
       const btn1Bidang = document.getElementById('btnServer1Bidang');
       const btn2Bidang = document.getElementById('btnServer2Bidang');
-      const desc = document.getElementById('serverDescText');
-      const descBidang = document.getElementById('serverDescBidangText');
       const pinServerText = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
 
       if (mode === 'server2') {
@@ -298,8 +296,6 @@ function getBpnGatewayBase() {
         if (btn2) btn2.classList.add('active');
         if (btn1Bidang) btn1Bidang.classList.remove('active');
         if (btn2Bidang) btn2Bidang.classList.add('active');
-        if (desc) desc.innerText = 'Server 2: Pemrosesan mandiri di browser.';
-        if (descBidang) descBidang.innerText = 'Server 2: Pemrosesan mandiri di browser.';
         if (pinServerText) pinServerText.innerText = 'Server 2';
       } else {
         if (badge) {
@@ -314,8 +310,6 @@ function getBpnGatewayBase() {
         if (btn2) btn2.classList.remove('active');
         if (btn1Bidang) btn1Bidang.classList.add('active');
         if (btn2Bidang) btn2Bidang.classList.remove('active');
-        if (desc) desc.innerText = 'Server 1: Supabase Gateway Cloud resmi.';
-        if (descBidang) descBidang.innerText = 'Server 1: Supabase Gateway Cloud resmi.';
         if (pinServerText) pinServerText.innerText = 'Server 1';
       }
     }
@@ -418,28 +412,169 @@ function getBpnGatewayBase() {
       };
     }
 
+    async function fetchSpatialStatusData(lat, lng) {
+      const statusRes = {
+        rtrw: 'Kawasan Budidaya / Permukiman',
+        rdtr: 'Zonasi Perda RDTR Berlaku',
+        lsd: 'Non-LSD (Bebas Alih Fungsi)',
+        lbs: 'Bukan Lahan Baku Sawah',
+        hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
+        znt: 'Zona Nilai Pasar Wajar'
+      };
+
+      try {
+        const delta = 0.0008;
+        const minLat = (lat - delta).toFixed(6);
+        const minLng = (lng - delta).toFixed(6);
+        const maxLat = (lat + delta).toFixed(6);
+        const maxLng = (lng + delta).toFixed(6);
+        const bbox = `${minLat},${minLng},${maxLat},${maxLng}`;
+        const wmsBase = 'https://atlas.atrbpn.go.id/geoserver/wms';
+
+        const queryWms = async (layerName) => {
+          const directUrl = `${wmsBase}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=${encodeURIComponent(layerName)}&QUERY_LAYERS=${encodeURIComponent(layerName)}&SRS=EPSG:4326&BBOX=${bbox}&WIDTH=101&HEIGHT=101&X=50&Y=50&INFO_FORMAT=application/json&FEATURE_COUNT=5`;
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 2000);
+          try {
+            const resp = await fetch(directUrl, { signal: ctrl.signal });
+            clearTimeout(tid);
+            if (!resp.ok) throw new Error('direct wms error');
+            return await resp.json();
+          } catch (e) {
+            clearTimeout(tid);
+            const proxyBase = getBpnGatewayBase();
+            if (proxyBase && proxyBase.startsWith('https://')) {
+              try {
+                const proxyUrl = `${proxyBase}/functions/v1/cadastre-gateway?action=proxy-wms&url=${encodeURIComponent(directUrl)}`;
+                const ctrl2 = new AbortController();
+                const tid2 = setTimeout(() => ctrl2.abort(), 2000);
+                const resp2 = await fetch(proxyUrl, { signal: ctrl2.signal });
+                clearTimeout(tid2);
+                if (resp2.ok) return await resp2.json();
+              } catch (e2) {}
+            }
+            return null;
+          }
+        };
+
+        const queryKlhk = async () => {
+          const klhkUrl = `https://geoportal.planologi.kehutanan.go.id/server/rest/services/Peta_Interaktif_2026/KWSHUTAN_AR_250K/MapServer/identify?geometry=${lng},${lat}&geometryType=esriGeometryPoint&sr=4326&layers=all&tolerance=3&mapExtent=${minLng},${minLat},${maxLng},${maxLat}&imageDisplay=101,101,96&returnGeometry=false&f=json`;
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 2000);
+          try {
+            const resp = await fetch(klhkUrl, { signal: ctrl.signal });
+            clearTimeout(tid);
+            if (!resp.ok) return null;
+            return await resp.json();
+          } catch (e) {
+            clearTimeout(tid);
+            return null;
+          }
+        };
+
+        const [resRtrw, resRdtr, resLsd, resLbs, resZnt, resHutan] = await Promise.allSettled([
+          queryWms('rtr-online:rtrw_kabkot'),
+          queryWms('rtr-online:rdtr_kabkot'),
+          queryWms('umum:lsd_merge'),
+          queryWms('geonode:lbs_parsial'),
+          queryWms('petabpn:ZNT_Nasional'),
+          queryKlhk()
+        ]);
+
+        if (resRtrw.status === 'fulfilled' && resRtrw.value && resRtrw.value.features && resRtrw.value.features.length > 0) {
+          const props = resRtrw.value.features[0].properties || {};
+          statusRes.rtrw = props.namobj || props.keterangan || props.orde2 || props.fungsikws || 'Kawasan Budidaya / Permukiman';
+        }
+        if (resRdtr.status === 'fulfilled' && resRdtr.value && resRdtr.value.features && resRdtr.value.features.length > 0) {
+          const props = resRdtr.value.features[0].properties || {};
+          statusRes.rdtr = props.namobj || props.sub_zona || props.zona || 'Zonasi Perda RDTR Berlaku';
+        }
+        if (resLsd.status === 'fulfilled' && resLsd.value && resLsd.value.features && resLsd.value.features.length > 0) {
+          statusRes.lsd = 'LSD Dipertahankan (Kepmen ATR/BPN No. 1589/2021)';
+        } else {
+          statusRes.lsd = 'Non-LSD (Bebas Alih Fungsi / Sesuai RTRW)';
+        }
+        if (resLbs.status === 'fulfilled' && resLbs.value && resLbs.value.features && resLbs.value.features.length > 0) {
+          statusRes.lbs = 'Lahan Baku Sawah (LBS Nasional)';
+        } else {
+          statusRes.lbs = 'Bukan Lahan Baku Sawah (Non-LBS)';
+        }
+        if (resZnt.status === 'fulfilled' && resZnt.value && resZnt.value.features && resZnt.value.features.length > 0) {
+          const props = resZnt.value.features[0].properties || {};
+          const val = props.nir || props.nilairp;
+          statusRes.znt = val ? `Zona ${props.zonanilai || 'A'} (Rp ${Number(val).toLocaleString('id-ID')} / m²)` : (props.zonanilai ? `Zona ${props.zonanilai}` : 'Zona Nilai Pasar Wajar');
+        }
+        if (resHutan.status === 'fulfilled' && resHutan.value && resHutan.value.results && resHutan.value.results.length > 0) {
+          statusRes.hutan = resHutan.value.results[0].attributes?.FUNGSIKWS || resHutan.value.results[0].value || 'Kawasan Hutan Negara';
+        } else {
+          statusRes.hutan = 'APL (Non Hutan Boleh Disertifikatkan)';
+        }
+      } catch (err) {}
+
+      return statusRes;
+    }
+
     function renderCadastralProFields() {
-      if (!activePinData) return;
       const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
-      const proLockHtml = '<span class="pro-lock-text" onclick="openMemberModal()" title="Khusus Member PRO. Klik untuk membuka portal akun." style="cursor:pointer;color:var(--accent);font-weight:600;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Akses PRO</span>';
+      const proRows = document.querySelectorAll('.pro-only-field');
+      const teaser = document.getElementById('proSpecTeaser');
 
-      const elNib = document.getElementById('pinNibText');
-      if (elNib) elNib.innerHTML = isPro ? (activePinData.nib_lengkap || activePinData.nib || '-') : proLockHtml;
+      if (isPro) {
+        proRows.forEach(row => { row.style.display = 'flex'; });
+        if (teaser) teaser.style.display = 'none';
 
-      const elNosu = document.getElementById('pinNosuText');
-      if (elNosu) elNosu.innerHTML = isPro ? (activePinData.nosu || '-') : proLockHtml;
+        if (activePinData) {
+          const elNib = document.getElementById('pinNibText');
+          if (elNib) elNib.innerText = activePinData.nib_lengkap || activePinData.nib || '-';
 
-      const elNomorHak = document.getElementById('pinNomorHakText');
-      if (elNomorHak) elNomorHak.innerHTML = isPro ? (activePinData.nomor_hak || '-') : proLockHtml;
+          const elNosu = document.getElementById('pinNosuText');
+          if (elNosu) elNosu.innerText = activePinData.nosu || '-';
 
-      const elKantah = document.getElementById('pinKantahText');
-      if (elKantah) elKantah.innerHTML = isPro ? (activePinData.kantah || '-') : proLockHtml;
+          const elNomorHak = document.getElementById('pinNomorHakText');
+          if (elNomorHak) elNomorHak.innerText = activePinData.nomor_hak || '-';
 
-      const elKluster = document.getElementById('pinKlusterPtslText');
-      if (elKluster) elKluster.innerHTML = isPro ? (activePinData.kluster_ptsl || 'Kluster K1 (Hak Terbit)') : proLockHtml;
+          const elDesa = document.getElementById('pinDesaText');
+          if (elDesa) elDesa.innerText = activePinData.desa || '-';
 
-      const elAkurasi = document.getElementById('pinAkurasiAlatText');
-      if (elAkurasi) elAkurasi.innerHTML = isPro ? (activePinData.akurasibidang || 'Kadaster Digital Presisi') : proLockHtml;
+          const elKec = document.getElementById('pinKecamatanText');
+          if (elKec) elKec.innerText = activePinData.kecamatan || '-';
+
+          const elKantah = document.getElementById('pinKantahText');
+          if (elKantah) elKantah.innerText = activePinData.kantah || '-';
+
+          const elKluster = document.getElementById('pinKlusterPtslText');
+          if (elKluster) elKluster.innerText = activePinData.kluster_ptsl || 'Kluster K1 (Hak Terbit)';
+
+          const elAkurasi = document.getElementById('pinAkurasiAlatText');
+          if (elAkurasi) elAkurasi.innerText = activePinData.akurasibidang || 'Kadaster Digital Presisi';
+
+          const elRtrw = document.getElementById('pinRtrwText');
+          if (elRtrw) elRtrw.innerText = activePinData.rtrw || 'Kawasan Budidaya / Permukiman';
+
+          const elRdtr = document.getElementById('pinRdtrText');
+          if (elRdtr) elRdtr.innerText = activePinData.rdtr || 'Zonasi Perda RDTR Berlaku';
+
+          const elLsd = document.getElementById('pinLsdText');
+          if (elLsd) elLsd.innerText = activePinData.lsd || 'Non-LSD (Bebas Alih Fungsi)';
+
+          const elLbs = document.getElementById('pinLbsText');
+          if (elLbs) elLbs.innerText = activePinData.lbs || 'Bukan Lahan Baku Sawah';
+
+          const elHutan = document.getElementById('pinHutanText');
+          if (elHutan) elHutan.innerText = activePinData.hutan || 'APL (Non Hutan Boleh Disertifikatkan)';
+
+          const elZnt = document.getElementById('pinZntText');
+          if (elZnt) elZnt.innerText = activePinData.znt || 'Zona Nilai Pasar Wajar';
+        }
+      } else {
+        proRows.forEach(row => { row.style.display = 'none'; });
+        if (teaser) teaser.style.display = 'block';
+
+        if (activePinData) {
+          const elNib = document.getElementById('pinNibText');
+          if (elNib) elNib.innerText = (activePinData.nib && activePinData.nib !== '-') ? `Bidang NIB ${activePinData.nib}` : 'Bidang Terdaftar';
+        }
+      }
     }
 
     async function handleMapClick(lat, lng, doSwitchTab = true) {
@@ -547,6 +682,12 @@ function getBpnGatewayBase() {
             akurasibidang: decoded ? decoded.akurasibidang : 'Kadaster Digital Presisi',
             alatukur: decoded ? decoded.alatukur : 'GNSS RTK / Terestrial Total Station',
             status_validasi: decoded ? decoded.status_validasi : (effectivePersil.status_validasi || 'Kadaster Resmi Presisi'),
+            rtrw: 'Kawasan Budidaya / Permukiman',
+            rdtr: 'Zonasi Perda RDTR Berlaku',
+            lsd: 'Non-LSD (Bebas Alih Fungsi)',
+            lbs: 'Bukan Lahan Baku Sawah',
+            hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
+            znt: 'Zona Nilai Pasar Wajar',
             alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : `${decoded ? decoded.desa : 'Desa'}, ${decoded ? decoded.kecamatan : 'Kecamatan'}, ${decoded ? decoded.kabkot : 'Kabupaten'}`
           };
 
@@ -570,6 +711,12 @@ function getBpnGatewayBase() {
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
           renderCadastralProFields();
+          fetchSpatialStatusData(lat, lng).then(status => {
+            if (activePinData && Math.abs(activePinData.lat - lat) < 0.001 && Math.abs(activePinData.lng - lng) < 0.001) {
+              Object.assign(activePinData, status);
+              renderCadastralProFields();
+            }
+          });
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
           if (elStatusValidasi) {
             elStatusValidasi.className = 'spec-value emerald';
@@ -674,6 +821,12 @@ function getBpnGatewayBase() {
             akurasibidang: 'Delineasi Mandiri Pengguna',
             alatukur: 'Digitasi Kartometrik Satelit',
             status_validasi: 'Belum Terhubung Server',
+            rtrw: 'Kawasan Budidaya / Permukiman',
+            rdtr: 'Zonasi Perda RDTR Berlaku',
+            lsd: 'Non-LSD (Bebas Alih Fungsi)',
+            lbs: 'Bukan Lahan Baku Sawah',
+            hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
+            znt: 'Zona Nilai Pasar Wajar',
             alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
           };
 
@@ -692,6 +845,12 @@ function getBpnGatewayBase() {
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
           renderCadastralProFields();
+          fetchSpatialStatusData(lat, lng).then(status => {
+            if (activePinData && Math.abs(activePinData.lat - lat) < 0.001 && Math.abs(activePinData.lng - lng) < 0.001) {
+              Object.assign(activePinData, status);
+              renderCadastralProFields();
+            }
+          });
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
           if (elStatusValidasi) {
             elStatusValidasi.className = 'status-offline-tag';
@@ -710,11 +869,8 @@ function getBpnGatewayBase() {
             elLegalitas.innerText = 'Mode Delineasi Mandiri : Batas Bidang Siap Disesuaikan';
           }
 
-          const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = activePinData.desa;
-          const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
           const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
           const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
-          const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = activePinData.kantah;
 
           const elShpProv = document.getElementById('shpProvinsi');
           if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
@@ -859,20 +1015,35 @@ function getBpnGatewayBase() {
         showToast('Pilih bidang tanah pada peta terlebih dahulu.', 'warn');
         return;
       }
-      const summary = `DATA RESMI BIDANG TANAH KADASTRAL
+      const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
+      let summary = `DATA RESMI BIDANG TANAH KADASTRAL\n\n`;
+      summary += `Tipe Hak: ${activePinData.tipe_hak || 'Hak Milik'}\n`;
+      summary += `Luas Terdaftar: ${Math.round(activePinData.luas_m2 || 0).toLocaleString('id-ID')} m²\n`;
+      summary += `Kabupaten: ${activePinData.kabkot || '-'}\n`;
+      summary += `Provinsi: ${activePinData.provinsi || '-'}\n`;
+      summary += `Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}\n`;
+      summary += `Status Validasi: ${activePinData.status_validasi || 'Terdaftar di Basis Data'}\n`;
 
-Tipe Hak: ${activePinData.tipe_hak}
-Luas Terdaftar: ${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²
-Desa: ${activePinData.desa}
-Kecamatan: ${activePinData.kecamatan}
-Kabupaten: ${activePinData.kabkot}
-Provinsi: ${activePinData.provinsi}
-Kode Pos: ${activePinData.kodepos || '-'}
-Kantah: ${activePinData.kantah}
-Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
+      if (isPro) {
+        summary += `\nDATA DETAIL KADASTER & TATA RUANG (PRO):\n`;
+        summary += `NIB Lengkap: ${activePinData.nib_lengkap || activePinData.nib || '-'}\n`;
+        summary += `Nomor Hak: ${activePinData.nomor_hak || '-'}\n`;
+        summary += `No. Surat Ukur: ${activePinData.nosu || '-'}\n`;
+        summary += `Desa: ${activePinData.desa || '-'}\n`;
+        summary += `Kecamatan: ${activePinData.kecamatan || '-'}\n`;
+        summary += `Kantah: ${activePinData.kantah || '-'}\n`;
+        summary += `Kluster PTSL: ${activePinData.kluster_ptsl || '-'}\n`;
+        summary += `Akurasi & Alat: ${activePinData.akurasibidang || '-'}\n`;
+        summary += `RTRW Kab/Kota: ${activePinData.rtrw || '-'}\n`;
+        summary += `RDTR (Detail): ${activePinData.rdtr || '-'}\n`;
+        summary += `Status LSD: ${activePinData.lsd || '-'}\n`;
+        summary += `Status LBS: ${activePinData.lbs || '-'}\n`;
+        summary += `Kawasan Hutan (KLHK): ${activePinData.hutan || '-'}\n`;
+        summary += `Zona Nilai Tanah: ${activePinData.znt || '-'}\n`;
+      }
 
       navigator.clipboard.writeText(summary).then(() => {
-        showToast('Data lengkap bidang tanah berhasil disalin ke clipboard!', 'success');
+        showToast(isPro ? 'Data lengkap kadaster dan tata ruang berhasil disalin!' : 'Data dasar bidang berhasil disalin ke clipboard!', 'success');
       });
     }
 
@@ -912,6 +1083,14 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = '-';
       const elCoords = document.getElementById('pinCoordsText'); if (elCoords) elCoords.innerText = '-';
       const elStatusValidasi = document.getElementById('pinStatusValidasiText'); if (elStatusValidasi) elStatusValidasi.innerText = '-';
+      const elKluster = document.getElementById('pinKlusterPtslText'); if (elKluster) elKluster.innerText = '-';
+      const elAkurasi = document.getElementById('pinAkurasiAlatText'); if (elAkurasi) elAkurasi.innerText = '-';
+      const elRtrw = document.getElementById('pinRtrwText'); if (elRtrw) elRtrw.innerText = '-';
+      const elRdtr = document.getElementById('pinRdtrText'); if (elRdtr) elRdtr.innerText = '-';
+      const elLsd = document.getElementById('pinLsdText'); if (elLsd) elLsd.innerText = '-';
+      const elLbs = document.getElementById('pinLbsText'); if (elLbs) elLbs.innerText = '-';
+      const elHutan = document.getElementById('pinHutanText'); if (elHutan) elHutan.innerText = '-';
+      const elZnt = document.getElementById('pinZntText'); if (elZnt) elZnt.innerText = '-';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';

@@ -708,6 +708,20 @@ function exportCoordinatesXls() {
       addCustomAttrRow('SELISIH_M2', 'N', selisih);
       addCustomAttrRow('TAHUN', 'N', tahun);
       addCustomAttrRow('STATUS', 'C', statusVal);
+
+      const rtrw = (pData.rtrw || 'BUDIDAYA PERMUKIMAN').toUpperCase().slice(0, 30);
+      const rdtr = (pData.rdtr || 'ZONASI PERDA BERLAKU').toUpperCase().slice(0, 30);
+      const lsd = (pData.lsd || 'NON-LSD (BEBAS ALIH)').toUpperCase().slice(0, 25);
+      const lbs = (pData.lbs || 'BUKAN SAWAH BAKU').toUpperCase().slice(0, 25);
+      const kwsHutan = (pData.hutan || 'APL (NON HUTAN)').toUpperCase().slice(0, 25);
+      const znt = (pData.znt || 'ZONA NILAI PASAR').toUpperCase().slice(0, 25);
+
+      addCustomAttrRow('RTRW', 'C', rtrw);
+      addCustomAttrRow('RDTR', 'C', rdtr);
+      addCustomAttrRow('STATUS_LSD', 'C', lsd);
+      addCustomAttrRow('STATUS_LBS', 'C', lbs);
+      addCustomAttrRow('KWSHUTAN', 'C', kwsHutan);
+      addCustomAttrRow('ZNT_M2', 'C', znt);
     }
 
     function getCustomFieldsFromTable() {

@@ -686,27 +686,25 @@ function latLngToUtm(lat, lon) {
         attrInputIds.forEach(id => {
           const el = document.getElementById(id);
           if (el) {
-            el.disabled = true;
-            el.style.backgroundColor = 'var(--bg-subtle)';
-            el.style.cursor = 'not-allowed';
+            el.disabled = false;
+            el.style.backgroundColor = '';
+            el.style.cursor = '';
           }
         });
-        const shpLayer = document.getElementById('shpLayer');
-        if (shpLayer) shpLayer.value = 'geospasi.dutamik.id';
 
         if (tabBtnCustom) {
           tabBtnCustom.disabled = true;
-          tabBtnCustom.style.opacity = '0.5';
-          tabBtnCustom.style.cursor = 'not-allowed';
+          tabBtnCustom.style.opacity = '0.7';
+          tabBtnCustom.style.cursor = 'pointer';
         }
         if (tabBtnOss) {
-          tabBtnOss.disabled = true;
-          tabBtnOss.style.cursor = 'default';
+          tabBtnOss.disabled = false;
+          tabBtnOss.style.cursor = 'pointer';
         }
         if (attrModeBadge) {
           attrModeBadge.className = '';
           attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--text-sub);';
-          attrModeBadge.innerText = 'Ekspor Dasar (Maksimal 150 m²)';
+          attrModeBadge.innerText = 'Free User Max 150 M2';
         }
         let freeNotice = document.getElementById('shpFreeAttrNotice');
         if (!freeNotice && boxEkspor) {

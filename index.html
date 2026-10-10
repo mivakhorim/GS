@@ -216,27 +216,6 @@
             <div class="content-box">
               <div class="box-header">
                 <div class="box-title">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-                  Koneksi Data Server
-                </div>
-                <span id="badgeServerKadasterBidang" class="badge-pill blue">SERVER 1</span>
-              </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
-                <button type="button" id="btnServer1Bidang" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1">
-                  <span>Server 1</span>
-                </button>
-                <button type="button" id="btnServer2Bidang" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2">
-                  <span>Server 2</span>
-                </button>
-              </div>
-              <div id="serverDescBidangText" style="font-size: 0.69rem; color: var(--text-sub); line-height: 1.4; background-color: var(--bg-subtle); padding: 5px 8px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
-                Server 1: Supabase Gateway Cloud resmi.
-              </div>
-            </div>
-
-            <div class="content-box">
-              <div class="box-header">
-                <div class="box-title">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   Informasi Bidang Tanah
                 </div>
@@ -263,7 +242,7 @@
                 </div>
               </div>
 
-              <div class="spec-list" style="margin-bottom: 0.75rem;">
+              <div class="spec-list" style="margin-bottom: 0.6rem;">
                 <div class="spec-item">
                   <span class="spec-label">NIB</span>
                   <span class="spec-value font-mono" id="pinNibText">-</span>
@@ -271,22 +250,6 @@
                 <div class="spec-item">
                   <span class="spec-label">Jenis Hak</span>
                   <span class="spec-value" id="pinTipeHakText">Hak Milik</span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">No. Surat Ukur</span>
-                  <span class="spec-value font-mono" id="pinNosuText">-</span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">Nomor Hak</span>
-                  <span class="spec-value font-mono" id="pinNomorHakText">-</span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">Desa / Kelurahan</span>
-                  <span class="spec-value" id="pinDesaText">-</span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">Kecamatan</span>
-                  <span class="spec-value" id="pinKecamatanText">-</span>
                 </div>
                 <div class="spec-item">
                   <span class="spec-label">Kabupaten / Kota</span>
@@ -297,18 +260,6 @@
                   <span class="spec-value" id="pinProvinsiText">-</span>
                 </div>
                 <div class="spec-item">
-                  <span class="spec-label">Kantor Pertanahan</span>
-                  <span class="spec-value" id="pinKantahText">-</span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">Kluster PTSL</span>
-                  <span class="spec-value" id="pinKlusterPtslText">Kluster K1 (Hak Terbit)</span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">Akurasi & Alat</span>
-                  <span class="spec-value" id="pinAkurasiAlatText">Kadaster Digital Presisi</span>
-                </div>
-                <div class="spec-item">
                   <span class="spec-label">Koordinat Titik</span>
                   <span class="spec-value font-mono" id="pinCoordsText" style="font-size: 0.71rem;">-</span>
                 </div>
@@ -316,9 +267,72 @@
                   <span class="spec-label">Status Validasi</span>
                   <span class="spec-value emerald" id="pinStatusValidasiText">Terdaftar di Basis Data</span>
                 </div>
-                <div class="spec-item">
-                  <span class="spec-label">Server Data</span>
-                  <span class="spec-value" id="pinServerDataText">Server 1</span>
+
+                <div class="spec-item pro-only-field" id="itemPinNosu" style="display: none;">
+                  <span class="spec-label">No. Surat Ukur</span>
+                  <span class="spec-value font-mono" id="pinNosuText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinNomorHak" style="display: none;">
+                  <span class="spec-label">Nomor Hak</span>
+                  <span class="spec-value font-mono" id="pinNomorHakText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinDesa" style="display: none;">
+                  <span class="spec-label">Desa / Kelurahan</span>
+                  <span class="spec-value" id="pinDesaText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinKecamatan" style="display: none;">
+                  <span class="spec-label">Kecamatan</span>
+                  <span class="spec-value" id="pinKecamatanText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinKantah" style="display: none;">
+                  <span class="spec-label">Kantor Pertanahan</span>
+                  <span class="spec-value" id="pinKantahText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinKlusterPtsl" style="display: none;">
+                  <span class="spec-label">Kluster PTSL</span>
+                  <span class="spec-value" id="pinKlusterPtslText">Kluster K1 (Hak Terbit)</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinAkurasiAlat" style="display: none;">
+                  <span class="spec-label">Akurasi &amp; Alat</span>
+                  <span class="spec-value" id="pinAkurasiAlatText">Kadaster Digital Presisi</span>
+                </div>
+
+                <div class="spec-item pro-only-field" id="itemPinRtrw" style="display: none;">
+                  <span class="spec-label">RTRW Kab/Kota</span>
+                  <span class="spec-value" id="pinRtrwText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinRdtr" style="display: none;">
+                  <span class="spec-label">RDTR (Detail)</span>
+                  <span class="spec-value" id="pinRdtrText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinLsd" style="display: none;">
+                  <span class="spec-label">Status LSD</span>
+                  <span class="spec-value" id="pinLsdText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinLbs" style="display: none;">
+                  <span class="spec-label">Status LBS</span>
+                  <span class="spec-value" id="pinLbsText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinHutan" style="display: none;">
+                  <span class="spec-label">Kawasan Hutan (KLHK)</span>
+                  <span class="spec-value" id="pinHutanText">-</span>
+                </div>
+                <div class="spec-item pro-only-field" id="itemPinZnt" style="display: none;">
+                  <span class="spec-label">Zona Nilai Tanah</span>
+                  <span class="spec-value" id="pinZntText">-</span>
+                </div>
+              </div>
+
+              <div id="proSpecTeaser" class="pro-teaser-card" onclick="openMemberModal()" style="display: block; cursor: pointer; margin-bottom: 0.75rem; padding: 0.5rem 0.65rem; background: var(--bg-subtle); border: 1px dashed var(--accent); border-radius: var(--radius-sm); transition: var(--transition-fast);">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent); flex-shrink: 0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span style="font-weight: 700; font-size: 0.72rem; color: var(--text-main);">Buka Fitur &amp; Data Lengkap PRO</span>
+                  </div>
+                  <span style="font-size: 0.68rem; font-weight: 700; color: var(--accent); white-space: nowrap;">Upgrade &rarr;</span>
+                </div>
+                <div style="font-size: 0.67rem; color: var(--text-muted); margin-top: 3px; line-height: 1.35;">
+                  Tersedia No. Surat Ukur, Desa, Kecamatan, No. Hak, RTRW, RDTR, LSD, Kawasan Hutan KLHK &amp; Nilai ZNT.
                 </div>
               </div>
 
@@ -357,9 +371,9 @@
               <div class="box-header" style="margin-bottom: 0.4rem;">
                 <div class="box-title">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Ekspor &amp; Cetak Peta Bidang
+                  Expor Peta SHP
                 </div>
-                <span id="attrModeBadge" style="font-size: 0.72rem; font-weight: 600; color: var(--text-sub);">Ekspor Dasar (Maksimal 150 m²)</span>
+                <span id="attrModeBadge" style="font-size: 0.72rem; font-weight: 600; color: var(--text-sub);">Free User Max 150 M2</span>
               </div>
 
               <div style="display: flex; border-bottom: 1px solid var(--border-light); margin-bottom: 0.65rem;">
@@ -626,9 +640,6 @@
                 <button type="button" id="btnServer2" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2">
                   <span>Server 2</span>
                 </button>
-              </div>
-              <div id="serverDescText" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.35;">
-                Server 1: Supabase Gateway Cloud resmi.
               </div>
             </div>
           </div>
@@ -1393,7 +1404,7 @@
       </div>
       <div class="modal-body">
         <p>
-          Duta GeoSpasi beroperasi secara online dengan integrasi aman Supabase Edge Gateway dan basis data geospasial resmi.
+          Duta GeoSpasi beroperasi secara daring dengan koneksi geospasial resmi terenkripsi.
         </p>
         <div style="background-color: var(--bg-subtle); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.73rem; color: var(--text-sub); line-height: 1.45;">
           Data bidang tanah kadaster diproses melalui koneksi HTTPS berkecepatan tinggi dengan validasi resmi ATR/BPN Republik Indonesia.
@@ -1409,7 +1420,7 @@
             </button>
           </div>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
-            Server 2 diproses langsung di peramban secara mandiri (khusus Member PRO).
+            Server 2 khusus untuk Member PRO.
           </div>
         </div>
         <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">

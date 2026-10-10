@@ -208,6 +208,12 @@ Server Sumber Data: ${serverName}`;
       const elStatusValidasi = document.getElementById('pinStatusValidasiText'); if (elStatusValidasi) elStatusValidasi.innerText = '-';
       const elKluster = document.getElementById('pinKlusterPtslText'); if (elKluster) elKluster.innerText = '-';
       const elAkurasiAlat = document.getElementById('pinAkurasiAlatText'); if (elAkurasiAlat) elAkurasiAlat.innerText = '-';
+      const elRtrw = document.getElementById('pinRtrwText'); if (elRtrw) elRtrw.innerText = '-';
+      const elRdtr = document.getElementById('pinRdtrText'); if (elRdtr) elRdtr.innerText = '-';
+      const elLsd = document.getElementById('pinLsdText'); if (elLsd) elLsd.innerText = '-';
+      const elLbs = document.getElementById('pinLbsText'); if (elLbs) elLbs.innerText = '-';
+      const elHutan = document.getElementById('pinHutanText'); if (elHutan) elHutan.innerText = '-';
+      const elZnt = document.getElementById('pinZntText'); if (elZnt) elZnt.innerText = '-';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';
