@@ -132,15 +132,24 @@ async function geocodeAndFly(query, zoomLevel = 14) {
           handleDrawClick(e);
           return;
         }
-        if (isMergeMode) {
-          handleMergeParcelClick(e.latlng.lat, e.latlng.lng);
+
+        const isImportedShp = (window.lastImportedShpData != null);
+        const isMerging = (typeof isMergeMode !== 'undefined' && isMergeMode);
+        const isMergedResult = (typeof isParcelLocked !== 'undefined' && isParcelLocked && activePinData && activePinData.fid && String(activePinData.fid).startsWith('Gabungan'));
+
+        if (isImportedShp) {
+          openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'shp');
           return;
         }
-        const hasActiveData = (window.lastImportedShpData != null) || (activeVertices && activeVertices.length >= 3) || isGeometryManuallyEdited;
-        if (hasActiveData) {
-          openConfirmSwitchModal(e.latlng.lat, e.latlng.lng);
+        if (isMerging) {
+          openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'merge');
           return;
         }
+        if (isMergedResult) {
+          openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'merged_result');
+          return;
+        }
+
         handleMapClick(e.latlng.lat, e.latlng.lng, true);
       });
 
@@ -554,16 +563,76 @@ async function geocodeAndFly(query, zoomLevel = 14) {
     }
 
     let pendingSwitchCoord = null;
+    let pendingSwitchContext = null;
 
-    function openConfirmSwitchModal(lat, lng) {
+    function openConfirmSwitchModal(lat, lng, context) {
       pendingSwitchCoord = { lat, lng };
+      pendingSwitchContext = context || 'shp';
       const modal = document.getElementById('modalConfirmSwitchParcel');
-      if (modal) modal.style.display = 'flex';
+      if (!modal) return;
+
+      const titleEl = document.getElementById('confirmSwitchTitle');
+      const subEl = document.getElementById('confirmSwitchSub');
+      const noticeEl = document.getElementById('confirmSwitchNotice');
+      const stayTitleEl = document.getElementById('confirmSwitchStayTitle');
+      const stayDescEl = document.getElementById('confirmSwitchStayDesc');
+      const stayBadgeEl = document.getElementById('confirmSwitchStayBadge');
+      const switchTitleEl = document.getElementById('confirmSwitchNewTitle');
+      const switchDescEl = document.getElementById('confirmSwitchNewDesc');
+
+      if (pendingSwitchContext === 'merge') {
+        const count = (typeof mergeParcelsList !== 'undefined' && mergeParcelsList) ? mergeParcelsList.length : 1;
+        if (titleEl) titleEl.innerText = 'MODE PENGGABUNGAN BIDANG AKTIF';
+        if (subEl) subEl.innerText = `Sesi penggabungan (${count} bidang terpilih) sedang berjalan`;
+        if (noticeEl) noticeEl.innerHTML = `Sistem mendeteksi <strong>Mode Penggabungan Bidang</strong> sedang aktif. Anda baru saja mengklik titik baru di peta. Silakan tentukan aksi Anda:`;
+        if (stayBadgeEl) stayBadgeEl.innerText = 'Tambah ke Gabung';
+        if (stayTitleEl) stayTitleEl.innerText = 'Tambah Bidang Ini ke Penggabungan';
+        if (stayDescEl) stayDescEl.innerText = 'Proses titik klik ini untuk menambahkan bidang tanah tetangga ke daftar penggabungan.';
+        if (switchTitleEl) switchTitleEl.innerText = 'Keluar & Buka Bidang Tunggal Baru';
+        if (switchDescEl) switchDescEl.innerText = 'Batalkan sesi penggabungan dan muat bidang tanah resmi pada koordinat baru ini.';
+      } else if (pendingSwitchContext === 'merged_result') {
+        if (titleEl) titleEl.innerText = 'HASIL PENGGABUNGAN BIDANG AKTIF';
+        if (subEl) subEl.innerText = 'Hasil gabungan poligon sedang ditampilkan pada peta';
+        if (noticeEl) noticeEl.innerHTML = `Sistem mendeteksi <strong>Hasil Penggabungan Poligon</strong> sedang aktif. Mengklik lokasi baru akan mereset hasil gabungan ini:`;
+        if (stayBadgeEl) stayBadgeEl.innerText = 'Tetap di Sini';
+        if (stayTitleEl) stayTitleEl.innerText = 'Pertahankan Hasil Gabungan';
+        if (stayDescEl) stayDescEl.innerText = 'Tetap di bidang gabungan ini untuk ekspor SHP, cetak peta, atau inspeksi luas.';
+        if (switchTitleEl) switchTitleEl.innerText = 'Keluar & Buka Bidang Baru';
+        if (switchDescEl) switchDescEl.innerText = 'Tutup hasil penggabungan dan muat data bidang tanah tunggal pada koordinat baru.';
+      } else {
+        const shpName = window.lastImportedShpData?.fileName || 'Shapefile ESRI (.zip)';
+        if (titleEl) titleEl.innerText = 'BERKAS SHAPEFILE SEDANG AKTIF';
+        if (subEl) subEl.innerText = `Data impor: ${escapeHtml(shpName)}`;
+        if (noticeEl) noticeEl.innerHTML = `Sistem mendeteksi berkas <strong>Shapefile (${escapeHtml(shpName)})</strong> sedang aktif di peta. Mengklik lokasi baru akan menutup data impor ini:`;
+        if (stayBadgeEl) stayBadgeEl.innerText = 'Tetap di Sini';
+        if (stayTitleEl) stayTitleEl.innerText = 'Pertahankan Data Shapefile';
+        if (stayDescEl) stayDescEl.innerText = 'Tetap di berkas Shapefile ini untuk melihat atribut .dbf, ekspor, atau edit patok.';
+        if (switchTitleEl) switchTitleEl.innerText = 'Ganti ke Bidang Tanah Baru';
+        if (switchDescEl) switchDescEl.innerText = 'Tutup Shapefile impor dan langsung muat data bidang tanah resmi BPN pada titik klik baru.';
+      }
+
+      modal.style.display = 'flex';
     }
 
     function closeConfirmSwitchModal() {
       const modal = document.getElementById('modalConfirmSwitchParcel');
       if (modal) modal.style.display = 'none';
+    }
+
+    function handleConfirmSwitchStay() {
+      closeConfirmSwitchModal();
+      if (pendingSwitchContext === 'merge' && pendingSwitchCoord) {
+        const { lat, lng } = pendingSwitchCoord;
+        pendingSwitchCoord = null;
+        pendingSwitchContext = null;
+        if (typeof handleMergeParcelClick === 'function') {
+          handleMergeParcelClick(lat, lng);
+        }
+      } else {
+        pendingSwitchCoord = null;
+        pendingSwitchContext = null;
+        showToast('Tetap di sesi aktif saat ini. Data Anda aman.', 'info');
+      }
     }
 
     function proceedSwitchToNewParcel() {
@@ -572,6 +641,11 @@ async function geocodeAndFly(query, zoomLevel = 14) {
         const targetLat = pendingSwitchCoord.lat;
         const targetLng = pendingSwitchCoord.lng;
         pendingSwitchCoord = null;
+        pendingSwitchContext = null;
+
+        if (typeof cancelMergeMode === 'function') {
+          cancelMergeMode();
+        }
         window.lastImportedShpData = null;
         const badge = document.getElementById('importedShpAttributesBadge');
         if (badge) badge.style.display = 'none';
@@ -588,10 +662,11 @@ async function geocodeAndFly(query, zoomLevel = 14) {
     function cancelSwitchParcel() {
       closeConfirmSwitchModal();
       pendingSwitchCoord = null;
-      showToast('Tetap di bidang aktif saat ini. Data pengeditan Anda aman.', 'info');
+      pendingSwitchContext = null;
     }
 
     window.openConfirmSwitchModal = openConfirmSwitchModal;
     window.closeConfirmSwitchModal = closeConfirmSwitchModal;
+    window.handleConfirmSwitchStay = handleConfirmSwitchStay;
     window.proceedSwitchToNewParcel = proceedSwitchToNewParcel;
     window.cancelSwitchParcel = cancelSwitchParcel;

@@ -4,8 +4,9 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background-color: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(4px);
+      background-color: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       z-index: 99999;
       display: none;
       align-items: center;
@@ -17,18 +18,18 @@
       width: 90vw;
       max-width: 680px;
       background-color: var(--bg-surface);
-      border: 1px solid var(--border-strong);
-      border-radius: 2px;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.22);
+      box-shadow: 0 24px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.06);
       overflow: hidden;
       margin: auto;
-      animation: coordsModalPop 0.18s ease-out;
+      animation: coordsModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes coordsModalPop {
-      from { transform: scale(0.97); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      from { transform: scale(0.96) translateY(6px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
     }
     .modal-coords-header {
       padding: 0.85rem 1.15rem;
@@ -47,7 +48,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 2px;
+      border-radius: 8px;
       flex-shrink: 0;
     }
     .modal-coords-title {
@@ -77,19 +78,20 @@
       }
     }
     .export-type-card {
-      background-color: var(--bg-surface);
+      background-color: #ffffff;
       border: 1px solid var(--border-light);
-      border-radius: 2px;
-      padding: 0.9rem;
+      border-radius: 8px;
+      padding: 0.95rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       gap: 0.8rem;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .export-type-card:hover {
+      transform: translateY(-2px);
       border-color: var(--accent);
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.1);
     }
     .export-type-badge {
       display: inline-block;
@@ -97,7 +99,7 @@
       font-weight: 700;
       letter-spacing: 0.05em;
       padding: 2px 6px;
-      border-radius: 2px;
+      border-radius: 4px;
       margin-bottom: 0.35rem;
       text-transform: uppercase;
     }

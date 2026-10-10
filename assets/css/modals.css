@@ -1,29 +1,35 @@
 .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background-color: rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(2px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      padding: 0.75rem;
-      overflow-y: auto;
-    }
-    .modal-card {
-      background-color: var(--bg-surface);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-md);
-      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
-      width: 100%;
-      max-width: 400px;
-      max-height: calc(100vh - 1.5rem);
-      margin: auto;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .modal-head {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+.modal-card {
+  background-color: var(--bg-surface);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 1.5rem);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalPopIn {
+  from { transform: scale(0.96) translateY(6px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-head {
       padding: 0.65rem 0.85rem;
       border-bottom: 1px solid var(--border-light);
       display: flex;
@@ -189,3 +195,132 @@
       font-weight: 600;
       color: var(--text-sub);
     }
+.confirm-switch-dialog {
+  max-width: 500px;
+  width: 92%;
+  border-radius: 10px;
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPopIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.confirm-switch-header {
+  padding: 0.9rem 1.15rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.confirm-switch-badge-icon {
+  width: 36px;
+  height: 36px;
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.confirm-switch-body {
+  padding: 1rem 1.15rem;
+  background-color: var(--bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.confirm-switch-notice {
+  font-size: 0.77rem;
+  line-height: 1.5;
+  color: var(--text-main);
+  background-color: #ffffff;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+.confirm-switch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+@media (max-width: 480px) {
+  .confirm-switch-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.confirm-switch-card {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.45rem;
+  min-height: 120px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.confirm-switch-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.1);
+}
+.confirm-switch-card.stay:hover {
+  border-color: var(--accent);
+  background-color: #f8fafc;
+}
+.confirm-switch-card.switch:hover {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+.confirm-switch-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.card-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+.card-status-pill.blue {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.card-status-pill.crimson {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+.card-action-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 0.2rem;
+  line-height: 1.35;
+}
+.card-action-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 8px !important;
+  box-shadow: 0 14px 30px -8px rgba(15, 23, 42, 0.18) !important;
+  border: 1px solid var(--border-light) !important;
+}
+.leaflet-popup-tip {
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1) !important;
+}
