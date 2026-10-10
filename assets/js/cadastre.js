@@ -414,124 +414,170 @@ function getBpnGatewayBase() {
 
     async function fetchSpatialStatusData(lat, lng) {
       const statusRes = {
-        rtrw: 'Kawasan Budidaya / Permukiman',
-        rdtr: 'Zonasi Perda RDTR Berlaku',
-        lsd: 'Non-LSD (Bebas Alih Fungsi)',
-        lbs: 'Bukan Lahan Baku Sawah',
-        hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
-        znt: 'Zona Nilai Pasar Wajar',
-        znt_range: 'Belum Dipetakan ZNT Nasional'
+        rtrw: '-',
+        rdtr: '-',
+        lsd: '-',
+        lbs: '-',
+        hutan: '-',
+        znt: '-',
+        znt_range: '-'
       };
 
+      const endpoints = [];
+      const origin = window.location.origin;
+      if (origin && (origin.indexOf('localhost') !== -1 || origin.indexOf('127.0.0.1') !== -1 || origin.startsWith('http'))) {
+        endpoints.push(`${origin}/api/spatial-status?lat=${lat}&lng=${lng}`);
+      }
+      const customBase = getBpnGatewayBase();
+      if (customBase && customBase.startsWith('https://')) {
+        endpoints.push(`${customBase}/api/spatial-status?lat=${lat}&lng=${lng}`);
+      }
+      const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbUrl = SUPABASE_PROJECT_URL || 'https://vezruyffzmabhtylxigc.supabase.co';
+      endpoints.push({
+        url: `${sbUrl}/functions/v1/cadastre-gateway?action=spatial-status&lat=${lat}&lng=${lng}`,
+        headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
+      });
+
+      for (let i = 0; i < endpoints.length; i++) {
+        const ep = endpoints[i];
+        const targetUrl = typeof ep === 'string' ? ep : ep.url;
+        const targetHeaders = (typeof ep === 'object' && ep.headers) ? ep.headers : undefined;
+        try {
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 5000);
+          const opt = { signal: ctrl.signal, mode: 'cors' };
+          if (targetHeaders) opt.headers = targetHeaders;
+          const resp = await fetch(targetUrl, opt);
+          clearTimeout(tid);
+          if (resp.ok) {
+            const json = await resp.json();
+            if (json && (json.lsd || json.lbs || json.rtrw)) {
+              return Object.assign(statusRes, json);
+            }
+          }
+        } catch (e) {}
+      }
+
       try {
-        const delta = 0.0008;
-        const minLat = (lat - delta).toFixed(6);
-        const minLng = (lng - delta).toFixed(6);
-        const maxLat = (lat + delta).toFixed(6);
-        const maxLng = (lng + delta).toFixed(6);
-        const bboxLatLng = `${minLat},${minLng},${maxLat},${maxLng}`;
-        const bboxLngLat = `${minLng},${minLat},${maxLng},${maxLat}`;
+        const r = 6378137.0;
+        const cx = r * (lng * Math.PI / 180);
+        const cy = r * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
+        const deltaM = 100.0;
+        const minX = (cx - deltaM).toFixed(4);
+        const maxX = (cx + deltaM).toFixed(4);
+        const minY = (cy - deltaM).toFixed(4);
+        const maxY = (cy + deltaM).toFixed(4);
+        const bbox3857 = `${minX},${minY},${maxX},${maxY}`;
         const wmsBase = 'https://atlas.atrbpn.go.id/geoserver/wms';
 
-        const queryWms = async (layerName, useLngLatBbox = false) => {
-          const curBbox = useLngLatBbox ? bboxLngLat : bboxLatLng;
-          const directUrl = `${wmsBase}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=${encodeURIComponent(layerName)}&QUERY_LAYERS=${encodeURIComponent(layerName)}&SRS=EPSG:4326&BBOX=${curBbox}&WIDTH=101&HEIGHT=101&X=50&Y=50&INFO_FORMAT=application/json&FEATURE_COUNT=5`;
-          const ctrl = new AbortController();
-          const tid = setTimeout(() => ctrl.abort(), 2000);
+        const queryWmsLayer = async (layerName) => {
+          const directUrl = `${wmsBase}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=${encodeURIComponent(layerName)}&QUERY_LAYERS=${encodeURIComponent(layerName)}&SRS=EPSG:3857&BBOX=${bbox3857}&WIDTH=101&HEIGHT=101&X=50&Y=50&INFO_FORMAT=application/json&FEATURE_COUNT=5`;
+          const proxyUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=proxy-wms&url=${encodeURIComponent(directUrl)}`;
           try {
-            const resp = await fetch(directUrl, { signal: ctrl.signal });
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 4000);
+            const resp = await fetch(proxyUrl, {
+              signal: ctrl.signal,
+              headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
+            });
             clearTimeout(tid);
-            if (!resp.ok) throw new Error('direct wms error');
-            return await resp.json();
-          } catch (e) {
-            clearTimeout(tid);
-            const proxyBase = getBpnGatewayBase();
-            if (proxyBase && proxyBase.startsWith('https://')) {
-              try {
-                const proxyUrl = `${proxyBase}/functions/v1/cadastre-gateway?action=proxy-wms&url=${encodeURIComponent(directUrl)}`;
-                const ctrl2 = new AbortController();
-                const tid2 = setTimeout(() => ctrl2.abort(), 2000);
-                const resp2 = await fetch(proxyUrl, { signal: ctrl2.signal });
-                clearTimeout(tid2);
-                if (resp2.ok) return await resp2.json();
-              } catch (e2) {}
-            }
-            return null;
-          }
+            if (resp.ok) return await resp.json();
+          } catch (e) {}
+          return null;
         };
 
-        const queryKlhk = async () => {
+        const queryKlhkDirect = async () => {
+          const minLng = (lng - 0.001).toFixed(6);
+          const minLat = (lat - 0.001).toFixed(6);
+          const maxLng = (lng + 0.001).toFixed(6);
+          const maxLat = (lat + 0.001).toFixed(6);
           const klhkUrl = `https://geoportal.planologi.kehutanan.go.id/server/rest/services/Peta_Interaktif_2026/KWSHUTAN_AR_250K/MapServer/identify?geometry=${lng},${lat}&geometryType=esriGeometryPoint&sr=4326&layers=all&tolerance=3&mapExtent=${minLng},${minLat},${maxLng},${maxLat}&imageDisplay=101,101,96&returnGeometry=false&f=json`;
-          const ctrl = new AbortController();
-          const tid = setTimeout(() => ctrl.abort(), 2000);
           try {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 3500);
             const resp = await fetch(klhkUrl, { signal: ctrl.signal });
             clearTimeout(tid);
-            if (!resp.ok) return null;
-            return await resp.json();
-          } catch (e) {
-            clearTimeout(tid);
-            return null;
-          }
+            if (resp.ok) return await resp.json();
+          } catch (e) {}
+          return null;
         };
 
-        const [resRtrw, resRdtr, resLsd, resLbs, resZnt, resHutan] = await Promise.allSettled([
-          queryWms('rtr-online:rtrw_kabkot', false),
-          queryWms('rtr-online:rdtr_kabkot', false),
-          queryWms('umum:lsd_merge', false),
-          queryWms('geonode:lbs_parsial', false),
-          queryWms('umum:ZNT', true),
-          queryKlhk()
+        const [resLsd, resLbs, resRtrw, resRdtr, resZnt, resHutan] = await Promise.allSettled([
+          queryWmsLayer('umum:lsd_merge'),
+          queryWmsLayer('geonode:lbs_parsial'),
+          queryWmsLayer('rtr-online:rtrw_kabkot'),
+          queryWmsLayer('rtr-online:rdtr_kabkot'),
+          queryWmsLayer('umum:ZNT'),
+          queryKlhkDirect()
         ]);
+
+        if (resLsd.status === 'fulfilled' && resLsd.value && resLsd.value.features && resLsd.value.features.length > 0) {
+          const props = resLsd.value.features[0].properties || {};
+          const ket = props.lsd || props.layer || 'Dipertahankan';
+          statusRes.lsd = `LSD Dipertahankan (${ket})`;
+        } else if (resLsd.status === 'fulfilled' && resLsd.value && Array.isArray(resLsd.value.features)) {
+          statusRes.lsd = 'Bukan Kawasan LSD';
+        } else {
+          statusRes.lsd = '-';
+        }
+
+        if (resLbs.status === 'fulfilled' && resLbs.value && resLbs.value.features && resLbs.value.features.length > 0) {
+          const props = resLbs.value.features[0].properties || {};
+          const jswh = props.jswh || props.qname25 || props.namobj || 'Baku Sawah';
+          statusRes.lbs = `Lahan Baku Sawah (${jswh})`;
+        } else if (resLbs.status === 'fulfilled' && resLbs.value && Array.isArray(resLbs.value.features)) {
+          statusRes.lbs = 'Bukan Lahan Baku Sawah';
+        } else {
+          statusRes.lbs = '-';
+        }
 
         if (resRtrw.status === 'fulfilled' && resRtrw.value && resRtrw.value.features && resRtrw.value.features.length > 0) {
           const props = resRtrw.value.features[0].properties || {};
-          statusRes.rtrw = props.namobj || props.keterangan || props.orde2 || props.fungsikws || 'Kawasan Budidaya / Permukiman';
+          statusRes.rtrw = props.namobj || props.jnsrpr || '-';
+        } else if (resRtrw.status === 'fulfilled' && resRtrw.value && Array.isArray(resRtrw.value.features)) {
+          statusRes.rtrw = 'Belum Terpetakan di RTRW Online';
+        } else {
+          statusRes.rtrw = '-';
         }
+
         if (resRdtr.status === 'fulfilled' && resRdtr.value && resRdtr.value.features && resRdtr.value.features.length > 0) {
           const props = resRdtr.value.features[0].properties || {};
-          statusRes.rdtr = props.namobj || props.sub_zona || props.zona || 'Zonasi Perda RDTR Berlaku';
-        }
-        if (resLsd.status === 'fulfilled' && resLsd.value && resLsd.value.features && resLsd.value.features.length > 0) {
-          statusRes.lsd = 'LSD Dipertahankan (Kepmen ATR/BPN No. 1589/2021)';
+          statusRes.rdtr = props.namobj || props.sub_zona || props.zona || '-';
+        } else if (resRdtr.status === 'fulfilled' && resRdtr.value && Array.isArray(resRdtr.value.features)) {
+          statusRes.rdtr = 'Belum Tersedia RDTR Interaktif';
         } else {
-          statusRes.lsd = 'Non-LSD (Bebas Alih Fungsi / Sesuai RTRW)';
+          statusRes.rdtr = '-';
         }
-        if (resLbs.status === 'fulfilled' && resLbs.value && resLbs.value.features && resLbs.value.features.length > 0) {
-          statusRes.lbs = 'Lahan Baku Sawah (LBS Nasional)';
-        } else {
-          statusRes.lbs = 'Bukan Lahan Baku Sawah (Non-LBS)';
-        }
+
         if (resZnt.status === 'fulfilled' && resZnt.value && resZnt.value.features && resZnt.value.features.length > 0) {
           const props = resZnt.value.features[0].properties || {};
-          const nirVal = props.NILAI || props.MEAN || props.nir || props.nilairp;
-          const zoneNum = props.NOMORZONE || props.zonanilai || 'Resmi';
-          const rangeText = props.RANGENILAI || props.rentang || '';
-          const kelasNum = props.KELASNILAI || props.kelas || '';
-
-          statusRes.znt = nirVal
-            ? `Zona ${zoneNum} (NIR: Rp ${Number(nirVal).toLocaleString('id-ID')} / m²)`
-            : `Zona ${zoneNum}`;
-
+          const nirVal = props.NILAI || props.MEAN;
+          const zoneNum = props.NOMORZONE || 'Resmi';
+          const rangeText = props.RANGENILAI || '';
+          const kelasNum = props.KELASNILAI || '';
+          statusRes.znt = nirVal ? `Zona ${zoneNum} (NIR: Rp ${Number(nirVal).toLocaleString('id-ID')} / m²)` : `Zona ${zoneNum}`;
           if (rangeText) {
-            const cleanRange = rangeText.includes('>') ? rangeText.replace('>', '> Rp ') : (rangeText.includes('Rp') ? rangeText : `Rp ${rangeText}`);
+            const cleanRange = String(rangeText).replace('>', '> Rp ');
             statusRes.znt_range = `${cleanRange} / m²${kelasNum ? ` (Kelas ${kelasNum})` : ''}`;
           } else if (nirVal) {
             const num = Number(nirVal);
-            const minR = Math.round(num * 0.85 / 10000) * 10000;
-            const maxR = Math.round(num * 1.20 / 10000) * 10000;
-            statusRes.znt_range = `Rp ${minR.toLocaleString('id-ID')} - Rp ${maxR.toLocaleString('id-ID')} / m²${kelasNum ? ` (Kelas ${kelasNum})` : ''}`;
-          } else {
-            statusRes.znt_range = 'Nilai Pasar Sesuai Zona Terdaftar';
+            statusRes.znt_range = `Rp ${Math.round(num * 0.85).toLocaleString('id-ID')} - Rp ${Math.round(num * 1.20).toLocaleString('id-ID')} / m²`;
           }
+        } else if (resZnt.status === 'fulfilled' && resZnt.value && Array.isArray(resZnt.value.features)) {
+          statusRes.znt = 'Belum Dipetakan ZNT';
+          statusRes.znt_range = '-';
         } else {
-          statusRes.znt = 'Zona Nilai Pasar Wajar';
-          statusRes.znt_range = 'Belum Dipetakan ZNT Nasional';
+          statusRes.znt = '-';
+          statusRes.znt_range = '-';
         }
+
         if (resHutan.status === 'fulfilled' && resHutan.value && resHutan.value.results && resHutan.value.results.length > 0) {
           statusRes.hutan = resHutan.value.results[0].attributes?.FUNGSIKWS || resHutan.value.results[0].value || 'Kawasan Hutan Negara';
+        } else if (resHutan.status === 'fulfilled' && resHutan.value && Array.isArray(resHutan.value.results)) {
+          statusRes.hutan = 'Bukan Kawasan Hutan (APL)';
         } else {
-          statusRes.hutan = 'APL (Non Hutan Boleh Disertifikatkan)';
+          statusRes.hutan = '-';
         }
       } catch (err) {}
 
@@ -558,31 +604,31 @@ function getBpnGatewayBase() {
           if (elKantah) elKantah.innerText = activePinData.kantah || '-';
 
           const elKluster = document.getElementById('pinKlusterPtslText');
-          if (elKluster) elKluster.innerText = activePinData.kluster_ptsl || 'Kluster K1 (Hak Terbit)';
+          if (elKluster) elKluster.innerText = activePinData.kluster_ptsl || '-';
 
           const elAkurasi = document.getElementById('pinAkurasiAlatText');
-          if (elAkurasi) elAkurasi.innerText = activePinData.akurasibidang || 'Kadaster Digital Presisi';
+          if (elAkurasi) elAkurasi.innerText = activePinData.akurasibidang || '-';
 
           const elRtrw = document.getElementById('pinRtrwText');
-          if (elRtrw) elRtrw.innerText = activePinData.rtrw || 'Kawasan Budidaya / Permukiman';
+          if (elRtrw) elRtrw.innerText = activePinData.rtrw || '-';
 
           const elRdtr = document.getElementById('pinRdtrText');
-          if (elRdtr) elRdtr.innerText = activePinData.rdtr || 'Zonasi Perda RDTR Berlaku';
+          if (elRdtr) elRdtr.innerText = activePinData.rdtr || '-';
 
           const elLsd = document.getElementById('pinLsdText');
-          if (elLsd) elLsd.innerText = activePinData.lsd || 'Non-LSD (Bebas Alih Fungsi)';
+          if (elLsd) elLsd.innerText = activePinData.lsd || '-';
 
           const elLbs = document.getElementById('pinLbsText');
-          if (elLbs) elLbs.innerText = activePinData.lbs || 'Bukan Lahan Baku Sawah';
+          if (elLbs) elLbs.innerText = activePinData.lbs || '-';
 
           const elHutan = document.getElementById('pinHutanText');
-          if (elHutan) elHutan.innerText = activePinData.hutan || 'APL (Non Hutan Boleh Disertifikatkan)';
+          if (elHutan) elHutan.innerText = activePinData.hutan || '-';
 
           const elZnt = document.getElementById('pinZntText');
-          if (elZnt) elZnt.innerText = activePinData.znt || 'Zona Nilai Pasar Wajar';
+          if (elZnt) elZnt.innerText = activePinData.znt || '-';
 
           const elZntRange = document.getElementById('pinZntRangeText');
-          if (elZntRange) elZntRange.innerText = activePinData.znt_range || 'Belum Dipetakan ZNT Nasional';
+          if (elZntRange) elZntRange.innerText = activePinData.znt_range || '-';
         }
       } else {
         proRows.forEach(row => { row.style.display = 'none'; });
@@ -684,29 +730,29 @@ function getBpnGatewayBase() {
             fid: effectivePersil.fid || (decoded ? decoded.nib_lengkap : '-'),
             nib: decoded ? decoded.nib : (effectivePersil.nib || '-'),
             nib_lengkap: decoded ? decoded.nib_lengkap : (effectivePersil.nib_lengkap || effectivePersil.nib || '-'),
-            tipe_hak: decoded ? decoded.tipe_hak : (effectivePersil.tipe_hak || 'Hak Milik'),
+            tipe_hak: decoded ? decoded.tipe_hak : (effectivePersil.tipe_hak || '-'),
             nomor_hak: decoded ? decoded.nomor_hak : (effectivePersil.nomor_hak || '-'),
             nomor_hak_raw: decoded ? decoded.nomor_hak_raw : (effectivePersil.nomor_hak_raw || '-'),
             nosu: decoded ? decoded.nosu : (effectivePersil.nosu || '-'),
-            tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '2026'),
+            tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '-'),
             luas_m2: effectivePersil.luas_m2 || 0,
             desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
             kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
             kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
             provinsi: decoded ? decoded.provinsi : ((effectivePersil.provinsi && effectivePersil.provinsi !== '-') ? effectivePersil.provinsi : ((geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-')),
             kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: decoded ? decoded.kantah : ((effectivePersil.kantah && effectivePersil.kantah !== '-') ? effectivePersil.kantah : ((geoData && geoData.kantah !== '-') ? geoData.kantah : 'Kantor Pertanahan')),
-            kluster_ptsl: decoded ? decoded.kluster_ptsl : 'Kluster K1 (Hak Terbit)',
-            akurasibidang: decoded ? decoded.akurasibidang : 'Kadaster Digital Presisi',
-            alatukur: decoded ? decoded.alatukur : 'GNSS RTK / Terestrial Total Station',
-            status_validasi: decoded ? decoded.status_validasi : (effectivePersil.status_validasi || 'Kadaster Resmi Presisi'),
-            rtrw: 'Kawasan Budidaya / Permukiman',
-            rdtr: 'Zonasi Perda RDTR Berlaku',
-            lsd: 'Non-LSD (Bebas Alih Fungsi)',
-            lbs: 'Bukan Lahan Baku Sawah',
-            hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
-            znt: 'Zona Nilai Pasar Wajar',
-            znt_range: 'Belum Dipetakan ZNT Nasional',
+            kantah: decoded ? decoded.kantah : ((effectivePersil.kantah && effectivePersil.kantah !== '-') ? effectivePersil.kantah : ((geoData && geoData.kantah && geoData.kantah !== 'Kantor Pertanahan') ? geoData.kantah : '-')),
+            kluster_ptsl: decoded ? decoded.kluster_ptsl : '-',
+            akurasibidang: decoded ? decoded.akurasibidang : '-',
+            alatukur: decoded ? decoded.alatukur : '-',
+            status_validasi: decoded ? decoded.status_validasi : (effectivePersil.status_validasi || 'Terdaftar di Basis Data'),
+            rtrw: 'Memuat status RTRW...',
+            rdtr: 'Memuat status RDTR...',
+            lsd: 'Memverifikasi status LSD...',
+            lbs: 'Memverifikasi status LBS...',
+            hutan: 'Memeriksa status Kawasan Hutan...',
+            znt: 'Memuat Zona Nilai Tanah...',
+            znt_range: 'Memuat rentang nilai...',
             alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : [decoded?.desa, decoded?.kecamatan, decoded?.kabkot].filter(v => v && v !== '-').join(', ') || 'Lokasi Titik Bidang'
           };
 
@@ -826,25 +872,25 @@ function getBpnGatewayBase() {
             nomor_hak: '-',
             nomor_hak_raw: '-',
             nosu: '-',
-            tahun: '2026',
+            tahun: '-',
             luas_m2: estArea,
-            desa: (geoData && geoData.desa !== '-') ? geoData.desa : 'Wilayah Belum Terpetakan',
+            desa: (geoData && geoData.desa !== '-') ? geoData.desa : '-',
             kecamatan: (geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-',
             kabkot: (geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-',
             provinsi: (geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-',
             kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: (geoData && geoData.kantah !== '-') ? geoData.kantah : 'Kantor Pertanahan',
-            kluster_ptsl: 'Kluster K3 (Delineasi Mandiri)',
+            kantah: (geoData && geoData.kantah && geoData.kantah !== 'Kantor Pertanahan') ? geoData.kantah : '-',
+            kluster_ptsl: '-',
             akurasibidang: 'Delineasi Mandiri Pengguna',
             alatukur: 'Digitasi Kartometrik Satelit',
-            status_validasi: 'Belum Terhubung Server',
-            rtrw: 'Kawasan Budidaya / Permukiman',
-            rdtr: 'Zonasi Perda RDTR Berlaku',
-            lsd: 'Non-LSD (Bebas Alih Fungsi)',
-            lbs: 'Bukan Lahan Baku Sawah',
-            hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
-            znt: 'Zona Nilai Pasar Wajar',
-            znt_range: '-',
+            status_validasi: 'Belum Terdaftar di BPN',
+            rtrw: 'Memuat status RTRW...',
+            rdtr: 'Memuat status RDTR...',
+            lsd: 'Memverifikasi status LSD...',
+            lbs: 'Memverifikasi status LBS...',
+            hutan: 'Memeriksa status Kawasan Hutan...',
+            znt: 'Memuat Zona Nilai Tanah...',
+            znt_range: 'Memuat rentang nilai...',
             alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
           };
 
@@ -992,7 +1038,7 @@ function getBpnGatewayBase() {
       const kodepos = addr.postcode || '-';
       const jalan = data?.alamat_lengkap || addr.road || addr.amenity || data?.display_name || '-';
       const cleanKab = kabkot !== '-' ? kabkot.replace(/^Kabupaten\s*/i, '').replace(/^Kota\s*/i, '').trim() : '';
-      const kantah = data?.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : 'Kantor Pertanahan');
+      const kantah = data?.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : '-');
 
       return { desa, kecamatan: kec, kabkot, provinsi: prov, kodepos, kantah, jalan };
     }

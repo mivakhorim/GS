@@ -136,8 +136,9 @@ async function geocodeAndFly(query, zoomLevel = 14) {
           handleMergeParcelClick(e.latlng.lat, e.latlng.lng);
           return;
         }
-        if (isParcelLocked && activeVertices && activeVertices.length >= 3) {
-          showToast('Bidang khusus aktif (hasil import / gabungan / gambar manual). Klik tombol Batal Pilihan terlebih dahulu jika ingin beralih ke bidang lain.', 'warn');
+        const hasActiveData = (window.lastImportedShpData != null) || (activeVertices && activeVertices.length >= 3) || isGeometryManuallyEdited;
+        if (hasActiveData) {
+          openConfirmSwitchModal(e.latlng.lat, e.latlng.lng);
           return;
         }
         handleMapClick(e.latlng.lat, e.latlng.lng, true);
@@ -551,3 +552,46 @@ async function geocodeAndFly(query, zoomLevel = 14) {
         }, 500);
       }
     }
+
+    let pendingSwitchCoord = null;
+
+    function openConfirmSwitchModal(lat, lng) {
+      pendingSwitchCoord = { lat, lng };
+      const modal = document.getElementById('modalConfirmSwitchParcel');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeConfirmSwitchModal() {
+      const modal = document.getElementById('modalConfirmSwitchParcel');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function proceedSwitchToNewParcel() {
+      closeConfirmSwitchModal();
+      if (pendingSwitchCoord) {
+        const targetLat = pendingSwitchCoord.lat;
+        const targetLng = pendingSwitchCoord.lng;
+        pendingSwitchCoord = null;
+        window.lastImportedShpData = null;
+        const badge = document.getElementById('importedShpAttributesBadge');
+        if (badge) badge.style.display = 'none';
+        isParcelLocked = false;
+        isGeometryManuallyEdited = false;
+        if (typeof clearCanvasRebuilderLayers === 'function') {
+          clearCanvasRebuilderLayers();
+        }
+        handleMapClick(targetLat, targetLng, true);
+        showToast('Memuat data bidang tanah baru...', 'info');
+      }
+    }
+
+    function cancelSwitchParcel() {
+      closeConfirmSwitchModal();
+      pendingSwitchCoord = null;
+      showToast('Tetap di bidang aktif saat ini. Data pengeditan Anda aman.', 'info');
+    }
+
+    window.openConfirmSwitchModal = openConfirmSwitchModal;
+    window.closeConfirmSwitchModal = closeConfirmSwitchModal;
+    window.proceedSwitchToNewParcel = proceedSwitchToNewParcel;
+    window.cancelSwitchParcel = cancelSwitchParcel;

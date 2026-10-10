@@ -261,8 +261,8 @@
       if (!tipeHak && kodehak && hakMap[kodehak]) {
         tipeHak = hakMap[kodehak];
       }
-      if (!tipeHak || tipeHak === '-') {
-        tipeHak = 'Hak Milik';
+      if (!tipeHak) {
+        tipeHak = '-';
       }
 
       let provNama = normalizeIndonesianProvince(props.provinsi || (geoData && geoData.provinsi) || '');
@@ -294,7 +294,7 @@
       } else if (nomorHakBuku) {
         nib5 = nomorHakBuku.slice(-5).padStart(5, '0');
       } else {
-        nib5 = '01234';
+        nib5 = '-';
       }
 
       let effProvCode = kodeprov || '';
@@ -316,59 +316,78 @@
           if (kabNama.includes('Klaten')) effKabCode = effKabCode || '08';
           else if (kabNama.includes('Sukoharjo')) effKabCode = effKabCode || '11';
           else if (kabNama.includes('Surakarta') || kabNama.includes('Solo')) effKabCode = effKabCode || '72';
-          else effKabCode = effKabCode || '08';
-          effDesaCode = effDesaCode || '2004';
+          else if (kabNama.includes('Semarang')) effKabCode = effKabCode || '74';
+          else if (kabNama.includes('Boyolali')) effKabCode = effKabCode || '09';
+          else if (kabNama.includes('Karanganyar')) effKabCode = effKabCode || '13';
+          else if (kabNama.includes('Sragen')) effKabCode = effKabCode || '14';
+          else if (kabNama.includes('Wonogiri')) effKabCode = effKabCode || '12';
+          else effKabCode = effKabCode || '';
+          effDesaCode = effDesaCode || '';
         } else if (provNama.includes('Jawa Barat') || provNama.includes('Jabar')) {
           effProvCode = effProvCode || '32';
-          effKabCode = effKabCode || '01';
-          effDesaCode = effDesaCode || '1002';
+          if (kabNama.includes('Bandung')) effKabCode = effKabCode || '73';
+          else if (kabNama.includes('Bekasi')) effKabCode = effKabCode || '75';
+          else if (kabNama.includes('Bogor')) effKabCode = effKabCode || '71';
+          else if (kabNama.includes('Depok')) effKabCode = effKabCode || '76';
+          else effKabCode = effKabCode || '';
+          effDesaCode = effDesaCode || '';
         } else if (provNama.includes('Banten')) {
           effProvCode = effProvCode || '36';
-          effKabCode = effKabCode || '03';
-          effDesaCode = effDesaCode || '1001';
+          if (kabNama.includes('Tangerang Selatan')) effKabCode = effKabCode || '74';
+          else if (kabNama.includes('Tangerang')) effKabCode = effKabCode || '71';
+          else if (kabNama.includes('Serang')) effKabCode = effKabCode || '73';
+          else effKabCode = effKabCode || '';
+          effDesaCode = effDesaCode || '';
         } else if (provNama.includes('Jawa Timur') || provNama.includes('Jatim')) {
           effProvCode = effProvCode || '35';
-          effKabCode = effKabCode || '78';
-          effDesaCode = effDesaCode || '1001';
+          if (kabNama.includes('Surabaya')) effKabCode = effKabCode || '78';
+          else if (kabNama.includes('Malang')) effKabCode = effKabCode || '73';
+          else effKabCode = effKabCode || '';
+          effDesaCode = effDesaCode || '';
         } else if (provNama.includes('Yogyakarta') || provNama.includes('DIY')) {
           effProvCode = effProvCode || '34';
-          effKabCode = effKabCode || '04';
-          effDesaCode = effDesaCode || '2001';
+          if (kabNama.includes('Sleman')) effKabCode = effKabCode || '04';
+          else if (kabNama.includes('Bantul')) effKabCode = effKabCode || '02';
+          else if (kabNama.includes('Yogyakarta')) effKabCode = effKabCode || '71';
+          else effKabCode = effKabCode || '';
+          effDesaCode = effDesaCode || '';
         } else {
-          effProvCode = effProvCode || '11';
-          effKabCode = effKabCode || '08';
-          effDesaCode = effDesaCode || '2004';
+          effProvCode = effProvCode || '';
+          effKabCode = effKabCode || '';
+          effDesaCode = effDesaCode || '';
         }
       }
 
-      let nibLengkap = '';
+      let nibLengkap = '-';
       if (rawNib && rawNib.length >= 13) {
         nibLengkap = `${rawNib.slice(0, 2)}.${rawNib.slice(2, 4)}.${rawNib.slice(4, 8)}.${rawNib.slice(8, 13)}`;
-      } else {
+      } else if (nib5 !== '-' && effProvCode && effKabCode && effDesaCode) {
         nibLengkap = `${effProvCode}.${effKabCode}.${effDesaCode}.${nib5}`;
-      }
-
-      let nomorHak = '';
-      if (nomorHakBuku) {
-        nomorHak = `${tipeHak} No. ${nomorHakBuku}`;
-      } else if (rawNomor) {
-        nomorHak = `${tipeHak} No. ${rawNomor.slice(-5)}`;
+      } else if (nib5 !== '-') {
+        nibLengkap = nib5;
       } else {
-        nomorHak = `${tipeHak} No. ${nib5}`;
+        nibLengkap = '-';
       }
 
-      const tahun = String(props.tahun || '2026').trim();
+      let nomorHak = '-';
+      if (nomorHakBuku) {
+        nomorHak = (tipeHak !== '-') ? `${tipeHak} No. ${nomorHakBuku}` : `No. ${nomorHakBuku}`;
+      } else if (rawNomor) {
+        nomorHak = (tipeHak !== '-') ? `${tipeHak} No. ${rawNomor.slice(-5)}` : `No. ${rawNomor.slice(-5)}`;
+      }
+
+      const tahun = String(props.tahun || '').trim() || '-';
       let nosu = String(props.nosu || props.surat_ukur || props.suratukur || '').trim();
-      if (!nosu || nosu === '-') {
-        nosu = (desaNama !== '-' && desaNama !== '') ? `No. ${nib5}/${desaNama}/${tahun}` : `No. ${nib5}/${tahun}`;
+      if (!nosu || nosu === '') {
+        nosu = '-';
       }
 
       const cleanKab = (kabNama && kabNama !== '-') ? kabNama.replace(/^Kabupaten\s*/i, '').replace(/^Kota\s*/i, '').trim() : '';
       const kantah = String(props.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : '-')).trim();
 
-      const klusterPtsl = 'Kluster K1 (Sertifikat Hak Terbit)';
-      const akurasiBidang = 'Kadaster Digital Presisi (PTSL Terverifikasi)';
-      const alatUkur = 'GNSS RTK / Terestrial Total Station';
+      const klusterPtsl = String(props.kluster || props.kluster_ptsl || props.ptsl || '').trim() || '-';
+      const akurasiBidang = String(props.akurasi || props.akurasibidang || '').trim() || '-';
+      const alatUkur = String(props.alatukur || props.alat_ukur || '').trim() || '-';
 
       return {
         kodeprov,
@@ -383,14 +402,14 @@
         nib: nib5,
         nib_lengkap: nibLengkap,
         nomor_hak: nomorHak,
-        nomor_hak_raw: nomorHakBuku || nib5,
+        nomor_hak_raw: nomorHakBuku || (rawNomor ? rawNomor.slice(-5) : '-'),
         tipe_hak: tipeHak,
         nosu,
         tahun,
         kluster_ptsl: klusterPtsl,
         akurasibidang: akurasiBidang,
         alatukur: alatUkur,
-        status_validasi: 'Kadaster Resmi Presisi'
+        status_validasi: 'Terdaftar di Basis Data'
       };
     }
 
