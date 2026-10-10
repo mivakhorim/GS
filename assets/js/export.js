@@ -587,7 +587,7 @@ function exportCoordinatesXls() {
 
     function switchAttrTab(tab) {
       if (tab === 'custom' && !(typeof isMemberProActive === 'function' && isMemberProActive())) {
-        showToast('Pengaturan terkunci untuk akun Gratis (LAYER: geospasi.dutamik.id). Upgrade ke PRO untuk mengaktifkan.', 'warn');
+        showToast('Untuk mengedit atribut peta memerlukan akses PRO. Upgrade ke PRO untuk mengaktifkan.', 'warn');
         openMemberModal();
         return;
       }

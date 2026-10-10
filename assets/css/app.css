@@ -262,6 +262,24 @@
       border: 1px solid #34d399;
       box-shadow: 0 0 8px rgba(5, 150, 105, 0.45);
     }
+    .pro-lock-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 6px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--accent);
+      background-color: var(--accent-soft);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      line-height: 1.4;
+      transition: background-color 0.15s ease;
+    }
+    .pro-lock-text:hover {
+      background-color: #dbeafe;
+    }
     .status-pill {
       display: inline-flex;
       align-items: center;

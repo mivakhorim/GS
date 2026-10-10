@@ -227,6 +227,9 @@
         for (const ring of rings) {
           if (!ring || ring.length < 3) continue;
           const coords = ring.map(pt => {
+            if (Math.abs(pt[0]) <= 180 && Math.abs(pt[1]) <= 90) {
+              return { lat: Number(pt[1].toFixed(7)), lng: Number(pt[0].toFixed(7)) };
+            }
             const unproj = L.CRS.EPSG3857.unproject(L.point(pt[0], pt[1]));
             return { lat: Number(unproj.lat.toFixed(7)), lng: Number(unproj.lng.toFixed(7)) };
           });
@@ -260,12 +263,36 @@
       }
 
       const props = chosenFeat.properties || {};
-      const nib = props.nib ? String(props.nib).trim() : '-';
-      const tipeHak = props.tipehak ? String(props.tipehak).trim() : 'Hak Milik';
+      const getPropVal = (keys, fallback = '-') => {
+        for (const k of keys) {
+          if (props[k] !== undefined && props[k] !== null && String(props[k]).trim() !== '') {
+            return String(props[k]).trim();
+          }
+          const lower = k.toLowerCase();
+          for (const pk in props) {
+            if (pk.toLowerCase() === lower && props[pk] !== undefined && props[pk] !== null && String(props[pk]).trim() !== '') {
+              return String(props[pk]).trim();
+            }
+          }
+        }
+        return fallback;
+      };
+
+      const nib = getPropVal(['nib', 'nomor_identifikasi_bidang', 'id_persil'], '-');
+      const tipeHak = getPropVal(['tipehak', 'tipe_hak', 'hak', 'jenishak', 'status_hak'], 'Hak Milik');
+      const nomorHak = getPropVal(['nomor', 'nomor_hak', 'nohak'], '-');
+      const nosu = getPropVal(['nosu', 'no_su', 'suratukur', 'surat_ukur'], '-');
+      const tahun = getPropVal(['tahun', 'thn', 'tahun_terbit'], '2026');
+      const desa = getPropVal(['desa', 'kelurahan', 'kd_desa', 'namadesa'], '');
+      const kecamatan = getPropVal(['kecamatan', 'kd_kec', 'namakecamatan'], '');
+      const kabkot = getPropVal(['kabupaten', 'kabkot', 'kota', 'kd_kab', 'namakabupaten'], '');
+      const provinsi = getPropVal(['provinsi', 'propinsi', 'kd_prop', 'namaprovinsi'], '');
+      const kantah = getPropVal(['kantah', 'kantor', 'kantor_pertanahan'], '');
+      const statusValidasi = getPropVal(['status', 'status_validasi', 'validasi'], 'Kadaster Resmi Presisi');
+
       const calcArea = Math.round(calculatePolygonArea(chosenCoords));
-      const luasM2 = props.luas && Number(props.luas) > 0 ? Number(props.luas) : calcArea;
-      const nomorHak = props.nomor ? String(props.nomor).trim() : '-';
-      const tahun = props.tahun ? String(props.tahun).trim() : '2026';
+      const rawLuas = getPropVal(['luas', 'luas_m2', 'luastanah', 'luas_tertulis'], '');
+      const luasM2 = (rawLuas && Number(rawLuas) > 0) ? Number(rawLuas) : calcArea;
 
       return {
         found: true,
@@ -275,11 +302,17 @@
         tipe_hak: tipeHak,
         luas_m2: luasM2,
         nomor_hak: nomorHak,
+        nosu: nosu,
         tahun: tahun,
-        fid: chosenFeat.id || '-',
+        desa: desa || null,
+        kecamatan: kecamatan || null,
+        kabkot: kabkot || null,
+        provinsi: provinsi || null,
+        kantah: kantah || null,
+        status_validasi: statusValidasi,
+        fid: chosenFeat.id || (nib !== '-' ? nib : '-'),
         polygon_coords: chosenCoords,
         bbox_coords: chosenCoords,
-        status_validasi: 'Kadaster Resmi Presisi',
         source: 'ATLAS GEOSERVER'
       };
     }
@@ -530,7 +563,7 @@ function latLngToUtm(lat, lon) {
           freeNotice = document.createElement('div');
           freeNotice.id = 'shpFreeAttrNotice';
           freeNotice.style.cssText = 'font-size: 0.71rem; color: var(--text-sub); margin: 4px 0 6px 0; line-height: 1.45;';
-          freeNotice.innerHTML = 'Mode Akun Gratis: Terkunci pada <code>LAYER: geospasi.dutamik.id</code> (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
+          freeNotice.innerHTML = 'Untuk mengedit atribut peta memerlukan akses PRO (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
           const tabNav = boxEkspor.querySelector('div[style*="border-bottom"]');
           if (tabNav) {
             boxEkspor.insertBefore(freeNotice, tabNav);
@@ -538,6 +571,9 @@ function latLngToUtm(lat, lon) {
         } else if (freeNotice) {
           freeNotice.style.display = 'block';
         }
+      }
+      if (typeof renderCadastralProFields === 'function') {
+        renderCadastralProFields();
       }
     };
     window.openMemberModal = function() { showToast('Layanan akun sedang offline.', 'info'); };

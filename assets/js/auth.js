@@ -327,7 +327,7 @@ function closeServerModal() {
           freeNotice = document.createElement('div');
           freeNotice.id = 'shpFreeAttrNotice';
           freeNotice.style.cssText = 'font-size: 0.71rem; color: var(--text-sub); margin: 4px 0 6px 0; line-height: 1.45;';
-          freeNotice.innerHTML = 'Mode Akun Gratis: Terkunci pada <code>LAYER: geospasi.dutamik.id</code> (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
+          freeNotice.innerHTML = 'Untuk mengedit atribut peta memerlukan akses PRO (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
           const tabNav = boxEkspor.querySelector('div[style*="border-bottom"]');
           if (tabNav) {
             boxEkspor.insertBefore(freeNotice, tabNav);
@@ -362,6 +362,10 @@ function closeServerModal() {
         if (freeNotice) {
           freeNotice.style.display = 'none';
         }
+      }
+
+      if (typeof renderCadastralProFields === 'function') {
+        renderCadastralProFields();
       }
 
       if (isLoggedIn) {
@@ -399,7 +403,7 @@ function closeServerModal() {
           }
           if (alertEl) {
             alertEl.style.display = 'block';
-            alertEl.innerHTML = 'Mode Akun Gratis: Terkunci pada LAYER: geospasi.dutamik.id (Maks luas 150 m²). Berkas: geospasi.zip. Upgrade ke PRO untuk akses kustom & luas tanpa batas.';
+            alertEl.innerHTML = 'Untuk mengedit atribut peta memerlukan akses PRO. Mode Akun Gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom & luas tanpa batas.';
           }
           if (thankYouCard) thankYouCard.style.display = 'none';
           if (qrisBtn) qrisBtn.style.display = 'flex';

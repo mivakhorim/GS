@@ -88,12 +88,19 @@ function createPolygonFromBatchCoords() {
       activePinData.lng = lng;
       activePinData.luas_m2 = 0;
       activePinData.tipe_hak = 'Delineasi Mandiri';
+      activePinData.nib = '-';
+      activePinData.nomor_hak = '-';
+      activePinData.nosu = '-';
       rawInitialBboxCoords = manualBox;
       initCanvasRebuilder(lat, lng, estArea, manualBox);
       const elLuasBpn = document.getElementById('pinLuasBpnText');
       if (elLuasBpn) {
         elLuasBpn.className = 'stat-value offline';
         elLuasBpn.innerText = 'Belum Terhubung Server';
+      }
+      const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
+      if (typeof renderCadastralProFields === 'function') {
+        renderCadastralProFields();
       }
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
       if (elStatusValidasi) {
@@ -106,7 +113,7 @@ function createPolygonFromBatchCoords() {
       }
       const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
       if (elPinServer && typeof getCadastreServerMode === 'function') {
-        elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2 (BPN PRO)' : 'Server 1 (Cloud)';
+        elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
       }
       const notFoundBox = document.getElementById('persilNotFoundBox');
       const foundBox = document.getElementById('persilFoundBox');
@@ -136,17 +143,27 @@ function createPolygonFromBatchCoords() {
         showToast('Pilih bidang tanah pada peta terlebih dahulu.', 'warn');
         return;
       }
+      if (!(typeof isMemberProActive === 'function' && isMemberProActive())) {
+        showToast('Rincian data kadaster resmi khusus Member PRO. Silakan upgrade akun.', 'warn');
+        if (typeof openMemberModal === 'function') openMemberModal();
+        return;
+      }
+      const serverName = (typeof getCadastreServerMode === 'function' && getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
+      const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0) ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : 'Belum Terhubung Server';
       const summary = `DATA RESMI BIDANG TANAH KADASTRAL
 
-Tipe Hak: ${activePinData.tipe_hak}
-Luas Terdaftar: ${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²
-Desa: ${activePinData.desa}
-Kecamatan: ${activePinData.kecamatan}
-Kabupaten: ${activePinData.kabkot}
-Provinsi: ${activePinData.provinsi}
-Kode Pos: ${activePinData.kodepos || '-'}
-Kantah: ${activePinData.kantah}
-Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
+Nomor Identifikasi Bidang (NIB): ${activePinData.nib || '-'}
+Jenis Hak: ${activePinData.tipe_hak || '-'}
+Nomor Surat Ukur: ${activePinData.nosu || '-'}
+Nomor Hak: ${activePinData.nomor_hak || '-'}
+Desa / Kelurahan: ${activePinData.desa || '-'}
+Kecamatan: ${activePinData.kecamatan || '-'}
+Kabupaten / Kota: ${activePinData.kabkot || '-'}
+Provinsi: ${activePinData.provinsi || '-'}
+Kantor Pertanahan: ${activePinData.kantah || '-'}
+Luas Terdaftar: ${luasStr}
+Koordinat Titik: ${activePinData.lat ? activePinData.lat.toFixed(6) : '-'}, ${activePinData.lng ? activePinData.lng.toFixed(6) : '-'}
+Server Sumber Data: ${serverName}`;
 
       navigator.clipboard.writeText(summary).then(() => {
         showToast('Data lengkap bidang tanah berhasil disalin ke clipboard!', 'success');
@@ -177,6 +194,18 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       if (foundBox) foundBox.style.display = 'none';
       if (notFoundBox) notFoundBox.style.display = 'none';
       if (loadingBox) loadingBox.style.display = 'none';
+
+      const elNib = document.getElementById('pinNibText'); if (elNib) elNib.innerText = '-';
+      const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = '-';
+      const elNosu = document.getElementById('pinNosuText'); if (elNosu) elNosu.innerText = '-';
+      const elNomorHak = document.getElementById('pinNomorHakText'); if (elNomorHak) elNomorHak.innerText = '-';
+      const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = '-';
+      const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = '-';
+      const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = '-';
+      const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = '-';
+      const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = '-';
+      const elCoords = document.getElementById('pinCoordsText'); if (elCoords) elCoords.innerText = '-';
+      const elStatusValidasi = document.getElementById('pinStatusValidasiText'); if (elStatusValidasi) elStatusValidasi.innerText = '-';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';

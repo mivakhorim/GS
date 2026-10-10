@@ -259,12 +259,12 @@ function getBpnGatewayBase() {
     function switchCadastreServer(mode) {
       if (mode === 'server2') {
         if (typeof isMemberProActive !== 'function' || !isMemberProActive()) {
-          showToast('Server 2 (Pengambilan data langsung di BPN) khusus untuk Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+          showToast('Server 2 khusus untuk Member PRO. Silakan masuk atau upgrade akun.', 'warn');
           if (typeof openMemberModal === 'function') openMemberModal();
           return false;
         }
         localStorage.setItem('cadastre_server_mode', 'server2');
-        showToast('Mode Server 2 Aktif: Mengambil data langsung dari BPN tanpa melalui server Supabase.', 'success');
+        showToast('Mode Server 2 Aktif: Pemrosesan mandiri di peramban.', 'success');
       } else {
         localStorage.setItem('cadastre_server_mode', 'server1');
         showToast('Mode Server 1 Aktif: Menggunakan Supabase Gateway Cloud resmi.', 'info');
@@ -288,27 +288,27 @@ function getBpnGatewayBase() {
       if (mode === 'server2') {
         if (badge) {
           badge.className = 'badge-pill green';
-          badge.innerText = 'SERVER 2 (BPN PRO)';
+          badge.innerText = 'SERVER 2';
         }
         if (badgeBidang) {
           badgeBidang.className = 'badge-pill green';
-          badgeBidang.innerText = 'SERVER 2 (BPN PRO)';
+          badgeBidang.innerText = 'SERVER 2';
         }
         if (btn1) btn1.classList.remove('active');
         if (btn2) btn2.classList.add('active');
         if (btn1Bidang) btn1Bidang.classList.remove('active');
         if (btn2Bidang) btn2Bidang.classList.add('active');
-        if (desc) desc.innerText = 'Server 2 Aktif: Pengambilan data langsung dari BPN dan diproses di browser.';
-        if (descBidang) descBidang.innerText = 'Server 2 Aktif: Pengambilan data langsung dari BPN dan diproses di browser.';
-        if (pinServerText) pinServerText.innerText = 'Server 2 (BPN PRO)';
+        if (desc) desc.innerText = 'Server 2: Pemrosesan mandiri di browser.';
+        if (descBidang) descBidang.innerText = 'Server 2: Pemrosesan mandiri di browser.';
+        if (pinServerText) pinServerText.innerText = 'Server 2';
       } else {
         if (badge) {
           badge.className = 'badge-pill blue';
-          badge.innerText = 'SERVER 1 (CLOUD)';
+          badge.innerText = 'SERVER 1';
         }
         if (badgeBidang) {
           badgeBidang.className = 'badge-pill blue';
-          badgeBidang.innerText = 'SERVER 1 (CLOUD)';
+          badgeBidang.innerText = 'SERVER 1';
         }
         if (btn1) btn1.classList.add('active');
         if (btn2) btn2.classList.remove('active');
@@ -316,7 +316,7 @@ function getBpnGatewayBase() {
         if (btn2Bidang) btn2Bidang.classList.remove('active');
         if (desc) desc.innerText = 'Server 1: Supabase Gateway Cloud resmi.';
         if (descBidang) descBidang.innerText = 'Server 1: Supabase Gateway Cloud resmi.';
-        if (pinServerText) pinServerText.innerText = 'Server 1 (Cloud)';
+        if (pinServerText) pinServerText.innerText = 'Server 1';
       }
     }
 
@@ -345,7 +345,7 @@ function getBpnGatewayBase() {
             }
           }
         } catch (e) {
-          showToast('Server 2 BPN langsung gagal merespons, beralih ke Server 1.', 'info');
+          showToast('Server 2 gagal merespons, beralih ke Server 1.', 'info');
         }
       }
 
@@ -392,6 +392,24 @@ function getBpnGatewayBase() {
         message: 'Titik koordinat berada di luar bidang tanah terdaftar ATR/BPN.',
         polygon_coords: null
       };
+    }
+
+    function renderCadastralProFields() {
+      if (!activePinData) return;
+      const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
+      const proLockHtml = '<span class="pro-lock-text" onclick="openMemberModal()" title="Khusus Member PRO. Klik untuk membuka portal akun." style="cursor:pointer;color:var(--accent);font-weight:600;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Akses PRO</span>';
+
+      const elNib = document.getElementById('pinNibText');
+      if (elNib) elNib.innerHTML = isPro ? (activePinData.nib || '-') : proLockHtml;
+
+      const elNosu = document.getElementById('pinNosuText');
+      if (elNosu) elNosu.innerHTML = isPro ? (activePinData.nosu || '-') : proLockHtml;
+
+      const elNomorHak = document.getElementById('pinNomorHakText');
+      if (elNomorHak) elNomorHak.innerHTML = isPro ? (activePinData.nomor_hak || '-') : proLockHtml;
+
+      const elKantah = document.getElementById('pinKantahText');
+      if (elKantah) elKantah.innerHTML = isPro ? (activePinData.kantah || '-') : proLockHtml;
     }
 
     async function handleMapClick(lat, lng, doSwitchTab = true) {
@@ -465,14 +483,18 @@ function getBpnGatewayBase() {
             lat: lat,
             lng: lng,
             fid: effectivePersil.fid || '-',
+            nib: effectivePersil.nib || '-',
             tipe_hak: effectivePersil.tipe_hak || 'Terdaftar Resmi',
+            nomor_hak: effectivePersil.nomor_hak || '-',
+            nosu: effectivePersil.nosu || '-',
+            tahun: effectivePersil.tahun || '2026',
             luas_m2: effectivePersil.luas_m2 || 0,
-            desa: (geoData && geoData.desa !== '-') ? geoData.desa : (effectivePersil.desa || '-'),
-            kecamatan: (geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : (effectivePersil.kecamatan || '-'),
-            kabkot: (geoData && geoData.kabkot !== '-') ? geoData.kabkot : (effectivePersil.kabkot || '-'),
-            provinsi: (geoData && geoData.provinsi !== '-') ? geoData.provinsi : (effectivePersil.provinsi || '-'),
+            desa: (effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-'),
+            kecamatan: (effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-'),
+            kabkot: (effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-'),
+            provinsi: (effectivePersil.provinsi && effectivePersil.provinsi !== '-') ? effectivePersil.provinsi : ((geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-'),
             kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: (geoData && geoData.kantah !== '-') ? geoData.kantah : (effectivePersil.kantah || 'Kantor Pertanahan'),
+            kantah: (effectivePersil.kantah && effectivePersil.kantah !== '-') ? effectivePersil.kantah : ((geoData && geoData.kantah !== '-') ? geoData.kantah : 'Kantor Pertanahan'),
             alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
           };
 
@@ -495,6 +517,7 @@ function getBpnGatewayBase() {
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
+          renderCadastralProFields();
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
           if (elStatusValidasi) {
             elStatusValidasi.className = 'spec-value emerald';
@@ -502,7 +525,7 @@ function getBpnGatewayBase() {
           }
           const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
           if (elPinServer) {
-            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2 (BPN PRO)' : 'Server 1 (Cloud)';
+            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
           }
 
           const badgeEl = document.getElementById('badgeTipeHak');
@@ -582,7 +605,11 @@ function getBpnGatewayBase() {
             lat: lat,
             lng: lng,
             fid: 'BIDANG-MANDIRI-' + Math.floor(1000 + Math.random() * 9000),
+            nib: '-',
             tipe_hak: 'Delineasi Mandiri',
+            nomor_hak: '-',
+            nosu: '-',
+            tahun: '2026',
             luas_m2: estArea,
             desa: (geoData && geoData.desa !== '-') ? geoData.desa : 'Wilayah Belum Terpetakan',
             kecamatan: (geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-',
@@ -607,6 +634,7 @@ function getBpnGatewayBase() {
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
+          renderCadastralProFields();
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
           if (elStatusValidasi) {
             elStatusValidasi.className = 'status-offline-tag';
@@ -614,7 +642,7 @@ function getBpnGatewayBase() {
           }
           const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
           if (elPinServer) {
-            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2 (BPN PRO)' : 'Server 1 (Cloud)';
+            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
           }
 
           const badgeEl = document.getElementById('badgeTipeHak');
@@ -629,6 +657,7 @@ function getBpnGatewayBase() {
           const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
           const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
           const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
+          const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = activePinData.kantah;
 
           const elShpProv = document.getElementById('shpProvinsi');
           if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
@@ -806,6 +835,18 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
       if (notFoundBox) notFoundBox.style.display = 'none';
       if (loadingBox) loadingBox.style.display = 'none';
 
+      const elNib = document.getElementById('pinNibText'); if (elNib) elNib.innerText = '-';
+      const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = '-';
+      const elNosu = document.getElementById('pinNosuText'); if (elNosu) elNosu.innerText = '-';
+      const elNomorHak = document.getElementById('pinNomorHakText'); if (elNomorHak) elNomorHak.innerText = '-';
+      const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = '-';
+      const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = '-';
+      const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = '-';
+      const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = '-';
+      const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = '-';
+      const elCoords = document.getElementById('pinCoordsText'); if (elCoords) elCoords.innerText = '-';
+      const elStatusValidasi = document.getElementById('pinStatusValidasiText'); if (elStatusValidasi) elStatusValidasi.innerText = '-';
+
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';
       showToast('Pilihan bidang dibatalkan. Peta siap untuk memilih atau mendigitasi bidang baru.', 'info');
@@ -965,3 +1006,4 @@ Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
     window.getCadastreServerMode = getCadastreServerMode;
     window.switchCadastreServer = switchCadastreServer;
     window.updateCadastreServerUI = updateCadastreServerUI;
+    window.renderCadastralProFields = renderCadastralProFields;

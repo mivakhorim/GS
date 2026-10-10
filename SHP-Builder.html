@@ -219,14 +219,14 @@
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
                   Koneksi Data Server
                 </div>
-                <span id="badgeServerKadasterBidang" class="badge-pill blue">SERVER 1 (CLOUD)</span>
+                <span id="badgeServerKadasterBidang" class="badge-pill blue">SERVER 1</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
-                <button type="button" id="btnServer1Bidang" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1: Supabase Cloud Gateway">
-                  <span>Server 1 (Cloud)</span>
+                <button type="button" id="btnServer1Bidang" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1">
+                  <span>Server 1</span>
                 </button>
-                <button type="button" id="btnServer2Bidang" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2: Langsung BPN (Khusus Member PRO)">
-                  <span>Server 2 (BPN PRO)</span>
+                <button type="button" id="btnServer2Bidang" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2">
+                  <span>Server 2</span>
                 </button>
               </div>
               <div id="serverDescBidangText" style="font-size: 0.69rem; color: var(--text-sub); line-height: 1.4; background-color: var(--bg-subtle); padding: 5px 8px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
@@ -240,7 +240,12 @@
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   Informasi Bidang Tanah
                 </div>
-                <span class="badge-pill blue" id="badgeTipeHak">HAK MILIK</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <button type="button" class="btn-tool-icon" onclick="copyBidangData()" title="Salin Data Kadaster Lengkap (Khusus Member PRO)" aria-label="Salin Data Kadaster" style="width: 24px; height: 24px; padding: 0;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                  <span class="badge-pill blue" id="badgeTipeHak">HAK MILIK</span>
+                </div>
               </div>
 
               <div class="card-equal-grid" style="margin-bottom: 0.65rem;">
@@ -260,8 +265,28 @@
 
               <div class="spec-list" style="margin-bottom: 0.75rem;">
                 <div class="spec-item">
-                  <span class="spec-label">Server Data</span>
-                  <span class="spec-value" id="pinServerDataText">Server 1 (Cloud)</span>
+                  <span class="spec-label">NIB</span>
+                  <span class="spec-value font-mono" id="pinNibText">-</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Jenis Hak</span>
+                  <span class="spec-value" id="pinTipeHakText">Hak Milik</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">No. Surat Ukur</span>
+                  <span class="spec-value font-mono" id="pinNosuText">-</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Nomor Hak</span>
+                  <span class="spec-value font-mono" id="pinNomorHakText">-</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Desa / Kelurahan</span>
+                  <span class="spec-value" id="pinDesaText">-</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Kecamatan</span>
+                  <span class="spec-value" id="pinKecamatanText">-</span>
                 </div>
                 <div class="spec-item">
                   <span class="spec-label">Kabupaten / Kota</span>
@@ -272,12 +297,20 @@
                   <span class="spec-value" id="pinProvinsiText">-</span>
                 </div>
                 <div class="spec-item">
+                  <span class="spec-label">Kantor Pertanahan</span>
+                  <span class="spec-value" id="pinKantahText">-</span>
+                </div>
+                <div class="spec-item">
                   <span class="spec-label">Koordinat Titik</span>
                   <span class="spec-value font-mono" id="pinCoordsText" style="font-size: 0.71rem;">-</span>
                 </div>
                 <div class="spec-item">
                   <span class="spec-label">Status Validasi</span>
                   <span class="spec-value emerald" id="pinStatusValidasiText">Terdaftar di Basis Data</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Server Data</span>
+                  <span class="spec-value" id="pinServerDataText">Server 1</span>
                 </div>
               </div>
 
@@ -576,14 +609,14 @@
             <div style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border-light);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
                 <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-main);">Pilihan Server Kadaster</span>
-                <span id="badgeServerKadaster" class="badge-pill blue">SERVER 1 (CLOUD)</span>
+                <span id="badgeServerKadaster" class="badge-pill blue">SERVER 1</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
-                <button type="button" id="btnServer1" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1: Supabase Cloud Gateway">
-                  <span>Server 1 (Cloud)</span>
+                <button type="button" id="btnServer1" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1">
+                  <span>Server 1</span>
                 </button>
-                <button type="button" id="btnServer2" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2: Langsung BPN (Khusus Member PRO)">
-                  <span>Server 2 (BPN PRO)</span>
+                <button type="button" id="btnServer2" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2">
+                  <span>Server 2</span>
                 </button>
               </div>
               <div id="serverDescText" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.35;">
@@ -1209,7 +1242,7 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               <span>Akses Fitur Data Geospasial</span>
             </div>
-            Mode Akun Gratis: Terkunci pada LAYER: geospasi.dutamik.id (Maks luas 150 m²). Berkas: geospasi.zip. Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
+            Untuk mengedit atribut peta memerlukan akses PRO. Akun gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
           </div>
           <div style="margin-top: 0.6rem; background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;">
             <strong>Dukungan &amp; Saran Fitur:</strong> Jika ada fitur yang memerlukan penyesuaian khusus atau saran fitur baru, pengguna dapat menghubungi Admin Duta Digital Agensi (dutamik.id) untuk penambahan pembaruan pada versi berikutnya.
@@ -1230,7 +1263,7 @@
         </div>
 
         <div id="memberStatusAlert" style="background-color: var(--bg-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.74rem; line-height: 1.45;">
-          Mode Akun Gratis: Terkunci pada LAYER: geospasi.dutamik.id (Maks luas 150 m²). Berkas: geospasi.zip. Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
+          Untuk mengedit atribut peta memerlukan akses PRO. Mode Akun Gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
@@ -1361,14 +1394,14 @@
           <span style="font-weight: 600; font-size: 0.76rem; color: var(--text-main);">Pilihan Server Kadaster:</span>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.35rem;">
             <button type="button" class="btn btn-outline" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;">
-              <span>Server 1 (Cloud)</span>
+              <span>Server 1</span>
             </button>
             <button type="button" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;">
-              <span>Server 2 (BPN PRO)</span>
+              <span>Server 2</span>
             </button>
           </div>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
-            Server 2 mengambil data langsung dari BPN dan diproses di peramban tanpa perantara server Supabase (khusus Member PRO).
+            Server 2 diproses langsung di peramban secara mandiri (khusus Member PRO).
           </div>
         </div>
         <div style="margin-top: 0.85rem; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
