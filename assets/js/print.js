@@ -950,8 +950,26 @@ function togglePrintDimensions(show) {
     function handlePrintMapTrigger() {
       ensureActiveVerticesFromDraw();
       if (!activeVertices || activeVertices.length < 3) {
-        showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn');
-        return;
+        if (typeof map !== 'undefined' && map) {
+          const center = map.getCenter();
+          showToast('Menyiapkan bidang pada posisi peta untuk dicetak...', 'info');
+          if (typeof handleMapClick === 'function') {
+            handleMapClick(center.lat, center.lng, false).then(() => {
+              if (isMobileDevice()) {
+                processDirectMobilePdfPrint();
+              } else {
+                openMapPrintModal();
+              }
+            }).catch(() => {
+              if (isMobileDevice()) {
+                processDirectMobilePdfPrint();
+              } else {
+                openMapPrintModal();
+              }
+            });
+            return;
+          }
+        }
       }
       if (isMobileDevice()) {
         processDirectMobilePdfPrint();
