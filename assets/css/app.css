@@ -951,11 +951,6 @@
       color: #ffffff;
       border-color: var(--crimson);
     }
-    #btnToggleMoveVertex.active {
-      background-color: var(--accent);
-      color: #ffffff;
-      border-color: var(--accent);
-    }
     .btn-tool-icon.danger {
       color: var(--crimson);
       border-color: #fee2e2;

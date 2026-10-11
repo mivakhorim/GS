@@ -377,15 +377,15 @@ function getBpnGatewayBase() {
 
       const endpointsToTry = [];
       const persilApiBase = getBpnGatewayBase();
-      if (persilApiBase) {
-        endpointsToTry.push({ url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 3500 });
+      if (persilApiBase && persilApiBase.startsWith('https://')) {
+        endpointsToTry.push({ url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 12000 });
       }
 
       const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
       endpointsToTry.push({
         url: `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-        timeout: 6000
+        timeout: 12000
       });
 
       for (const item of endpointsToTry) {
@@ -699,62 +699,19 @@ function getBpnGatewayBase() {
         handleMapClick(pos.lat, pos.lng, false);
       });
 
-      activePinMarker.on('click', function(ev) {
-        L.DomEvent.stopPropagation(ev);
-        handleMapClick(lat, lng, true);
-      });
-
       const currentActiveTab = document.querySelector('.tab-view.active')?.id;
-      if (doSwitchTab && (currentActiveTab !== 'tab-bidang') && (typeof isDrawingPolygon === 'undefined' || !isDrawingPolygon)) {
+      if (doSwitchTab && (currentActiveTab === 'tab-info' || currentActiveTab === 'tab-search' || !currentActiveTab)) {
         switchTab('tab-bidang');
       }
 
       try {
-        const persilData = await fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
+        const persilPromise = fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
+        const geoPromise = fetchLocationDetails(lat, lng);
+        const [persilData, geoData] = await Promise.all([persilPromise, geoPromise]);
+
         if (seq !== persilFetchSeq) {
           return;
         }
-
-        let geoData = null;
-        fetchLocationDetails(lat, lng).then(gData => {
-          if (seq !== persilFetchSeq || !activePinData) return;
-          if (gData) {
-            geoData = gData;
-            if (gData.desa && gData.desa !== '-') activePinData.desa = gData.desa;
-            if (gData.kecamatan && gData.kecamatan !== '-') activePinData.kecamatan = gData.kecamatan;
-            if (gData.kabkot && gData.kabkot !== '-') activePinData.kabkot = gData.kabkot;
-            if (gData.provinsi && gData.provinsi !== '-') activePinData.provinsi = gData.provinsi;
-            if (gData.kodepos && gData.kodepos !== '-') activePinData.kodepos = gData.kodepos;
-            if (gData.kantah && gData.kantah !== '-' && gData.kantah !== 'Kantor Pertanahan') activePinData.kantah = gData.kantah;
-            if (gData.jalan && gData.jalan !== '-') activePinData.alamat = gData.jalan;
-            renderCadastralProFields();
-            updateFullBidangInfo();
-            const elLokasi = document.getElementById('pinLokasiUtamaText');
-            if (elLokasi && activePinData.desa !== '-') {
-              elLokasi.innerText = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
-                ? `${activePinData.desa}, ${activePinData.kecamatan}`
-                : activePinData.desa;
-            }
-            const elHudNib = document.getElementById('hudNib');
-            if (elHudNib && activePinData.desa !== '-') {
-              elHudNib.innerText = elLokasi ? elLokasi.innerText : activePinData.desa;
-            }
-            const elAlamatGmaps = document.getElementById('pinAlamatGmapsText');
-            if (elAlamatGmaps && activePinData.alamat !== '-') {
-              elAlamatGmaps.innerText = activePinData.alamat;
-            }
-            const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
-            const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
-            const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
-            const elShpProv = document.getElementById('shpProvinsi');
-            if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
-            const elShpKeterangan = document.getElementById('shpKeterangan');
-            if (elShpKeterangan) {
-              const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Desa ${activePinData.desa}, Kec. ${activePinData.kecamatan}`;
-              elShpKeterangan.value = rawKet.toUpperCase();
-            }
-          }
-        }).catch(() => {});
 
         const effectivePersil = persilData;
         if (effectivePersil && effectivePersil.found && effectivePersil.polygon_coords && effectivePersil.polygon_coords.length >= 3) {
@@ -1043,7 +1000,7 @@ function getBpnGatewayBase() {
       let addr = null;
       let data = null;
 
-      if (isProxyActive && persilApiBase) {
+      if (isProxyActive && persilApiBase && persilApiBase.startsWith('https://')) {
         try {
           const url = `${persilApiBase}/api/reverse-geocode?lat=${lat}&lng=${lng}`;
           const res = await fetch(url);
@@ -1337,7 +1294,7 @@ function getBpnGatewayBase() {
       const badge = document.getElementById('proxyBadge');
       const text = document.getElementById('proxyText');
       const persilBase = getBpnGatewayBase();
-      if (persilBase) {
+      if (persilBase && persilBase.startsWith('https://')) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 2000);
