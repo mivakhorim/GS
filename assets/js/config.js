@@ -413,15 +413,62 @@
       };
     }
 
+    function snapSharedBoundaryBends(baseCoords, otherRings, maxDistMeters = 1.8) {
+      if (!baseCoords || baseCoords.length < 3 || !otherRings || otherRings.length === 0) return baseCoords;
+      let out = baseCoords.map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }));
+
+      otherRings.forEach(ring => {
+        if (!ring || ring.length < 3) return;
+        ring.forEach(q => {
+          let bestSeg = -1;
+          let bestDist = Infinity;
+          const n = out.length;
+          for (let i = 0; i < n; i++) {
+            const p1 = out[i];
+            const p2 = out[(i + 1) % n];
+            const midLat = (p1.lat + p2.lat) * 0.5;
+            const cosLat = Math.cos(midLat * Math.PI / 180);
+
+            const vx = (p2.lng - p1.lng) * 111320 * cosLat;
+            const vy = (p2.lat - p1.lat) * 111320;
+            const segLenSq = vx * vx + vy * vy;
+            if (segLenSq < 0.09) continue;
+
+            const qx = (q.lng - p1.lng) * 111320 * cosLat;
+            const qy = (q.lat - p1.lat) * 111320;
+            const t = (qx * vx + qy * vy) / segLenSq;
+            if (t > 0.04 && t < 0.96) {
+              const px = vx * t;
+              const py = vy * t;
+              const d = Math.hypot(qx - px, qy - py);
+              if (d < maxDistMeters && d < bestDist) {
+                bestDist = d;
+                bestSeg = i;
+              }
+            }
+          }
+          if (bestSeg >= 0) {
+            const tooClose = out.some(v => {
+              const dlat = (q.lat - v.lat) * 111320;
+              const dlng = (q.lng - v.lng) * 111320 * Math.cos(q.lat * Math.PI / 180);
+              return Math.hypot(dlat, dlng) < 0.25;
+            });
+            if (!tooClose) {
+              out.splice(bestSeg + 1, 0, { lat: Number(q.lat.toFixed(7)), lng: Number(q.lng.toFixed(7)) });
+            }
+          }
+        });
+      });
+      return out;
+    }
+    window.snapSharedBoundaryBends = snapSharedBoundaryBends;
+
     function parseGeoServerPersilGeoJson(data, clickLat, clickLng) {
       if (!data || !Array.isArray(data.features) || data.features.length === 0) {
         return null;
       }
-      let chosenFeat = null;
-      let chosenCoords = null;
-      let bestDist = Infinity;
-      let foundExact = false;
 
+      let allParsedRings = [];
       for (const feat of data.features) {
         const geom = feat.geometry;
         if (!geom) continue;
@@ -447,26 +494,60 @@
               coords.pop();
             }
           }
-          if (coords.length < 3) continue;
-
-          if (isPointInsideOrNearPolygon(clickLat, clickLng, coords, 0.5)) {
-            chosenFeat = feat;
-            chosenCoords = coords;
-            foundExact = true;
-            break;
-          }
-          const d = distancePointToPolygonMeters(clickLat, clickLng, coords);
-          if (d <= 35.0 && d < bestDist) {
-            bestDist = d;
-            chosenFeat = feat;
-            chosenCoords = coords;
+          if (coords.length >= 3) {
+            allParsedRings.push({ feat, coords });
           }
         }
-        if (foundExact) break;
+      }
+
+      if (allParsedRings.length === 0) return null;
+
+      let strictlyInsideMatches = [];
+      let nearMatches = [];
+
+      for (const item of allParsedRings) {
+        let inside = false;
+        for (let i = 0, j = item.coords.length - 1; i < item.coords.length; j = i++) {
+          const xi = item.coords[i].lng, yi = item.coords[i].lat;
+          const xj = item.coords[j].lng, yj = item.coords[j].lat;
+          const intersect = ((yi > clickLat) !== (yj > clickLat)) && (clickLng < (xj - xi) * (clickLat - yi) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
+
+        if (inside) {
+          let latSum = 0, lngSum = 0;
+          item.coords.forEach(p => { latSum += p.lat; lngSum += p.lng; });
+          const cLat = latSum / item.coords.length;
+          const cLng = lngSum / item.coords.length;
+          const distToC = Math.hypot((clickLat - cLat) * 111320, (clickLng - cLng) * 111320 * Math.cos(clickLat * Math.PI / 180));
+          strictlyInsideMatches.push({ ...item, distToC });
+        } else {
+          const d = distancePointToPolygonMeters(clickLat, clickLng, item.coords);
+          if (d <= 35.0) {
+            nearMatches.push({ ...item, d });
+          }
+        }
+      }
+
+      let chosenFeat = null;
+      let chosenCoords = null;
+      if (strictlyInsideMatches.length > 0) {
+        strictlyInsideMatches.sort((a, b) => a.distToC - b.distToC);
+        chosenFeat = strictlyInsideMatches[0].feat;
+        chosenCoords = strictlyInsideMatches[0].coords;
+      } else if (nearMatches.length > 0) {
+        nearMatches.sort((a, b) => a.d - b.d);
+        chosenFeat = nearMatches[0].feat;
+        chosenCoords = nearMatches[0].coords;
       }
 
       if (!chosenFeat || !chosenCoords || chosenCoords.length < 3) {
         return null;
+      }
+
+      const otherRings = allParsedRings.filter(item => item.feat !== chosenFeat).map(item => item.coords);
+      if (otherRings.length > 0) {
+        chosenCoords = snapSharedBoundaryBends(chosenCoords, otherRings, 1.8);
       }
 
       const props = chosenFeat.properties || {};

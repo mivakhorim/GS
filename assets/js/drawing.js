@@ -386,9 +386,15 @@ Server Sumber Data: ${serverName}`;
         return;
       }
 
-      let pts = rawBboxCoords;
-      activeVertices = pts.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.02, 0.25);
+      let pts = rawBboxCoords.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
+      if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.0000005 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.0000005) {
+        pts.pop();
+      }
+      activeVertices = pts.filter((p, i) => {
+        if (i === 0) return true;
+        const prev = pts[i - 1];
+        return Math.abs(p.lat - prev.lat) > 0.00000001 || Math.abs(p.lng - prev.lng) > 0.00000001;
+      });
 
       const toolbar = document.getElementById('mapPrecisionToolbar');
       if (toolbar) toolbar.style.display = 'flex';
@@ -447,6 +453,73 @@ Server Sumber Data: ${serverName}`;
       renderCanvasPolygon(true);
     }
 
+    function checkAndInsertBoundaryVertex(latlng, maxPixelDist = 20) {
+      if (isFreeDeleteVertexMode || isDrawingPolygon || isMergeMode) return false;
+      if (!map || !activeVertices || activeVertices.length < 3) return false;
+
+      const clickPt = map.latLngToLayerPoint(latlng);
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+
+      let bestDist = Infinity;
+      let bestPartIdx = -1;
+      let bestInsertIdx = -1;
+      let bestProjLatLng = null;
+
+      parts.forEach((partList, pIdx) => {
+        const n = partList.length;
+        for (let i = 0; i < n; i++) {
+          const v1 = partList[i];
+          const v2 = partList[(i + 1) % n];
+          const ptA = map.latLngToLayerPoint(L.latLng(v1.lat, v1.lng));
+          const ptB = map.latLngToLayerPoint(L.latLng(v2.lat, v2.lng));
+
+          const dx = ptB.x - ptA.x;
+          const dy = ptB.y - ptA.y;
+          const segLenSq = dx * dx + dy * dy;
+          if (segLenSq === 0) continue;
+
+          let t = ((clickPt.x - ptA.x) * dx + (clickPt.y - ptA.y) * dy) / segLenSq;
+          t = Math.max(0, Math.min(1, t));
+
+          const projPt = L.point(ptA.x + t * dx, ptA.y + t * dy);
+          const dist = clickPt.distanceTo(projPt);
+
+          if (dist < bestDist) {
+            const candLatLng = map.layerPointToLatLng(projPt);
+            const distA = L.latLng(v1.lat, v1.lng).distanceTo(candLatLng);
+            const distB = L.latLng(v2.lat, v2.lng).distanceTo(candLatLng);
+            if (distA >= 0.35 && distB >= 0.35) {
+              bestDist = dist;
+              bestPartIdx = pIdx;
+              bestInsertIdx = i + 1;
+              bestProjLatLng = candLatLng;
+            }
+          }
+        }
+      });
+
+      if (bestDist <= maxPixelDist && bestProjLatLng && bestPartIdx >= 0) {
+        isGeometryManuallyEdited = true;
+        const targetPart = parts[bestPartIdx];
+        targetPart.splice(bestInsertIdx, 0, {
+          lat: Number(bestProjLatLng.lat.toFixed(7)),
+          lng: Number(bestProjLatLng.lng.toFixed(7))
+        });
+        if (parts.length === 1) activeVertices = targetPart;
+        renderCanvasPolygon(true);
+        showToast(`Patok baru berhasil disisipkan pada belokan batas (Total: ${activeVertices.length} patok).`, 'success');
+        return true;
+      }
+      return false;
+    }
+    window.checkAndInsertBoundaryVertex = checkAndInsertBoundaryVertex;
+
+    function handleActivePolygonClick(e) {
+      if (checkAndInsertBoundaryVertex(e.latlng, 22)) {
+        L.DomEvent.stopPropagation(e);
+      }
+    }
+
     function renderCanvasPolygon(updateHandles = true) {
       if (!activeVertices || activeVertices.length < 3) return;
       syncActivePolygonPanel();
@@ -472,6 +545,7 @@ Server Sumber Data: ${serverName}`;
           className: 'active-cadastre-polygon',
           interactive: true
         }).addTo(map);
+        activePolygonLayer.on('click', handleActivePolygonClick);
       } else {
         activePolygonLayer.setLatLngs(latlngs);
         activePolygonLayer.setStyle({
@@ -581,18 +655,23 @@ Server Sumber Data: ${serverName}`;
           }).addTo(map);
 
           const popupContent = `
-            <div style="font-family:'Inter',sans-serif;font-size:11px;padding:3px;min-width:130px;">
-              <div style="font-weight:700;margin-bottom:3px;color:var(--text-main);display:flex;justify-content:space-between;">
+            <div style="font-family:'Inter',sans-serif;font-size:11px;padding:4px;min-width:160px;">
+              <div style="font-weight:700;margin-bottom:3px;color:var(--text-main);display:flex;justify-content:space-between;align-items:center;">
                 <span>Patok ${nodeLabel}</span>
                 <span style="font-family:'JetBrains Mono',monospace;color:var(--text-muted);font-size:9.5px;">#${idx+1}</span>
               </div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-sub);margin-bottom:5px;">
-                ${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-sub);margin-bottom:6px;background:var(--bg-subtle);padding:3px 6px;border-radius:4px;border:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+                <span>${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</span>
+                <button type="button" style="border:none;background:none;cursor:pointer;color:var(--brand-primary);font-size:10px;font-weight:700;padding:0 2px;" onclick="window.editVertexCoordinate(${pIdx}, ${idx})" title="Edit Koordinat">Edit</button>
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;">
-                <div style="display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--text-sub);background:var(--bg-subtle);padding:4px 6px;border-radius:4px;border:1px solid var(--border-light);">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span>Tahan &amp; geser patok di peta</span>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+                  <button type="button" class="btn btn-outline" style="padding:3px 4px;font-size:9.5px;justify-content:center;font-weight:600;color:var(--brand-primary);border-color:var(--brand-primary);" onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'prev')">
+                    + Sisi Kiri
+                  </button>
+                  <button type="button" class="btn btn-outline" style="padding:3px 4px;font-size:9.5px;justify-content:center;font-weight:600;color:var(--brand-primary);border-color:var(--brand-primary);" onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'next')">
+                    + Sisi Kanan
+                  </button>
                 </div>
                 <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:10px;justify-content:center;width:100%;font-weight:600;color:var(--crimson);border-color:#fecdd3;" onclick="window.deleteVertexMarker(${pIdx}, ${idx})">
                   Hapus Patok ${nodeLabel}
@@ -601,6 +680,9 @@ Server Sumber Data: ${serverName}`;
                 <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:9.5px;justify-content:center;width:100%;font-weight:600;color:#991b1b;border-color:#fca5a5;margin-top:2px;" onclick="window.deletePartEntirely(${pIdx})">
                   Hapus Sisa Garis / Bagian ${pfx}
                 </button>` : ''}
+                <div style="font-size:8.5px;color:var(--text-muted);text-align:center;margin-top:2px;">
+                  Klik garis batas untuk tambah patok di sudut belokan
+                </div>
               </div>
             </div>
           `;
@@ -610,14 +692,17 @@ Server Sumber Data: ${serverName}`;
             className: 'vertex-action-popup'
           });
           marker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
             if (isFreeDeleteVertexMode) {
-              L.DomEvent.stopPropagation(e);
               window.deleteVertexMarker(pIdx, idx);
               return;
             }
+            this.openPopup();
           });
           marker.on('mouseover', function() {
-            if (!isFreeDeleteVertexMode) this.openPopup();
+            if (!isFreeDeleteVertexMode && !this.isPopupOpen()) {
+              this.openPopup();
+            }
           });
 
           marker.on('drag', function(e) {
@@ -647,7 +732,7 @@ Server Sumber Data: ${serverName}`;
           const dist = p1.distanceTo(p2);
 
           const curZ = map.getZoom();
-          const minAddDist = curZ >= 23 ? 0.6 : (curZ >= 20 ? 1.5 : 3.5);
+          const minAddDist = curZ >= 22 ? 0.3 : (curZ >= 19 ? 0.7 : (curZ >= 17 ? 1.5 : 3.0));
           if (dist >= minAddDist) {
             const midLat = (v.lat + nextV.lat) / 2;
             const midLng = (v.lng + nextV.lng) / 2;
@@ -1874,6 +1959,61 @@ Server Sumber Data: ${serverName}`;
       }
       removeVertexAt(vIdx);
       showToast('Titik patok berhasil dihapus.', 'success');
+    };
+
+    window.editVertexCoordinate = function(pIdx, vIdx) {
+      if (map) map.closePopup();
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const targetPart = parts[pIdx] || activeVertices;
+      const curr = targetPart[vIdx];
+      if (!curr) return;
+      const input = prompt(`Ubah koordinat Patok #${vIdx + 1} (format: Lat, Lng):`, `${curr.lat.toFixed(7)}, ${curr.lng.toFixed(7)}`);
+      if (!input) return;
+      const spl = input.split(',').map(s => parseFloat(s.trim()));
+      if (spl.length === 2 && !isNaN(spl[0]) && !isNaN(spl[1])) {
+        if (Math.abs(spl[0]) <= 90 && Math.abs(spl[1]) <= 180) {
+          targetPart[vIdx] = { lat: spl[0], lng: spl[1] };
+          if (parts.length === 1) activeVertices = targetPart;
+          isGeometryManuallyEdited = true;
+          renderCanvasPolygon(true);
+          showToast(`Koordinat Patok #${vIdx + 1} berhasil diperbarui.`, 'success');
+        } else {
+          showToast('Nilai koordinat tidak valid (Latitude -90 s/d 90, Longitude -180 s/d 180).', 'warn');
+        }
+      } else {
+        showToast('Format koordinat salah. Gunakan format: Latitude, Longitude', 'warn');
+      }
+    };
+
+    window.addVertexNextTo = function(pIdx, vIdx, direction = 'next') {
+      if (map) map.closePopup();
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const targetPart = parts[pIdx] || activeVertices;
+      const n = targetPart.length;
+      if (n < 2) return;
+
+      let insertIdx;
+      let midLat, midLng;
+      if (direction === 'prev') {
+        const prevIdx = (vIdx - 1 + n) % n;
+        midLat = (targetPart[prevIdx].lat + targetPart[vIdx].lat) / 2;
+        midLng = (targetPart[prevIdx].lng + targetPart[vIdx].lng) / 2;
+        insertIdx = vIdx;
+      } else {
+        const nextIdx = (vIdx + 1) % n;
+        midLat = (targetPart[vIdx].lat + targetPart[nextIdx].lat) / 2;
+        midLng = (targetPart[vIdx].lng + targetPart[nextIdx].lng) / 2;
+        insertIdx = vIdx + 1;
+      }
+
+      targetPart.splice(insertIdx, 0, {
+        lat: Number(midLat.toFixed(7)),
+        lng: Number(midLng.toFixed(7))
+      });
+      if (parts.length === 1) activeVertices = targetPart;
+      isGeometryManuallyEdited = true;
+      renderCanvasPolygon(true);
+      showToast(`Patok baru berhasil ditambahkan pada garis (Total: ${targetPart.length} patok). Tahan & geser patok ke sudut batas yang tepat.`, 'success');
     };
 
     window.deletePartEntirely = function(pIdx) {

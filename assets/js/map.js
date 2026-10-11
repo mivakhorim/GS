@@ -133,6 +133,12 @@ async function geocodeAndFly(query, zoomLevel = 14) {
           return;
         }
 
+        if (typeof window.checkAndInsertBoundaryVertex === 'function') {
+          if (window.checkAndInsertBoundaryVertex(e.latlng, 18)) {
+            return;
+          }
+        }
+
         const isImportedShp = (window.lastImportedShpData != null);
         const isMerging = (typeof isMergeMode !== 'undefined' && isMergeMode);
         const isMergedResult = (typeof isParcelLocked !== 'undefined' && isParcelLocked && activePinData && activePinData.fid && String(activePinData.fid).startsWith('Gabungan'));
