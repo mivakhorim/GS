@@ -706,3 +706,183 @@
 .shp-attr-btn-close:active {
   transform: translateY(0);
 }
+.vertex-action-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--border-light);
+  background-color: #ffffff;
+}
+.vertex-action-popup .leaflet-popup-content {
+  margin: 0;
+  line-height: 1.4;
+  width: auto !important;
+}
+.vertex-action-card {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding: 8px 10px;
+  min-width: 210px;
+  max-width: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: #ffffff;
+}
+.vertex-action-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 5px;
+}
+.vertex-badge-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 800;
+  background-color: #0a2e5c;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.vertex-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.vertex-index-num {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.vertex-coords-box {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vertex-coord-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 0.68rem;
+}
+.vertex-coord-row .coord-k {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+.vertex-coord-row .coord-v {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+}
+.vertex-action-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.btn-vertex-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-radius: 5px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-vertex-action:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+.btn-vertex-action:active {
+  transform: translateY(0);
+}
+.btn-vertex-action.edit {
+  color: #0a2e5c;
+  border-color: #bfdbfe;
+  background-color: #eff6ff;
+}
+.btn-vertex-action.edit:hover {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+}
+.btn-vertex-action.delete {
+  color: #b91c1c;
+  border-color: #fecdd3;
+  background-color: #fff1f2;
+}
+.btn-vertex-action.delete:hover {
+  background-color: #ffe4e6;
+  border-color: #fca5a5;
+}
+.vertex-add-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid #e2e8f0;
+}
+.vertex-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.btn-vertex-action.add-side {
+  font-size: 0.63rem;
+  color: #166534;
+  border-color: #bbf7d0;
+  background-color: #f0fdf4;
+  padding: 3px 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn-vertex-action.add-side:hover {
+  background-color: #dcfce7;
+  border-color: #86efac;
+}
+.btn-vertex-action.add-edge-interactive {
+  font-size: 0.66rem;
+  color: #0a2e5c;
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  width: 100%;
+}
+.btn-vertex-action.add-edge-interactive:hover {
+  background-color: #f1f5f9;
+  border-color: #0a2e5c;
+}
+.btn-vertex-action.delete-part {
+  font-size: 0.64rem;
+  color: #991b1b;
+  border-color: #fca5a5;
+  background-color: #fef2f2;
+  margin-top: 2px;
+}
+.btn-vertex-action.delete-part:hover {
+  background-color: #fee2e2;
+}
+.btn-tool-icon.active {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
+  border-color: var(--accent) !important;
+}

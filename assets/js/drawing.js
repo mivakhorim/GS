@@ -513,6 +513,19 @@ Server Sumber Data: ${serverName}`;
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
+    function getDirectionLabel(fromLat, fromLng, toLat, toLng) {
+      const dLng = (toLng - fromLng) * Math.PI / 180;
+      const lat1 = fromLat * Math.PI / 180;
+      const lat2 = toLat * Math.PI / 180;
+      const y = Math.sin(dLng) * Math.cos(lat2);
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+      let brng = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+      if (brng >= 315 || brng < 45) return 'Sisi Atas';
+      if (brng >= 45 && brng < 135) return 'Sisi Kanan';
+      if (brng >= 135 && brng < 225) return 'Sisi Bawah';
+      return 'Sisi Kiri';
+    }
+
     function renderVertexHandles() {
       vertexMarkers.forEach(m => map.removeLayer(m));
       vertexMarkers = [];
@@ -541,30 +554,126 @@ Server Sumber Data: ${serverName}`;
             zIndexOffset: 1000
           }).addTo(map);
 
+          const utmCoord = (typeof getUtmCoordinates === 'function') ? getUtmCoordinates(v.lat, v.lng) : null;
+          const utmStr = utmCoord ? `X: ${utmCoord.easting.toFixed(2)} | Y: ${utmCoord.northing.toFixed(2)} (${utmCoord.zone})` : '';
+
+          const nextIdx = (idx + 1) % numPts;
+          const prevIdx = (idx - 1 + numPts) % numPts;
+          const nextV = partList[nextIdx];
+          const prevV = partList[prevIdx];
+          const nextLabel = parts.length > 1 ? `${pfx}${nextIdx + 1}` : `P${nextIdx + 1}`;
+          const prevLabel = parts.length > 1 ? `${pfx}${prevIdx + 1}` : `P${prevIdx + 1}`;
+          const distNext = L.latLng(v.lat, v.lng).distanceTo(L.latLng(nextV.lat, nextV.lng));
+          const distPrev = L.latLng(v.lat, v.lng).distanceTo(L.latLng(prevV.lat, prevV.lng));
+
+          const dirNext = getDirectionLabel(v.lat, v.lng, nextV.lat, nextV.lng);
+          const dirPrev = getDirectionLabel(v.lat, v.lng, prevV.lat, prevV.lng);
+
           const popupContent = `
-            <div style="font-family:'Inter',sans-serif;font-size:11px;padding:3px;min-width:130px;">
-              <div style="font-weight:700;margin-bottom:3px;color:var(--text-main);display:flex;justify-content:space-between;">
-                <span>Patok ${nodeLabel}</span>
-                <span style="font-family:'JetBrains Mono',monospace;color:var(--text-muted);font-size:9.5px;">#${idx+1}</span>
+            <div class="vertex-action-card">
+              <div class="vertex-action-head">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span class="vertex-badge-tag">${nodeLabel}</span>
+                  <span class="vertex-title">Patok ${nodeLabel}</span>
+                </div>
+                <span class="vertex-index-num">#${idx + 1} dari ${numPts}</span>
               </div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-sub);margin-bottom:5px;">
-                ${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}
+
+              <div class="vertex-coords-box">
+                <div class="vertex-coord-row">
+                  <span class="coord-k">WGS84</span>
+                  <span class="coord-v">${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</span>
+                </div>
+                ${utmStr ? `
+                <div class="vertex-coord-row">
+                  <span class="coord-k">UTM</span>
+                  <span class="coord-v">${utmStr}</span>
+                </div>` : ''}
+                <div class="vertex-coord-row" style="margin-top: 2px; padding-top: 2px; border-top: 1px dashed #e2e8f0; font-size: 0.62rem; color: #64748b;">
+                  <span>Ruas: &larr; ${prevLabel} (${distPrev.toFixed(1)}m) | ${nextLabel} (${distNext.toFixed(1)}m) &rarr;</span>
+                </div>
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;">
-                <button type="button" class="btn btn-outline" style="padding:4px 6px;font-size:10px;justify-content:center;width:100%;font-weight:600;color:var(--crimson);border-color:#fecdd3;" onclick="window.deleteVertexMarker(${pIdx}, ${idx})">
-                  Hapus Patok ${nodeLabel}
-                </button>
+
+              <div class="vertex-action-btns">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                  <button type="button" class="btn-vertex-action edit" onclick="window.openEditVertexModal(${pIdx}, ${idx})" title="Edit nilai koordinat patok ini">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    <span>Edit Koordinat</span>
+                  </button>
+                  <button type="button" class="btn-vertex-action delete" onclick="window.deleteVertexMarker(${pIdx}, ${idx})" title="Hapus patok ini">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <span>Hapus Patok</span>
+                  </button>
+                </div>
+
+                <div class="vertex-add-section">
+                  <div class="vertex-section-label">Tambah Patok Baru di Sisi:</div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                    <button type="button" class="btn-vertex-action add-side" onclick="window.addVertexBetween(${pIdx}, ${idx}, ${nextIdx})" title="Tambah patok baru di garis menuju ${nextLabel}">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <span>${dirNext} (&rarr; ${nextLabel})</span>
+                    </button>
+                    <button type="button" class="btn-vertex-action add-side" onclick="window.addVertexBetween(${pIdx}, ${prevIdx}, ${idx})" title="Tambah patok baru di garis dari ${prevLabel}">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <span>${dirPrev} (&larr; ${prevLabel})</span>
+                    </button>
+                  </div>
+                  <button type="button" class="btn-vertex-action add-edge-interactive" onclick="window.startAddVertexOnEdgeMode(${pIdx})" title="Klik sembarang pada garis batas bidang untuk menaruh patok baru">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    <span>Arahkan &amp; Klik Garis Batas</span>
+                  </button>
+                </div>
+
                 ${parts.length > 1 ? `
-                <button type="button" class="btn btn-outline" style="padding:4px 6px;font-size:9.5px;justify-content:center;width:100%;font-weight:600;color:#991b1b;border-color:#fca5a5;margin-top:2px;" onclick="window.deletePartEntirely(${pIdx})">
-                  Hapus Sisa Garis / Bagian ${pfx}
+                <button type="button" class="btn-vertex-action delete-part" onclick="window.deletePartEntirely(${pIdx})">
+                  Hapus Sisa Garis Bagian ${pfx}
                 </button>` : ''}
               </div>
             </div>
           `;
           marker.bindPopup(popupContent, {
-            offset: [0, -12],
+            offset: [0, -14],
             closeButton: true,
             className: 'vertex-action-popup'
+          });
+
+          let isMarkerDragging = false;
+          let popupCloseTimeout = null;
+
+          marker.on('mouseover', function(e) {
+            if (isMarkerDragging || isAddVertexOnEdgeMode) return;
+            if (popupCloseTimeout) {
+              clearTimeout(popupCloseTimeout);
+              popupCloseTimeout = null;
+            }
+            marker.openPopup();
+          });
+
+          marker.on('mouseout', function(e) {
+            if (popupCloseTimeout) clearTimeout(popupCloseTimeout);
+            popupCloseTimeout = setTimeout(() => {
+              const popupEl = marker.getPopup()?.getElement();
+              if (!popupEl || !popupEl.matches(':hover')) {
+                marker.closePopup();
+              }
+            }, 300);
+          });
+
+          marker.on('popupopen', function() {
+            const popupEl = marker.getPopup()?.getElement();
+            if (popupEl) {
+              popupEl.onmouseenter = function() {
+                if (popupCloseTimeout) {
+                  clearTimeout(popupCloseTimeout);
+                  popupCloseTimeout = null;
+                }
+              };
+              popupEl.onmouseleave = function() {
+                popupCloseTimeout = setTimeout(() => {
+                  marker.closePopup();
+                }, 300);
+              };
+            }
           });
 
           marker.on('click', function(e) {
@@ -573,9 +682,15 @@ Server Sumber Data: ${serverName}`;
               window.deleteVertexMarker(pIdx, idx);
               return;
             }
+            if (popupCloseTimeout) {
+              clearTimeout(popupCloseTimeout);
+              popupCloseTimeout = null;
+            }
+            marker.openPopup();
           });
 
           marker.on('dragstart', function() {
+            isMarkerDragging = true;
             this.closePopup();
             const el = this.getElement();
             if (el) el.classList.add('dragging');
@@ -591,6 +706,7 @@ Server Sumber Data: ${serverName}`;
           });
 
           marker.on('dragend', function() {
+            isMarkerDragging = false;
             const el = this.getElement();
             if (el) el.classList.remove('dragging');
             isGeometryManuallyEdited = true;
@@ -1712,28 +1828,7 @@ Server Sumber Data: ${serverName}`;
       if (el) el.innerText = customDrawPoints.length;
     }
     function addVertexToActivePolygon() {
-      if (!activeVertices || activeVertices.length < 3) {
-        showToast('Pilih bidang tanah pada peta terlebih dahulu.', 'warn');
-        return;
-      }
-      let maxDist = -1;
-      let maxIdx = 0;
-      for (let i = 0; i < activeVertices.length; i++) {
-        const nextIdx = (i + 1) % activeVertices.length;
-        const p1 = L.latLng(activeVertices[i].lat, activeVertices[i].lng);
-        const p2 = L.latLng(activeVertices[nextIdx].lat, activeVertices[nextIdx].lng);
-        const d = p1.distanceTo(p2);
-        if (d > maxDist) {
-          maxDist = d;
-          maxIdx = i;
-        }
-      }
-      const nextIdx = (maxIdx + 1) % activeVertices.length;
-      const midLat = (activeVertices[maxIdx].lat + activeVertices[nextIdx].lat) / 2;
-      const midLng = (activeVertices[maxIdx].lng + activeVertices[nextIdx].lng) / 2;
-      activeVertices.splice(maxIdx + 1, 0, { lat: midLat, lng: midLng });
-      renderCanvasPolygon(true);
-      showToast(`Patok baru berhasil ditambahkan (Total: ${activeVertices.length} patok).`, 'success');
+      startAddVertexOnEdgeMode();
     }
 
     function removeLastVertexFromActive() {
@@ -1886,4 +1981,312 @@ Server Sumber Data: ${serverName}`;
     }
 
     window.activateMoveVertexMode = activateMoveVertexMode;
+
+    function getClosestPointOnSegment(point, pA, pB, mapObj) {
+      const pt = mapObj.latLngToLayerPoint(L.latLng(point.lat, point.lng));
+      const a = mapObj.latLngToLayerPoint(L.latLng(pA.lat, pA.lng));
+      const b = mapObj.latLngToLayerPoint(L.latLng(pB.lat, pB.lng));
+
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lenSq = dx * dx + dy * dy;
+
+      if (lenSq === 0) {
+        return {
+          latLng: L.latLng(pA.lat, pA.lng),
+          distancePx: Math.hypot(pt.x - a.x, pt.y - a.y),
+          t: 0
+        };
+      }
+
+      let t = ((pt.x - a.x) * dx + (pt.y - a.y) * dy) / lenSq;
+      t = Math.max(0.02, Math.min(0.98, t));
+
+      const projX = a.x + t * dx;
+      const projY = a.y + t * dy;
+      const projLatLng = mapObj.layerPointToLatLng(L.point(projX, projY));
+      const distPx = Math.hypot(pt.x - projX, pt.y - projY);
+
+      return {
+        latLng: projLatLng,
+        distancePx: distPx,
+        t: t
+      };
+    }
+
+    function findClosestPolygonEdge(clickLatLng) {
+      if (!map) return null;
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      let best = null;
+      let minDistancePx = Infinity;
+
+      parts.forEach((partList, pIdx) => {
+        const n = partList.length;
+        for (let i = 0; i < n; i++) {
+          const nextIdx = (i + 1) % n;
+          const pA = partList[i];
+          const pB = partList[nextIdx];
+
+          const snap = getClosestPointOnSegment(clickLatLng, pA, pB, map);
+          if (snap.distancePx < minDistancePx) {
+            minDistancePx = snap.distancePx;
+            best = {
+              pIdx: pIdx,
+              partList: partList,
+              segIdx: i,
+              nextIdx: nextIdx,
+              latLng: snap.latLng,
+              distancePx: snap.distancePx,
+              fromPt: pA,
+              toPt: pB
+            };
+          }
+        }
+      });
+
+      return best;
+    }
+
+    var isAddVertexOnEdgeMode = false;
+    var snapPreviewMarker = null;
+    var snapPreviewGuideLine = null;
+
+    function startAddVertexOnEdgeMode(preferredPartIdx = 0) {
+      if (map) map.closePopup();
+      if (!activeVertices || activeVertices.length < 3) {
+        showToast('Pilih bidang tanah pada peta terlebih dahulu.', 'warn');
+        return;
+      }
+      isAddVertexOnEdgeMode = true;
+      if (isFreeDeleteVertexMode) toggleFreeDeleteVertexMode();
+
+      const btnMove = document.getElementById('btnToggleMoveVertex');
+      if (btnMove) btnMove.classList.remove('active');
+      const btnAdd = document.getElementById('btnToolbarAddVertex');
+      if (btnAdd) btnAdd.classList.add('active');
+
+      if (map) {
+        map.getContainer().style.cursor = 'crosshair';
+        map.off('mousemove', handleAddVertexMouseMove);
+        map.on('mousemove', handleAddVertexMouseMove);
+        map.off('click', handleAddVertexMapClick);
+        map.on('click', handleAddVertexMapClick);
+      }
+
+      window.removeEventListener('keydown', handleAddVertexEscKey);
+      window.addEventListener('keydown', handleAddVertexEscKey);
+
+      showToast('Mode Tambah Patok Aktif: Klik pada garis bidang batas di mana patok baru ingin ditempatkan (otomatis menempel di garis terdekat).', 'info');
+    }
+
+    function stopAddVertexOnEdgeMode() {
+      isAddVertexOnEdgeMode = false;
+      if (map) {
+        map.getContainer().style.cursor = '';
+        map.off('mousemove', handleAddVertexMouseMove);
+        map.off('click', handleAddVertexMapClick);
+      }
+      window.removeEventListener('keydown', handleAddVertexEscKey);
+
+      if (snapPreviewMarker && map) {
+        map.removeLayer(snapPreviewMarker);
+        snapPreviewMarker = null;
+      }
+      if (snapPreviewGuideLine && map) {
+        map.removeLayer(snapPreviewGuideLine);
+        snapPreviewGuideLine = null;
+      }
+
+      const btnAdd = document.getElementById('btnToolbarAddVertex');
+      if (btnAdd) btnAdd.classList.remove('active');
+      const btnMove = document.getElementById('btnToggleMoveVertex');
+      if (btnMove) btnMove.classList.add('active');
+    }
+
+    function handleAddVertexEscKey(e) {
+      if (e.key === 'Escape' && isAddVertexOnEdgeMode) {
+        stopAddVertexOnEdgeMode();
+        showToast('Mode Tambah Patok dibatalkan.', 'info');
+      }
+    }
+
+    function handleAddVertexMouseMove(e) {
+      if (!isAddVertexOnEdgeMode || !map) return;
+      const best = findClosestPolygonEdge(e.latlng);
+      if (!best) return;
+
+      if (!snapPreviewMarker) {
+        const snapIcon = L.divIcon({
+          className: 'snap-ghost-node',
+          html: '<div style="width:16px;height:16px;background:#166534;border:2px solid #ffffff;border-radius:50%;box-shadow:0 0 0 2px #166534,0 4px 10px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#ffffff;font-size:11px;font-weight:900;line-height:1;">+</div>',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+        snapPreviewMarker = L.marker(best.latLng, { icon: snapIcon, interactive: false, zIndexOffset: 3000 }).addTo(map);
+      } else {
+        snapPreviewMarker.setLatLng(best.latLng);
+      }
+
+      if (best.distancePx > 5) {
+        const guideCoords = [e.latlng, best.latLng];
+        if (!snapPreviewGuideLine) {
+          snapPreviewGuideLine = L.polyline(guideCoords, {
+            color: '#166534',
+            weight: 1.5,
+            dashArray: '3, 4',
+            opacity: 0.7,
+            interactive: false
+          }).addTo(map);
+        } else {
+          snapPreviewGuideLine.setLatLngs(guideCoords);
+        }
+      } else if (snapPreviewGuideLine) {
+        map.removeLayer(snapPreviewGuideLine);
+        snapPreviewGuideLine = null;
+      }
+    }
+
+    function handleAddVertexMapClick(e) {
+      if (!isAddVertexOnEdgeMode) return;
+      L.DomEvent.stopPropagation(e);
+
+      const best = findClosestPolygonEdge(e.latlng);
+      if (!best) {
+        showToast('Garis batas bidang tidak ditemukan.', 'warn');
+        stopAddVertexOnEdgeMode();
+        return;
+      }
+
+      isGeometryManuallyEdited = true;
+      const newPt = { lat: best.latLng.lat, lng: best.latLng.lng };
+      best.partList.splice(best.segIdx + 1, 0, newPt);
+      if (best.partList === activeVertices || !activeMultiParts || activeMultiParts.length <= 1) {
+        activeVertices = best.partList;
+      }
+
+      stopAddVertexOnEdgeMode();
+      renderCanvasPolygon(true);
+      showToast('Patok baru berhasil ditambahkan pada garis batas bidang.', 'success');
+    }
+
+    function addVertexBetween(pIdx, iFrom, iTo) {
+      if (map) map.closePopup();
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const targetPart = parts[pIdx];
+      if (!targetPart) return;
+
+      const pA = targetPart[iFrom];
+      const pB = targetPart[iTo];
+      if (!pA || !pB) return;
+
+      const midLat = (pA.lat + pB.lat) / 2;
+      const midLng = (pA.lng + pB.lng) / 2;
+      const newPt = { lat: midLat, lng: midLng };
+
+      isGeometryManuallyEdited = true;
+      if (iFrom < iTo) {
+        targetPart.splice(iFrom + 1, 0, newPt);
+      } else {
+        targetPart.push(newPt);
+      }
+
+      if (targetPart === activeVertices || !activeMultiParts || activeMultiParts.length <= 1) {
+        activeVertices = targetPart;
+      }
+
+      renderCanvasPolygon(true);
+      showToast('Patok baru berhasil ditambahkan di antara dua titik batas.', 'success');
+    }
+
+    function openEditVertexModal(pIdx, vIdx) {
+      if (map) map.closePopup();
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const targetPart = parts[pIdx];
+      if (!targetPart || !targetPart[vIdx]) return;
+
+      const v = targetPart[vIdx];
+      const pfx = parts.length > 1 ? (['A','B','C','D','E','F'][pIdx] || `P${pIdx+1}`) : 'P';
+      const nodeLabel = parts.length > 1 ? `${pfx}${vIdx + 1}` : `P${vIdx + 1}`;
+
+      const elModal = document.getElementById('modalEditVertex');
+      const elTitle = document.getElementById('editVertexModalTitle');
+      const elPart = document.getElementById('editVertexPartIdx');
+      const elPoint = document.getElementById('editVertexPointIdx');
+      const elLat = document.getElementById('inputEditVertexLat');
+      const elLng = document.getElementById('inputEditVertexLng');
+      const elUtm = document.getElementById('editVertexUtmHint');
+
+      if (elTitle) elTitle.innerText = `EDIT KOORDINAT PATOK ${nodeLabel}`;
+      if (elPart) elPart.value = pIdx;
+      if (elPoint) elPoint.value = vIdx;
+      if (elLat) elLat.value = v.lat.toFixed(8);
+      if (elLng) elLng.value = v.lng.toFixed(8);
+
+      if (elUtm) {
+        const utm = (typeof getUtmCoordinates === 'function') ? getUtmCoordinates(v.lat, v.lng) : null;
+        elUtm.innerText = utm ? `UTM: X=${utm.easting.toFixed(2)} | Y=${utm.northing.toFixed(2)} (${utm.zone})` : '-';
+      }
+
+      if (elModal) elModal.style.display = 'flex';
+    }
+
+    function closeEditVertexModal() {
+      const elModal = document.getElementById('modalEditVertex');
+      if (elModal) elModal.style.display = 'none';
+    }
+
+    function saveEditedVertexCoords() {
+      const elPart = document.getElementById('editVertexPartIdx');
+      const elPoint = document.getElementById('editVertexPointIdx');
+      const elLat = document.getElementById('inputEditVertexLat');
+      const elLng = document.getElementById('inputEditVertexLng');
+
+      const pIdx = parseInt(elPart?.value || '0', 10);
+      const vIdx = parseInt(elPoint?.value || '0', 10);
+      const newLat = parseFloat(elLat?.value);
+      const newLng = parseFloat(elLng?.value);
+
+      if (isNaN(newLat) || isNaN(newLng) || newLat < -90 || newLat > 90 || newLng < -180 || newLng > 180) {
+        showToast('Koordinat Latitude atau Longitude tidak valid.', 'crimson');
+        return;
+      }
+
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const targetPart = parts[pIdx];
+      if (!targetPart || !targetPart[vIdx]) {
+        closeEditVertexModal();
+        return;
+      }
+
+      targetPart[vIdx] = { lat: newLat, lng: newLng };
+      if (targetPart === activeVertices || !activeMultiParts || activeMultiParts.length <= 1) {
+        activeVertices[vIdx] = { lat: newLat, lng: newLng };
+      }
+
+      isGeometryManuallyEdited = true;
+      closeEditVertexModal();
+      renderCanvasPolygon(true);
+      showToast('Koordinat patok berhasil diperbarui.', 'success');
+    }
+
+    const inputEditLatEl = document.getElementById('inputEditVertexLat');
+    const inputEditLngEl = document.getElementById('inputEditVertexLng');
+    function updateEditModalUtm() {
+      const lat = parseFloat(inputEditLatEl?.value);
+      const lng = parseFloat(inputEditLngEl?.value);
+      const elUtm = document.getElementById('editVertexUtmHint');
+      if (!isNaN(lat) && !isNaN(lng) && elUtm && typeof getUtmCoordinates === 'function') {
+        const utm = getUtmCoordinates(lat, lng);
+        elUtm.innerText = `UTM: X=${utm.easting.toFixed(2)} | Y=${utm.northing.toFixed(2)} (${utm.zone})`;
+      }
+    }
+    if (inputEditLatEl) inputEditLatEl.addEventListener('input', updateEditModalUtm);
+    if (inputEditLngEl) inputEditLngEl.addEventListener('input', updateEditModalUtm);
+
+    window.startAddVertexOnEdgeMode = startAddVertexOnEdgeMode;
+    window.stopAddVertexOnEdgeMode = stopAddVertexOnEdgeMode;
+    window.addVertexBetween = addVertexBetween;
+    window.openEditVertexModal = openEditVertexModal;
+    window.closeEditVertexModal = closeEditVertexModal;
+    window.saveEditedVertexCoords = saveEditedVertexCoords;
 
