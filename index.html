@@ -242,10 +242,25 @@
                   </div>
                 </div>
                 <div class="stat-card">
-                  <span class="stat-label">Luas di Gambar</span>
+                  <span class="stat-label">Luas Bidang</span>
                   <div style="margin-top: 3px; display: flex; align-items: center; min-height: 24px;">
                     <span id="canvasLiveAreaM2" class="stat-value highlight">-</span>
                   </div>
+                </div>
+              </div>
+
+              <div id="boxDaftarBidangGabungan" style="display: none; background: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.6rem; margin-bottom: 0.65rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.45rem;">
+                  <div style="font-size: 0.73rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Daftar Bidang Terdaftar / Penggabungan
+                  </div>
+                  <span id="badgeJumlahBidangGabungan" class="badge-pill blue" style="font-size: 0.65rem;">2 Bidang</span>
+                </div>
+                <div id="daftarBidangGabunganContent" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem;"></div>
+                <div id="daftarBidangGabunganTotal" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-light); display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.73rem; color: var(--text-main);">
+                  <span>Total Luas Terdaftar:</span>
+                  <span id="totalLuasTerdaftarGabungan" class="font-mono emerald">-</span>
                 </div>
               </div>
 
@@ -273,6 +288,10 @@
                   <span class="spec-label">Jenis Hak</span>
                   <span class="spec-value" id="pinTipeHakText">-</span>
                 </div>
+                <div class="spec-item" id="itemPinNomorHak">
+                  <span class="spec-label">No. Hak Milik</span>
+                  <span class="spec-value font-mono" id="pinNomorHakText">-</span>
+                </div>
                 <div class="spec-item">
                   <span class="spec-label">Kabupaten / Kota</span>
                   <span class="spec-value" id="pinKabkotText">-</span>
@@ -286,10 +305,6 @@
                   <span class="spec-value" id="pinStatusValidasiText">-</span>
                 </div>
 
-                <div class="spec-item pro-only-field" id="itemPinNomorHak" style="display: none;">
-                  <span class="spec-label">Nomor Hak</span>
-                  <span class="spec-value font-mono" id="pinNomorHakText">-</span>
-                </div>
                 <div class="spec-item pro-only-field" id="itemPinKantah" style="display: none;">
                   <span class="spec-label">Kantor Pertanahan</span>
                   <span class="spec-value" id="pinKantahText">-</span>
@@ -2114,17 +2129,17 @@
   </div>
   </div>
 
-  <script src="assets/js/config.js?v=0.82"></script>
-  <script src="assets/js/auth.js?v=0.82"></script>
-  <script src="assets/js/map.js?v=0.82"></script>
-  <script src="assets/js/cadastre.js?v=0.82"></script>
-  <script src="assets/js/drawing.js?v=0.82"></script>
-  <script src="assets/js/poi.js?v=0.82"></script>
-  <script src="assets/js/canvas.js?v=0.82"></script>
-  <script src="assets/js/wilayah.js?v=0.82"></script>
-  <script src="assets/js/export.js?v=0.82"></script>
-  <script src="assets/js/print.js?v=0.82"></script>
-  <script src="assets/js/app.js?v=0.82"></script>
+  <script src="assets/js/config.js?v=0.83"></script>
+  <script src="assets/js/auth.js?v=0.83"></script>
+  <script src="assets/js/map.js?v=0.83"></script>
+  <script src="assets/js/cadastre.js?v=0.83"></script>
+  <script src="assets/js/drawing.js?v=0.83"></script>
+  <script src="assets/js/poi.js?v=0.83"></script>
+  <script src="assets/js/canvas.js?v=0.83"></script>
+  <script src="assets/js/wilayah.js?v=0.83"></script>
+  <script src="assets/js/export.js?v=0.83"></script>
+  <script src="assets/js/print.js?v=0.83"></script>
+  <script src="assets/js/app.js?v=0.83"></script>
   <div id="toastContainer" class="toast-container"></div>
 </body>
 </html>

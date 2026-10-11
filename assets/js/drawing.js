@@ -520,6 +520,290 @@ Server Sumber Data: ${serverName}`;
       }
     }
 
+    function latLngToMeters(coords, refLat, refLng) {
+      const cosLat = Math.cos(refLat * Math.PI / 180);
+      return coords.map(p => {
+        const lat = (p.lat !== undefined) ? Number(p.lat) : Number(p[1]);
+        const lng = (p.lng !== undefined) ? Number(p.lng) : Number(p[0]);
+        return [
+          (lng - refLng) * 111320 * cosLat,
+          (lat - refLat) * 111320
+        ];
+      });
+    }
+
+    function shoelacePolyArea(pts) {
+      const n = pts.length;
+      if (n < 3) return 0;
+      let area = 0;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
+      }
+      return Math.abs(area) * 0.5;
+    }
+
+    function signedPolyArea(pts) {
+      const n = pts.length;
+      if (n < 3) return 0;
+      let area = 0;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
+      }
+      return area * 0.5;
+    }
+
+    function ensurePolyCCW(pts) {
+      if (signedPolyArea(pts) < 0) {
+        return pts.slice().reverse();
+      }
+      return pts.slice();
+    }
+
+    function triangulatePolyCoords(pts) {
+      const cleanPts = ensurePolyCCW(pts);
+      const n = cleanPts.length;
+      if (n < 3) return [];
+      if (n === 3) return [cleanPts];
+      const indices = [];
+      for (let i = 0; i < n; i++) indices.push(i);
+      const triangles = [];
+
+      function isPtInTri(p, a, b, c) {
+        function cross(p1, p2, p3) {
+          return (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0]);
+        }
+        const cp1 = cross(a, b, p);
+        const cp2 = cross(b, c, p);
+        const cp3 = cross(c, a, p);
+        return (cp1 >= -1e-9 && cp2 >= -1e-9 && cp3 >= -1e-9) || (cp1 <= 1e-9 && cp2 <= 1e-9 && cp3 <= 1e-9);
+      }
+
+      const maxIter = indices.length * 4;
+      let iterCount = 0;
+      while (indices.length > 3 && iterCount < maxIter) {
+        iterCount++;
+        let earFound = false;
+        const k = indices.length;
+        for (let i = 0; i < k; i++) {
+          const prevIdx = indices[(i - 1 + k) % k];
+          const currIdx = indices[i];
+          const nextIdx = indices[(i + 1) % k];
+          const a = cleanPts[prevIdx];
+          const b = cleanPts[currIdx];
+          const c = cleanPts[nextIdx];
+          const crossAbBc = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+          if (crossAbBc <= 1e-9) continue;
+          let containsOther = false;
+          for (let j = 0; j < k; j++) {
+            if (j === ((i - 1 + k) % k) || j === i || j === ((i + 1) % k)) continue;
+            if (isPtInTri(cleanPts[indices[j]], a, b, c)) {
+              containsOther = true;
+              break;
+            }
+          }
+          if (!containsOther) {
+            triangles.push([a, b, c]);
+            indices.splice(i, 1);
+            earFound = true;
+            break;
+          }
+        }
+        if (!earFound) break;
+      }
+      if (indices.length === 3) {
+        triangles.push([cleanPts[indices[0]], cleanPts[indices[1]], cleanPts[indices[2]]]);
+      }
+      return triangles;
+    }
+
+    function clipPolyByHalfPlane(poly, p1, p2) {
+      const out = [];
+      if (!poly || poly.length < 3) return out;
+      function isInside(cp) {
+        return (p2[0] - p1[0]) * (cp[1] - p1[1]) - (p2[1] - p1[1]) * (cp[0] - p1[0]) >= -1e-9;
+      }
+      function lineIntersect(s, e) {
+        const dxSeg = e[0] - s[0];
+        const dySeg = e[1] - s[1];
+        const dxLine = p2[0] - p1[0];
+        const dyLine = p2[1] - p1[1];
+        const denom = dxSeg * dyLine - dySeg * dxLine;
+        if (Math.abs(denom) < 1e-12) return s;
+        const num = (p1[0] - s[0]) * dyLine - (p1[1] - s[1]) * dxLine;
+        const t = Math.max(0, Math.min(1, num / denom));
+        return [s[0] + t * dxSeg, s[1] + t * dySeg];
+      }
+      let s = poly[poly.length - 1];
+      for (let i = 0; i < poly.length; i++) {
+        const e = poly[i];
+        if (isInside(e)) {
+          if (!isInside(s)) out.push(lineIntersect(s, e));
+          out.push(e);
+        } else if (isInside(s)) {
+          out.push(lineIntersect(s, e));
+        }
+        s = e;
+      }
+      return out;
+    }
+
+    function clipConvexPolygons(subject, clip) {
+      let s = ensurePolyCCW(subject);
+      const c = ensurePolyCCW(clip);
+      let output = s;
+      const n = c.length;
+      for (let i = 0; i < n; i++) {
+        output = clipPolyByHalfPlane(output, c[i], c[(i + 1) % n]);
+        if (!output || output.length < 3) return [];
+      }
+      return output;
+    }
+
+    function calculatePolygonIntersectionArea(polyCoordsA, polyCoordsB) {
+      if (!polyCoordsA || polyCoordsA.length < 3 || !polyCoordsB || polyCoordsB.length < 3) return 0;
+      const refLat = polyCoordsA[0].lat !== undefined ? polyCoordsA[0].lat : polyCoordsA[0][1];
+      const refLng = polyCoordsA[0].lng !== undefined ? polyCoordsA[0].lng : polyCoordsA[0][0];
+
+      const mPolyA = latLngToMeters(polyCoordsA, refLat, refLng);
+      const mPolyB = latLngToMeters(polyCoordsB, refLat, refLng);
+
+      const triA = triangulatePolyCoords(mPolyA);
+      const triB = triangulatePolyCoords(mPolyB);
+      if (!triA.length || !triB.length) return 0;
+
+      let totalInterArea = 0;
+      for (let i = 0; i < triA.length; i++) {
+        for (let j = 0; j < triB.length; j++) {
+          const clipped = clipConvexPolygons(triA[i], triB[j]);
+          if (clipped && clipped.length >= 3) {
+            totalInterArea += shoelacePolyArea(clipped);
+          }
+        }
+      }
+      return totalInterArea;
+    }
+
+    function getCadastreParcelsPool() {
+      if (Array.isArray(window.currentCadastreParcelsPool) && window.currentCadastreParcelsPool.length > 0) {
+        return window.currentCadastreParcelsPool;
+      }
+      if (activePinData && Array.isArray(activePinData.merged_parcels) && activePinData.merged_parcels.length > 0) {
+        return activePinData.merged_parcels;
+      }
+      if (Array.isArray(mergeParcelsList) && mergeParcelsList.length > 0) {
+        return mergeParcelsList;
+      }
+      return [];
+    }
+
+    function evaluateOverlappingCadastreParcels(activeCoords) {
+      if (!activeCoords || activeCoords.length < 3) return [];
+      const pool = getCadastreParcelsPool();
+      if (!pool || pool.length === 0) return [];
+
+      const qualifying = [];
+      const activeGeomArea = calculatePolygonArea(activeCoords);
+      if (activeGeomArea <= 1) return [];
+
+      for (let i = 0; i < pool.length; i++) {
+        const item = pool[i];
+        const itemCoords = item.coords || item.polygon_coords;
+        if (!itemCoords || itemCoords.length < 3) continue;
+
+        const itemArea = (item.geom_area_m2 && item.geom_area_m2 > 0)
+          ? item.geom_area_m2
+          : calculatePolygonArea(itemCoords);
+        if (itemArea <= 1) continue;
+
+        const interArea = calculatePolygonIntersectionArea(activeCoords, itemCoords);
+        const overlapRatio = interArea / itemArea;
+
+        if (overlapRatio > 0.50) {
+          qualifying.push({
+            index: i + 1,
+            fid: item.fid || item.nib || `Bidang ${i + 1}`,
+            nib: item.nib || item.fid || '-',
+            nomor_hak: item.nomor_hak || item.nomor_hak_raw || '-',
+            tipe_hak: item.tipe_hak || 'Hak Milik',
+            luas_terdaftar_m2: (item.luas_m2 && Number(item.luas_m2) > 0) ? Number(item.luas_m2) : Math.round(itemArea),
+            geom_area_m2: roundArea2(itemArea),
+            intersection_area_m2: roundArea2(interArea),
+            overlap_pct: (overlapRatio * 100).toFixed(1)
+          });
+        }
+      }
+      return qualifying;
+    }
+
+    function renderMergedParcelsList(qualifyingParcels, liveAreaM2) {
+      const box = document.getElementById('boxDaftarBidangGabungan');
+      if (!box) return;
+      if (!qualifyingParcels || qualifyingParcels.length <= 1) {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'flex';
+      box.style.flexDirection = 'column';
+
+      const badge = document.getElementById('badgeJumlahBidangGabungan');
+      if (badge) badge.innerText = `${qualifyingParcels.length} Bidang`;
+
+      const contentEl = document.getElementById('daftarBidangGabunganContent');
+      if (contentEl) {
+        let rowsHtml = '';
+        let totalLuasTerdaftar = 0;
+        qualifyingParcels.forEach((p, idx) => {
+          totalLuasTerdaftar += p.luas_terdaftar_m2;
+          const noHak = (p.nomor_hak && p.nomor_hak !== '-') ? p.nomor_hak : 'Belum Terbit';
+          rowsHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-xs);">
+              <div style="display: flex; flex-direction: column; overflow: hidden; max-width: 65%;">
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${idx + 1}. No. Hak: ${noHak}
+                </div>
+                <div style="font-size: 0.66rem; color: var(--text-muted); font-family: var(--font-mono);">
+                  NIB: ${p.nib} : Overlap: ${p.overlap_pct}%
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: 700; color: var(--emerald); font-size: 0.72rem; font-family: var(--font-mono);">
+                  ${formatAreaM2(p.luas_terdaftar_m2)}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        contentEl.innerHTML = rowsHtml;
+
+        const totalEl = document.getElementById('totalLuasTerdaftarGabungan');
+        if (totalEl) totalEl.innerText = formatAreaM2(totalLuasTerdaftar);
+
+        const elLuasBpn = document.getElementById('pinLuasBpnText');
+        if (elLuasBpn) {
+          elLuasBpn.className = 'stat-value emerald';
+          elLuasBpn.innerText = `${formatAreaM2(totalLuasTerdaftar)} (${qualifyingParcels.length} Bidang)`;
+        }
+
+        const elNomorHak = document.getElementById('pinNomorHakText');
+        if (elNomorHak) {
+          const listHak = qualifyingParcels.map(p => p.nomor_hak).filter(n => n && n !== '-');
+          elNomorHak.innerText = listHak.length > 0 ? listHak.join(', ') : 'Gabungan';
+        }
+
+        const diffPctEl = document.getElementById('diffPercentText');
+        const diffBpnEl = document.getElementById('diffTargetBpnText');
+        if (totalLuasTerdaftar > 0) {
+          const diff = liveAreaM2 - totalLuasTerdaftar;
+          const pct = Math.max(0, 100 - (Math.abs(diff) / totalLuasTerdaftar * 100));
+          const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
+          if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
+          if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(totalLuasTerdaftar);
+        }
+      }
+    }
+
     function renderCanvasPolygon(updateHandles = true) {
       if (!activeVertices || activeVertices.length < 3) return;
       syncActivePolygonPanel();
@@ -574,42 +858,53 @@ Server Sumber Data: ${serverName}`;
       const hudLive = document.getElementById('hudLiveArea');
       if (hudLive) hudLive.innerText = formatAreaM2(liveAreaM2);
 
-      if (isGeometryManuallyEdited) {
-        if (activePinData) {
-          activePinData.luas_m2 = roundArea2(liveAreaM2);
-          activePinData.luas_ha = roundAreaHa6(liveAreaM2);
-        }
-        const elLuasBpn = document.getElementById('pinLuasBpnText');
-        if (elLuasBpn) {
+      const registeredBpnArea = (activePinData && activePinData.luas_terdaftar_m2 !== undefined && activePinData.luas_terdaftar_m2 !== null && activePinData.luas_terdaftar_m2 > 0)
+        ? activePinData.luas_terdaftar_m2
+        : (activePinData?.luas_m2 || 0);
+
+      const elLuasBpn = document.getElementById('pinLuasBpnText');
+      if (elLuasBpn) {
+        if (registeredBpnArea > 0) {
           elLuasBpn.className = 'stat-value emerald';
-          elLuasBpn.innerText = formatAreaM2(liveAreaM2);
+          elLuasBpn.innerText = formatAreaM2(registeredBpnArea);
+        } else {
+          elLuasBpn.className = 'stat-value offline';
+          elLuasBpn.innerText = 'Belum Terhubung Server';
         }
+      }
+
+      if (registeredBpnArea > 0) {
+        const diff = liveAreaM2 - registeredBpnArea;
+        const pct = Math.max(0, 100 - (Math.abs(diff) / registeredBpnArea * 100));
+        const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
+        const diffPctEl = document.getElementById('diffPercentText');
+        const diffBpnEl = document.getElementById('diffTargetBpnText');
+        if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
+        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(registeredBpnArea);
+      } else {
+        const diffPctEl = document.getElementById('diffPercentText');
+        const diffBpnEl = document.getElementById('diffTargetBpnText');
+        if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+        if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+      }
+
+      if (isGeometryManuallyEdited) {
         const elStatusValidasi = document.getElementById('pinStatusValidasiText');
         if (elStatusValidasi) {
           elStatusValidasi.className = 'spec-value emerald';
           elStatusValidasi.innerText = 'Kalkulasi Geometri Real';
         }
-        const elHudArea = document.getElementById('hudBpnArea');
-        if (elHudArea) elHudArea.innerText = formatAreaM2(liveAreaM2);
-        const diffPctEl = document.getElementById('diffPercentText');
-        const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (diffPctEl) diffPctEl.innerText = '0.00 m² (Kalkulasi Real)';
-        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(liveAreaM2);
+      }
+
+      const qualifyingParcels = evaluateOverlappingCadastreParcels(activeVertices);
+      if (qualifyingParcels && qualifyingParcels.length > 1) {
+        renderMergedParcelsList(qualifyingParcels, liveAreaM2);
       } else {
-        const targetBpnArea = activePinData?.luas_m2 || 0;
-        if (targetBpnArea > 0) {
-          const diff = liveAreaM2 - targetBpnArea;
-          const pct = Math.max(0, 100 - (Math.abs(diff) / targetBpnArea * 100));
-          const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
-          const diffPctEl = document.getElementById('diffPercentText');
-          const diffBpnEl = document.getElementById('diffTargetBpnText');
-          if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
-          if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(targetBpnArea);
-        } else {
-          const diffPctEl = document.getElementById('diffPercentText');
-          const diffBpnEl = document.getElementById('diffTargetBpnText');
-          if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
-          if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+        const box = document.getElementById('boxDaftarBidangGabungan');
+        if (box) box.style.display = 'none';
+        const elNomorHak = document.getElementById('pinNomorHakText');
+        if (elNomorHak && activePinData) {
+          elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
         }
       }
 
@@ -1084,15 +1379,20 @@ Server Sumber Data: ${serverName}`;
       mergePreviewLayers.forEach(l => map.removeLayer(l));
       mergePreviewLayers = [];
 
-      const firstParcelArea = (activePinData && activePinData.luas_m2 > 0)
-        ? roundArea2(activePinData.luas_m2)
-        : roundArea2(calculatePolygonArea(activeVertices));
+      const firstParcelArea = (activePinData && activePinData.luas_terdaftar_m2 > 0)
+        ? roundArea2(activePinData.luas_terdaftar_m2)
+        : ((activePinData && activePinData.luas_m2 > 0) ? roundArea2(activePinData.luas_m2) : roundArea2(calculatePolygonArea(activeVertices)));
 
       mergeParcelsList.push({
         coords: activeVertices.map(v => ({ lat: Number(v.lat.toFixed(7)), lng: Number(v.lng.toFixed(7)) })),
         fid: 'Bidang 1',
         _internalFid: activePinData?.fid || null,
-        luas: firstParcelArea
+        nib: activePinData?.nib || activePinData?.fid || 'Bidang 1',
+        nomor_hak: activePinData?.nomor_hak || activePinData?.nomor_hak_raw || '-',
+        tipe_hak: activePinData?.tipe_hak || 'Hak Milik',
+        luas: firstParcelArea,
+        luas_m2: firstParcelArea,
+        luas_terdaftar_m2: firstParcelArea
       });
 
       const banner = document.getElementById('mergeModeBanner');
@@ -1252,7 +1552,12 @@ Server Sumber Data: ${serverName}`;
           coords: snappedCoords,
           fid: newParcelLabel,
           _internalFid: persilData.fid || null,
-          luas: newParcelLuas
+          nib: persilData.nib || persilData.fid || newParcelLabel,
+          nomor_hak: persilData.nomor_hak || persilData.nomor_hak_raw || '-',
+          tipe_hak: persilData.tipe_hak || 'Hak Milik',
+          luas: newParcelLuas,
+          luas_m2: newParcelLuas,
+          luas_terdaftar_m2: newParcelLuas
         });
 
         const latlngs = snappedCoords.map(p => [p.lat, p.lng]);
@@ -1582,16 +1887,22 @@ Server Sumber Data: ${serverName}`;
         activeVertices = mergedPts;
       }
 
+      window.currentCadastreParcelsPool = mergeParcelsList.slice();
       if (activePinData) {
         activePinData.fid = 'Gabungan ' + mergeParcelsList.length + ' Bidang';
         activePinData.luas_m2 = targetTotalArea;
+        activePinData.luas_terdaftar_m2 = targetTotalArea;
         activePinData.luas_ha = roundAreaHa6(targetTotalArea);
+        activePinData.merged_parcels = mergeParcelsList.slice();
+        activePinData.nomor_hak = mergeParcelsList.map(p => p.nomor_hak).filter(n => n && n !== '-').join(', ') || 'Gabungan';
         const _elNib = document.getElementById('pinNibText');
         if (_elNib) _elNib.innerText = 'Gabungan ' + mergeParcelsList.length + ' Bidang';
         const _elLok = document.getElementById('pinLokasiUtamaText');
         if (_elLok) _elLok.innerText = (activePinData.desa !== '-' && activePinData.kecamatan !== '-') ? `${activePinData.desa}, ${activePinData.kecamatan}` : (activePinData.desa !== '-' ? activePinData.desa : 'Bidang Tanah');
         const _elLuas = document.getElementById('pinLuasBpnText');
         if (_elLuas) _elLuas.innerText = formatAreaM2(targetTotalArea);
+        const _elNomorHak = document.getElementById('pinNomorHakText');
+        if (_elNomorHak) _elNomorHak.innerText = activePinData.nomor_hak;
         const _elStatus = document.getElementById('pinStatusValidasiText');
         if (_elStatus) _elStatus.innerText = 'Penjumlahan Bidang Terpilih';
       }

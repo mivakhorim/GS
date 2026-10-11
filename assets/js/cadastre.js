@@ -681,6 +681,13 @@ function getBpnGatewayBase() {
           if (elNib) elNib.innerText = (activePinData.nib && activePinData.nib !== '-') ? `Bidang NIB ${activePinData.nib}` : 'Bidang Terdaftar';
         }
       }
+
+      if (activePinData) {
+        const elNomorHak = document.getElementById('pinNomorHakText');
+        if (elNomorHak) elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
+        const rowNomorHak = document.getElementById('itemPinNomorHak');
+        if (rowNomorHak) rowNomorHak.style.display = 'flex';
+      }
     }
 
     async function handleMapClick(lat, lng, doSwitchTab = true) {
@@ -778,6 +785,8 @@ function getBpnGatewayBase() {
             nosu: decoded ? decoded.nosu : (effectivePersil.nosu || '-'),
             tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '-'),
             luas_m2: effectivePersil.luas_m2 || 0,
+            luas_terdaftar_m2: effectivePersil.luas_m2 || 0,
+            all_parcels: effectivePersil.all_parcels || [],
             desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
             kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
             kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
@@ -798,6 +807,8 @@ function getBpnGatewayBase() {
             alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : [decoded?.desa, decoded?.kecamatan, decoded?.kabkot].filter(v => v && v !== '-').join(', ') || 'Lokasi Titik Bidang'
           };
 
+          window.currentCadastreParcelsPool = effectivePersil.all_parcels || [];
+
           const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
             ? `${activePinData.desa}, ${activePinData.kecamatan}`
             : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
@@ -807,9 +818,9 @@ function getBpnGatewayBase() {
 
           const elLuasBpn = document.getElementById('pinLuasBpnText');
           if (elLuasBpn) {
-            if (activePinData.luas_m2 > 0) {
+            if (activePinData.luas_terdaftar_m2 > 0) {
               elLuasBpn.className = 'stat-value emerald';
-              elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+              elLuasBpn.innerText = `${Math.round(activePinData.luas_terdaftar_m2).toLocaleString('id-ID')} m²`;
             } else {
               elLuasBpn.className = 'stat-value offline';
               elLuasBpn.innerText = 'Belum Terhubung Server';
@@ -817,6 +828,14 @@ function getBpnGatewayBase() {
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
+
+          const elNomorHak = document.getElementById('pinNomorHakText');
+          if (elNomorHak) {
+            elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
+          }
+          const rowNomorHak = document.getElementById('itemPinNomorHak');
+          if (rowNomorHak) rowNomorHak.style.display = 'flex';
+
           renderCadastralProFields();
           fetchSpatialStatusData(lat, lng).then(status => {
             if (activePinData && Math.abs(activePinData.lat - lat) < 0.001 && Math.abs(activePinData.lng - lng) < 0.001) {
@@ -1169,6 +1188,9 @@ function getBpnGatewayBase() {
       window.lastImportedShpData = null;
       const shpBadge = document.getElementById('importedShpAttributesBadge');
       if (shpBadge) shpBadge.style.display = 'none';
+      const boxGabungan = document.getElementById('boxDaftarBidangGabungan');
+      if (boxGabungan) boxGabungan.style.display = 'none';
+      window.currentCadastreParcelsPool = [];
 
       const noPin = document.getElementById('noPinAlert');
       const foundBox = document.getElementById('persilFoundBox');

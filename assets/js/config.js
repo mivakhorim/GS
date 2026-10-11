@@ -571,6 +571,32 @@
       const rawLuas = getPropVal(['luas', 'luas_m2', 'luastanah', 'luas_tertulis'], '');
       const luasM2 = (rawLuas && Number(rawLuas) > 0) ? Number(rawLuas) : calcArea;
 
+      const allParcelsList = allParsedRings.map((item, pIdx) => {
+        const itemProps = item.feat.properties || {};
+        const itemDecoded = decodeBpnCadastralStructure(itemProps, item.coords[0].lat, item.coords[0].lng);
+        const itemGeomArea = calculatePolygonArea(item.coords);
+        let itemRawLuas = null;
+        for (const k of ['luas', 'luas_m2', 'luastanah', 'luas_tertulis']) {
+          if (itemProps[k] !== undefined && itemProps[k] !== null && Number(itemProps[k]) > 0) {
+            itemRawLuas = Number(itemProps[k]);
+            break;
+          }
+        }
+        const itemLuasM2 = (itemRawLuas && itemRawLuas > 0) ? itemRawLuas : Math.round(itemGeomArea);
+        return {
+          coords: item.coords,
+          feat: item.feat,
+          fid: item.feat.id || itemDecoded.nib || `Bidang ${pIdx + 1}`,
+          nib: itemDecoded.nib,
+          nib_lengkap: itemDecoded.nib_lengkap,
+          nomor_hak: itemDecoded.nomor_hak,
+          nomor_hak_raw: itemDecoded.nomor_hak_raw,
+          tipe_hak: itemDecoded.tipe_hak,
+          luas_m2: itemLuasM2,
+          geom_area_m2: itemGeomArea
+        };
+      });
+
       return {
         found: true,
         is_official_cadastre: true,
@@ -595,6 +621,7 @@
         fid: chosenFeat.id || (decoded.nib !== '-' ? decoded.nib : '-'),
         polygon_coords: chosenCoords,
         bbox_coords: chosenCoords,
+        all_parcels: allParcelsList,
         source: 'ATLAS GEOSERVER'
       };
     }
