@@ -132,17 +132,24 @@ async function geocodeAndFly(query, zoomLevel = 14) {
           handleDrawClick(e);
           return;
         }
+        if (typeof isAddVertexOnEdgeMode !== 'undefined' && isAddVertexOnEdgeMode) {
+          if (typeof handleAddVertexMapClick === 'function') {
+            handleAddVertexMapClick(e);
+          }
+          return;
+        }
+        if (typeof isMergeMode !== 'undefined' && isMergeMode) {
+          if (typeof handleMergeParcelClick === 'function') {
+            handleMergeParcelClick(e.latlng.lat, e.latlng.lng);
+          }
+          return;
+        }
 
-        const isImportedShp = (window.lastImportedShpData != null);
-        const isMerging = (typeof isMergeMode !== 'undefined' && isMergeMode);
+        const isImportedShp = (window.lastImportedShpData != null && typeof activeVertices !== 'undefined' && activeVertices && activeVertices.length >= 3);
         const isMergedResult = (typeof isParcelLocked !== 'undefined' && isParcelLocked && activePinData && activePinData.fid && String(activePinData.fid).startsWith('Gabungan'));
 
         if (isImportedShp) {
           openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'shp');
-          return;
-        }
-        if (isMerging) {
-          openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'merge');
           return;
         }
         if (isMergedResult) {

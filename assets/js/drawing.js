@@ -244,6 +244,13 @@ Server Sumber Data: ${serverName}`;
     function clearCanvasRebuilderLayers() {
       isParcelLocked = false;
       activeMultiParts = null;
+      if (typeof stopAddVertexOnEdgeMode === 'function' && typeof isAddVertexOnEdgeMode !== 'undefined' && isAddVertexOnEdgeMode) {
+        stopAddVertexOnEdgeMode();
+      }
+      if (typeof snapMarker !== 'undefined' && snapMarker && map) {
+        map.removeLayer(snapMarker);
+        snapMarker = null;
+      }
       if (activePolygonLayer) {
         map.removeLayer(activePolygonLayer);
         activePolygonLayer = null;
@@ -433,7 +440,7 @@ Server Sumber Data: ${serverName}`;
           weight: 3.5,
           fillColor: '#ea580c',
           fillOpacity: 0.15,
-          interactive: true
+          interactive: false
         }).addTo(map);
       } else {
         activePolygonLayer.setLatLngs(latlngs);
@@ -1257,7 +1264,8 @@ Server Sumber Data: ${serverName}`;
           weight: 2.5,
           dashArray: '5, 5',
           fillColor: '#0a2e5c',
-          fillOpacity: 0.22
+          fillOpacity: 0.22,
+          interactive: false
         }).addTo(map);
         previewLayer.bindPopup(`
           <div style="font-size:0.78rem; font-family:'Plus Jakarta Sans',sans-serif;">
@@ -1660,7 +1668,7 @@ Server Sumber Data: ${serverName}`;
             iconSize: [14, 14],
             iconAnchor: [7, 7]
           });
-          snapMarker = L.marker(bestTarget, { icon: snapIcon, zIndexOffset: 2000 }).addTo(map);
+          snapMarker = L.marker(bestTarget, { icon: snapIcon, interactive: false, zIndexOffset: 2000 }).addTo(map);
         } else {
           snapMarker.setLatLng(bestTarget);
         }
@@ -1720,7 +1728,8 @@ Server Sumber Data: ${serverName}`;
           color: '#0a2e5c',
           weight: 2.5,
           fillColor: '#0a2e5c',
-          fillOpacity: 0.18
+          fillOpacity: 0.18,
+          interactive: false
         }).addTo(map);
       }
 
@@ -1730,7 +1739,8 @@ Server Sumber Data: ${serverName}`;
           color: '#0a2e5c',
           fillColor: '#ffffff',
           fillOpacity: 1,
-          weight: 2
+          weight: 2,
+          interactive: false
         }).addTo(map);
         customDrawMarkers.push(marker);
       });

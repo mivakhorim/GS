@@ -691,8 +691,13 @@ function getBpnGatewayBase() {
         handleMapClick(pos.lat, pos.lng, false);
       });
 
+      activePinMarker.on('click', function(ev) {
+        L.DomEvent.stopPropagation(ev);
+        handleMapClick(lat, lng, true);
+      });
+
       const currentActiveTab = document.querySelector('.tab-view.active')?.id;
-      if (doSwitchTab && (currentActiveTab === 'tab-info' || currentActiveTab === 'tab-search' || !currentActiveTab)) {
+      if (doSwitchTab && (currentActiveTab !== 'tab-bidang') && (typeof isDrawingPolygon === 'undefined' || !isDrawingPolygon)) {
         switchTab('tab-bidang');
       }
 
@@ -1124,6 +1129,9 @@ function getBpnGatewayBase() {
       clearCanvasRebuilderLayers();
       isParcelLocked = false;
       activePinData = null;
+      window.lastImportedShpData = null;
+      const shpBadge = document.getElementById('importedShpAttributesBadge');
+      if (shpBadge) shpBadge.style.display = 'none';
 
       const noPin = document.getElementById('noPinAlert');
       const foundBox = document.getElementById('persilFoundBox');
