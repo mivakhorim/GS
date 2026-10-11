@@ -376,14 +376,28 @@ Server Sumber Data: ${serverName}`;
     }
 
     var isFreeDeleteVertexMode = false;
+    function activateMoveVertexMode() {
+      if (isFreeDeleteVertexMode) {
+        toggleFreeDeleteVertexMode();
+      }
+      const btnMove = document.getElementById('btnToggleMoveVertex');
+      if (btnMove) btnMove.classList.add('active');
+      showToast('Mode Geser Patok Aktif: Tahan dan seret patok batas di peta untuk mengubah bentuk bidang.', 'info');
+    }
+
     function toggleFreeDeleteVertexMode() {
       isFreeDeleteVertexMode = !isFreeDeleteVertexMode;
       const btn = document.getElementById('btnToggleFreeDelete');
+      const btnMove = document.getElementById('btnToggleMoveVertex');
       if (btn) {
         btn.classList.toggle('active', isFreeDeleteVertexMode);
         if (isFreeDeleteVertexMode) {
+          document.body.classList.add('free-delete-active');
+          if (btnMove) btnMove.classList.remove('active');
           showToast('Mode Hapus Patok Bebas Aktif: Klik langsung patok mana saja di peta untuk menghapusnya.', 'info');
         } else {
+          document.body.classList.remove('free-delete-active');
+          if (btnMove) btnMove.classList.add('active');
           showToast('Mode Hapus Patok Bebas dinonaktifkan.', 'info');
         }
       }
@@ -516,9 +530,9 @@ Server Sumber Data: ${serverName}`;
           const nodeLabel = parts.length > 1 ? `${pfx}${idx + 1}` : `P${idx + 1}`;
           const nodeIcon = L.divIcon({
             className: 'vertex-pin',
-            html: `<div class="custom-vertex-node">${nodeLabel}</div>`,
-            iconSize: [18, 18],
-            iconAnchor: [9, 9]
+            html: `<div class="custom-vertex-node"><span class="node-label">${nodeLabel}</span><span class="node-move-hint" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg></span></div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
           });
 
           const marker = L.marker([v.lat, v.lng], {
@@ -537,25 +551,22 @@ Server Sumber Data: ${serverName}`;
                 ${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;">
-                <div style="display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--text-sub);background:var(--bg-subtle);padding:4px 6px;border-radius:4px;border:1px solid var(--border-light);">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span>Tahan &amp; geser patok di peta</span>
-                </div>
-                <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:10px;justify-content:center;width:100%;font-weight:600;color:var(--crimson);border-color:#fecdd3;" onclick="window.deleteVertexMarker(${pIdx}, ${idx})">
+                <button type="button" class="btn btn-outline" style="padding:4px 6px;font-size:10px;justify-content:center;width:100%;font-weight:600;color:var(--crimson);border-color:#fecdd3;" onclick="window.deleteVertexMarker(${pIdx}, ${idx})">
                   Hapus Patok ${nodeLabel}
                 </button>
                 ${parts.length > 1 ? `
-                <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:9.5px;justify-content:center;width:100%;font-weight:600;color:#991b1b;border-color:#fca5a5;margin-top:2px;" onclick="window.deletePartEntirely(${pIdx})">
+                <button type="button" class="btn btn-outline" style="padding:4px 6px;font-size:9.5px;justify-content:center;width:100%;font-weight:600;color:#991b1b;border-color:#fca5a5;margin-top:2px;" onclick="window.deletePartEntirely(${pIdx})">
                   Hapus Sisa Garis / Bagian ${pfx}
                 </button>` : ''}
               </div>
             </div>
           `;
           marker.bindPopup(popupContent, {
-            offset: [0, -10],
-            closeButton: false,
+            offset: [0, -12],
+            closeButton: true,
             className: 'vertex-action-popup'
           });
+
           marker.on('click', function(e) {
             if (isFreeDeleteVertexMode) {
               L.DomEvent.stopPropagation(e);
@@ -563,8 +574,12 @@ Server Sumber Data: ${serverName}`;
               return;
             }
           });
-          marker.on('mouseover', function() {
-            if (!isFreeDeleteVertexMode) this.openPopup();
+
+          marker.on('dragstart', function() {
+            this.closePopup();
+            const el = this.getElement();
+            if (el) el.classList.add('dragging');
+            isGeometryManuallyEdited = true;
           });
 
           marker.on('drag', function(e) {
@@ -576,8 +591,11 @@ Server Sumber Data: ${serverName}`;
           });
 
           marker.on('dragend', function() {
+            const el = this.getElement();
+            if (el) el.classList.remove('dragging');
             isGeometryManuallyEdited = true;
             renderCanvasPolygon(true);
+            showToast(`Posisi Patok ${nodeLabel} berhasil disesuaikan.`, 'info');
           });
 
           marker.on('contextmenu', function(e) {
@@ -1866,4 +1884,6 @@ Server Sumber Data: ${serverName}`;
       cleanActiveVerticesManual();
       showToast('Titik sudut batas berhasil dirapikan.', 'success');
     }
+
+    window.activateMoveVertexMode = activateMoveVertexMode;
 

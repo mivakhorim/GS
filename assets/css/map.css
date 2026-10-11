@@ -350,31 +350,84 @@
       flex-shrink: 0;
     }
 
+    .vertex-pin {
+      width: 32px !important;
+      height: 32px !important;
+      margin-left: -16px !important;
+      margin-top: -16px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: grab !important;
+      cursor: move !important;
+      pointer-events: auto !important;
+      touch-action: none !important;
+    }
+    .vertex-pin:active,
+    .vertex-pin.dragging {
+      cursor: grabbing !important;
+      cursor: move !important;
+    }
     .custom-vertex-node {
-      width: 18px;
-      height: 18px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background-color: var(--accent);
       border: 2px solid #ffffff;
       color: #ffffff;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 8px;
-      font-weight: 700;
+      font-size: 8.5px;
+      font-weight: 800;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+      cursor: grab !important;
       cursor: move !important;
       user-select: none;
-      transition: transform 0.15s ease, background-color 0.15s ease;
+      position: relative;
+      transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, box-shadow 0.15s ease;
     }
     .leaflet-marker-draggable {
+      cursor: grab !important;
       cursor: move !important;
     }
+    .vertex-pin:hover .custom-vertex-node,
     .custom-vertex-node:hover {
+      cursor: grab !important;
       cursor: move !important;
-      background-color: #1d4ed8;
-      transform: scale(1.18);
+      background-color: #1e40af;
+      transform: scale(1.25);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25), 0 4px 12px rgba(15, 23, 42, 0.4);
+    }
+    .vertex-pin:active .custom-vertex-node,
+    .vertex-pin.dragging .custom-vertex-node {
+      cursor: grabbing !important;
+      cursor: move !important;
+      background-color: #0f172a;
+      transform: scale(1.35);
+      box-shadow: 0 0 0 6px rgba(15, 23, 42, 0.25), 0 6px 16px rgba(0, 0, 0, 0.5);
+    }
+    .custom-vertex-node .node-move-hint {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+    .vertex-pin:hover .custom-vertex-node .node-label {
+      display: none;
+    }
+    .vertex-pin:hover .custom-vertex-node .node-move-hint {
+      display: flex;
+    }
+    body.free-delete-active .vertex-pin,
+    body.free-delete-active .custom-vertex-node {
+      cursor: pointer !important;
+    }
+    body.free-delete-active .vertex-pin:hover .custom-vertex-node {
+      background-color: #dc2626 !important;
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.25), 0 4px 12px rgba(220, 38, 38, 0.4) !important;
     }
     .custom-vertex-add {
       width: 14px;

@@ -350,7 +350,10 @@
                     <span id="txtToggleMerge">Gabung Bidang</span>
                   </button>
                 </div>
-                <div class="geo-patok-toolbar" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--bg-alt); padding: 3px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
+                <div class="geo-patok-toolbar" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; background: var(--bg-alt); padding: 3px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
+                  <button type="button" id="btnToggleMoveVertex" class="btn-tool-icon active" onclick="activateMoveVertexMode()" title="Mode Geser Patok (Tahan &amp; seret patok di peta)" aria-label="Geser Patok">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
+                  </button>
                   <button type="button" class="btn-tool-icon" onclick="addVertexToActivePolygon()" title="Tambah Patok Baru di Gambar" aria-label="Tambah Patok">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   </button>
@@ -1952,70 +1955,92 @@
   </div>
 
   <div id="modalShpAttributes" class="modal-print-overlay" style="display: none;" onclick="if(event.target===this) closeShpAttributesModal()">
-    <div class="modal-coords-dialog" role="dialog" aria-labelledby="shpAttrModalTitle" style="max-width: 960px; width: 95%; max-height: 90vh;">
-      <div class="modal-coords-header" style="background: var(--bg-card); border-bottom: 1px solid var(--border-light); padding: 0.9rem 1.1rem;">
-        <div style="display: flex; align-items: center; gap: 0.65rem;">
-          <div class="modal-coords-badge-icon" style="background: rgba(10, 46, 92, 0.08); color: var(--accent);">
+    <div class="shp-attr-dialog" role="dialog" aria-labelledby="shpAttrModalTitle">
+      <div class="shp-attr-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="shp-attr-icon-badge">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
           </div>
-          <div>
-            <div id="shpAttrModalTitle" class="modal-coords-title" style="font-size: 0.92rem; font-weight: 700; color: var(--text-main);">TABEL ATRIBUT SHAPEFILE (.DBF)</div>
-            <div id="shpAttrModalSub" class="modal-coords-sub" style="font-size: 0.72rem; color: var(--text-muted);">Inspeksi data atribut dBase III/IV lengkap hasil ekstraksi berkas ESRI Shapefile ZIP</div>
+          <div class="shp-attr-title-wrap">
+            <div id="shpAttrModalTitle" class="shp-attr-title">TABEL ATRIBUT SHAPEFILE (.DBF)</div>
+            <div id="shpAttrModalSub" class="shp-attr-sub">Inspeksi data atribut dBase III/IV lengkap hasil ekstraksi berkas ESRI Shapefile ZIP</div>
           </div>
         </div>
-        <button type="button" class="btn btn-outline btn-sm" onclick="closeShpAttributesModal()" aria-label="Tutup" style="padding: 4px 8px; border-color: var(--border-light);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button type="button" class="shp-attr-close-btn" onclick="closeShpAttributesModal()" aria-label="Tutup">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <div class="modal-coords-body" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.85rem;">
-        <div class="card-equal-grid tri-grid" style="margin-bottom: 0;">
-          <div class="stat-card" style="padding: 0.65rem 0.85rem;">
-            <span class="stat-label">Nama Berkas</span>
-            <span id="shpAttrStatFile" class="stat-value font-mono" style="font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
+      <div class="shp-attr-body">
+        <div class="shp-attr-stats-grid">
+          <div class="shp-attr-stat-card">
+            <div class="shp-attr-stat-head">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+              <span>Nama Berkas</span>
+            </div>
+            <div id="shpAttrStatFile" class="shp-attr-stat-val val-file" title="-">-</div>
           </div>
-          <div class="stat-card" style="padding: 0.65rem 0.85rem;">
-            <span class="stat-label">Jumlah Record</span>
-            <span id="shpAttrStatRecords" class="stat-value highlight" style="font-size: 0.88rem;">0 Baris</span>
+          <div class="shp-attr-stat-card">
+            <div class="shp-attr-stat-head">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span>Jumlah Record</span>
+            </div>
+            <div id="shpAttrStatRecords" class="shp-attr-stat-val val-records">0 Baris</div>
           </div>
-          <div class="stat-card" style="padding: 0.65rem 0.85rem;">
-            <span class="stat-label">Kolom Atribut</span>
-            <span id="shpAttrStatFields" class="stat-value emerald" style="font-size: 0.88rem;">0 Kolom</span>
+          <div class="shp-attr-stat-card">
+            <div class="shp-attr-stat-head">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+              <span>Kolom Atribut</span>
+            </div>
+            <div id="shpAttrStatFields" class="shp-attr-stat-val val-fields">0 Kolom</div>
           </div>
         </div>
 
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-          <div style="flex: 1; min-width: 220px; position: relative;">
-            <input type="text" id="inputFilterShpAttr" class="form-input" placeholder="Cari kata kunci atau nilai atribut..." oninput="filterShpAttrTable(this.value)" style="font-size: 0.74rem; padding: 6px 10px; width: 100%;">
+        <div class="shp-attr-toolbar">
+          <div class="shp-attr-search-wrap">
+            <svg class="shp-attr-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="inputFilterShpAttr" class="shp-attr-search-input" placeholder="Cari kata kunci atau nilai atribut..." oninput="filterShpAttrTable(this.value)">
           </div>
-          <span id="shpAttrFilterCount" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">0 record</span>
-          <button type="button" class="btn btn-outline" onclick="copyShpAttrCsv()" style="font-size: 0.72rem; padding: 5px 12px; white-space: nowrap; height: 32px;" title="Salin seluruh tabel format CSV">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            <span>Salin CSV</span>
-          </button>
-          <button type="button" class="btn btn-outline" onclick="copyShpAttrJson()" style="font-size: 0.72rem; padding: 5px 12px; white-space: nowrap; height: 32px;" title="Salin format JSON">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span>Salin JSON</span>
-          </button>
+          <div class="shp-attr-actions">
+            <span id="shpAttrFilterCount" class="shp-attr-counter-badge">0 record</span>
+            <button type="button" class="shp-attr-action-btn" onclick="copyShpAttrCsv()" title="Salin seluruh tabel format CSV">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>Salin CSV</span>
+            </button>
+            <button type="button" class="shp-attr-action-btn" onclick="copyShpAttrJson()" title="Salin seluruh tabel format JSON">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span>Salin JSON</span>
+            </button>
+          </div>
         </div>
 
-        <div class="coords-table-wrap" style="max-height: 400px; overflow: auto; border: 1px solid var(--border-light); border-radius: var(--radius-sm); background: #ffffff;">
-          <table class="coords-table" id="tableShpAttrContent" style="width: 100%; white-space: nowrap; font-size: 0.74rem; border-collapse: separate; border-spacing: 0;">
+        <div class="shp-attr-table-wrap">
+          <table class="shp-attr-table" id="tableShpAttrContent">
             <thead id="shpAttrThead">
-              <tr><th style="padding: 8px 10px; width: 44px; text-align: center; background: var(--bg-subtle); border-bottom: 2px solid var(--border-light);">#</th><th style="padding: 8px 12px; text-align: left; background: var(--bg-subtle); border-bottom: 2px solid var(--border-light);">Atribut</th></tr>
+              <tr>
+                <th class="shp-attr-col-idx">#</th>
+                <th>Atribut</th>
+              </tr>
             </thead>
             <tbody id="shpAttrTbody">
-              <tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: 2rem;">Belum ada data Shapefile yang dimuat.</td></tr>
+              <tr>
+                <td colspan="2" class="shp-attr-empty-cell">
+                  <div class="shp-attr-empty-content">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                    <span>Belum ada data Shapefile (.dbf) yang dimuat.</span>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="modal-coords-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.1rem; border-top: 1px solid var(--border-light); background: var(--bg-subtle);">
-        <span style="font-size: 0.68rem; color: var(--text-muted);">
+      <div class="shp-attr-footer">
+        <span class="shp-attr-footer-attribution">
           Duta Digital Agensi (dutamik.id) : Duta Media Informasi berKarya : Sukoharjo, Jawa Tengah
         </span>
-        <button type="button" class="btn btn-primary" onclick="closeShpAttributesModal()" style="font-size: 0.74rem; padding: 5px 16px;">
+        <button type="button" class="shp-attr-btn-close" onclick="closeShpAttributesModal()">
           Tutup
         </button>
       </div>
