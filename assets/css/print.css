@@ -230,11 +230,19 @@
       flex: 1 1 0;
       min-height: 0;
       overflow: auto;
-      background-color: #525659;
-      padding: 2rem;
+      background-color: #334155;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
+    }
+    .print-sheet-scale-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin: auto;
+      flex-shrink: 0;
     }
     .print-sheet-paper {
       background-color: #ffffff;
@@ -603,19 +611,20 @@
     }
     .print-legend-list {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-      gap: 2.5px 6px;
+      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+      gap: 3px 6px;
       overflow: hidden !important;
       max-height: none !important;
+      align-content: start;
     }
     .print-legend-item {
       display: flex;
       align-items: center;
       gap: 5px;
-      line-height: 1.15;
+      line-height: 1.5 !important;
     }
     .print-legend-symbol {
-      width: 18px;
+      width: 16px;
       height: 10px;
       display: flex;
       align-items: center;
@@ -623,19 +632,19 @@
       flex-shrink: 0;
     }
     .print-legend-swatch {
-      width: 16px;
+      width: 14px;
       height: 8px;
       border: 1px solid #000000;
       box-sizing: border-box;
     }
     .print-legend-line {
-      width: 16px;
+      width: 14px;
       height: 2px;
       box-sizing: border-box;
     }
     .print-legend-point {
-      width: 7px;
-      height: 7px;
+      width: 6.5px;
+      height: 6.5px;
       border-radius: 50%;
       box-sizing: border-box;
     }
@@ -643,6 +652,7 @@
       font-size: 7px;
       font-weight: 500;
       color: #0f172a;
+      line-height: 1.5 !important;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -676,27 +686,31 @@
       font-size: 9.5px;
     }
     .print-sheet-paper.a3 .print-legend-list {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 4px 8px;
     }
+    .print-sheet-paper.a3 .print-legend-item {
+      line-height: 1.5 !important;
+    }
     .print-sheet-paper.a3 .print-legend-symbol {
-      width: 24px;
+      width: 20px;
       height: 12px;
     }
     .print-sheet-paper.a3 .print-legend-swatch {
-      width: 20px;
-      height: 10px;
+      width: 18px;
+      height: 9px;
     }
     .print-sheet-paper.a3 .print-legend-line {
-      width: 20px;
+      width: 18px;
       height: 2.5px;
     }
     .print-sheet-paper.a3 .print-legend-point {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
     }
     .print-sheet-paper.a3 .print-legend-item span {
-      font-size: 8.5px;
+      font-size: 8px;
+      line-height: 1.5 !important;
     }
     @page {
       size: A4 landscape;
