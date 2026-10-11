@@ -257,7 +257,11 @@ function togglePrintDimensions(show) {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #ffffff; border: 2px solid #ea580c;"></div>
+              <svg class="print-legend-swatch" width="18" height="12" viewBox="0 0 18 12" style="border: 1.5px solid #ffffff; box-shadow: 0 0 2px rgba(0,0,0,0.85); background: #0284c7; border-radius: 2px; vertical-align: middle;">
+                <line x1="-2" y1="4" x2="6" y2="-4" stroke="#ffffff" stroke-width="1.8"/>
+                <line x1="2" y1="12" x2="14" y2="0" stroke="#ffffff" stroke-width="1.8"/>
+                <line x1="8" y1="14" x2="20" y2="2" stroke="#ffffff" stroke-width="1.8"/>
+              </svg>
             </div>
             <span>Batas Bidang Tanah</span>
           </div>
@@ -718,13 +722,18 @@ function togglePrintDimensions(show) {
       let bounds = null;
 
       if (parts[0] && parts[0].length >= 3) {
+        if (typeof window.ensureBidangHatchPattern === 'function') {
+          window.ensureBidangHatchPattern(printMapInstance);
+        }
         parts.forEach((pList, pIdx) => {
           const latlngs = pList.map(v => [v.lat, v.lng]);
           const poly = L.polygon(latlngs, {
-            color: '#ea580c',
+            color: '#ffffff',
             weight: 3.5,
-            fillColor: '#ea580c',
-            fillOpacity: 0.15,
+            opacity: 1,
+            fillColor: 'url(#bidangHatchPattern)',
+            fillOpacity: 1,
+            className: 'active-cadastre-polygon',
             zIndexOffset: 500
           }).addTo(printMapInstance);
 

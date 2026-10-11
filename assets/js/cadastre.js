@@ -1246,7 +1246,7 @@ function getBpnGatewayBase() {
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
-    function cleanAndDeduplicateVertices(coords, minMeters = 1.5, maxDeg = 14.0) {
+    function cleanAndDeduplicateVertices(coords, minMeters = 0.05, maxDeg = 0.5) {
       if (!coords || coords.length < 3) return coords;
       let pts = coords.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
@@ -1305,7 +1305,7 @@ function getBpnGatewayBase() {
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.8, 15.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.15, 1.0);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();

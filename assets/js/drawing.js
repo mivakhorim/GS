@@ -260,9 +260,57 @@ Server Sumber Data: ${serverName}`;
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
-    function cleanAndDeduplicateVertices(coords, minMeters = 1.5, maxDeg = 14.0) {
+    function ensureBidangHatchPattern(targetMap) {
+      const m = targetMap || (typeof map !== 'undefined' ? map : null);
+      if (!m || !m.getPanes) return;
+      const panes = m.getPanes();
+      const container = panes.overlayPane;
+      if (!container) return;
+      let svg = container.querySelector('svg');
+      if (!svg && m._renderer && m._renderer._container) {
+        svg = m._renderer._container;
+      }
+      if (!svg) svg = container.querySelector('svg');
+      if (!svg) return;
+
+      let defs = svg.querySelector('defs');
+      if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+      }
+      if (!defs.querySelector('#bidangHatchPattern')) {
+        const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+        pattern.setAttribute('id', 'bidangHatchPattern');
+        pattern.setAttribute('width', '16');
+        pattern.setAttribute('height', '16');
+        pattern.setAttribute('patternTransform', 'rotate(45 0 0)');
+        pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+
+        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bgRect.setAttribute('width', '16');
+        bgRect.setAttribute('height', '16');
+        bgRect.setAttribute('fill', '#0284c7');
+        bgRect.setAttribute('fill-opacity', '0.12');
+
+        const hatchLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        hatchLine.setAttribute('x1', '0');
+        hatchLine.setAttribute('y1', '0');
+        hatchLine.setAttribute('x2', '0');
+        hatchLine.setAttribute('y2', '16');
+        hatchLine.setAttribute('stroke', '#ffffff');
+        hatchLine.setAttribute('stroke-width', '2');
+        hatchLine.setAttribute('stroke-opacity', '0.7');
+
+        pattern.appendChild(bgRect);
+        pattern.appendChild(hatchLine);
+        defs.appendChild(pattern);
+      }
+    }
+    window.ensureBidangHatchPattern = ensureBidangHatchPattern;
+
+    function cleanAndDeduplicateVertices(coords, minMeters = 0.05, maxDeg = 0.5) {
       if (!coords || coords.length < 3) return coords;
-      let pts = coords.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
+      let pts = coords.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
         pts.pop();
       }
@@ -319,7 +367,7 @@ Server Sumber Data: ${serverName}`;
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.8, 15.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.15, 1.0);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
@@ -339,8 +387,8 @@ Server Sumber Data: ${serverName}`;
       }
 
       let pts = rawBboxCoords;
-      activeVertices = pts.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.25, 4.0);
+      activeVertices = pts.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.02, 0.25);
 
       const toolbar = document.getElementById('mapPrecisionToolbar');
       if (toolbar) toolbar.style.display = 'flex';
@@ -413,21 +461,26 @@ Server Sumber Data: ${serverName}`;
         liveAreaM2 = calculatePolygonArea(activeVertices);
       }
 
+      ensureBidangHatchPattern(map);
       if (!activePolygonLayer) {
         activePolygonLayer = L.polygon(latlngs, {
-          color: '#ea580c',
+          color: '#ffffff',
           weight: 3.5,
-          fillColor: '#ea580c',
-          fillOpacity: 0.15,
+          opacity: 1,
+          fillColor: 'url(#bidangHatchPattern)',
+          fillOpacity: 1,
+          className: 'active-cadastre-polygon',
           interactive: true
         }).addTo(map);
       } else {
         activePolygonLayer.setLatLngs(latlngs);
         activePolygonLayer.setStyle({
-          color: '#ea580c',
+          color: '#ffffff',
           weight: 3.5,
-          fillColor: '#ea580c',
-          fillOpacity: 0.15
+          opacity: 1,
+          fillColor: 'url(#bidangHatchPattern)',
+          fillOpacity: 1,
+          className: 'active-cadastre-polygon'
         });
       }
       const liveAreaHa = liveAreaM2 / 10000;
@@ -1100,7 +1153,7 @@ Server Sumber Data: ${serverName}`;
           if (Array.isArray(p)) return { lat: Number(p[1]), lng: Number(p[0]) };
           return { lat: Number(p.lat), lng: Number(p.lng) };
         });
-        rawCoords = cleanAndDeduplicateVertices(rawCoords, 0.25, 4.0);
+        rawCoords = cleanAndDeduplicateVertices(rawCoords, 0.05, 0.5);
 
         const existingPolys = [activeVertices, ...mergeParcelsList.map(p => p.coords)];
         const snappedCoords = snapSharedBoundaryVertices(rawCoords, existingPolys, 2.5);
@@ -1328,7 +1381,7 @@ Server Sumber Data: ${serverName}`;
           }
         }
         if (loop.length >= 3) {
-          const cleanLoop = cleanAndDeduplicateVertices(loop, 1.2, 14.0);
+          const cleanLoop = cleanAndDeduplicateVertices(loop, 0.05, 0.5);
           const loopArea = calculatePolygonArea(cleanLoop);
           if (loopArea >= 12.0) {
             loops.push(cleanLoop);
@@ -1427,7 +1480,7 @@ Server Sumber Data: ${serverName}`;
           const mergedRing = result.merged_polygon[0];
           mergedPts = mergedRing.map(p => ({ lat: Number(p[1]), lng: Number(p[0]) }));
         }
-        mergedPts = cleanAndDeduplicateVertices(mergedPts, 1.2, 14.0);
+        mergedPts = cleanAndDeduplicateVertices(mergedPts, 0.05, 0.5);
         for (let iter = 0; iter < 2; iter++) {
           const curGeomArea = calculatePolygonArea(mergedPts);
           if (curGeomArea <= 0 || Math.abs(curGeomArea - targetTotalArea) < 0.0001) break;
