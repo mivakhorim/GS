@@ -6,8 +6,9 @@ function getBpnGatewayBase() {
           return trimmed;
         }
       }
-      if (typeof window !== 'undefined' && window.location && window.location.origin) {
-        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+      if (typeof window !== 'undefined' && window.location) {
+        const port = String(window.location.port || '');
+        if (port === '8085' || port === '8089') {
           return window.location.origin;
         }
       }
@@ -39,16 +40,47 @@ function getBpnGatewayBase() {
     }
 
     function setupPersilLayer() {
+      if (!map.getPane('persilPane')) {
+        const pp = map.createPane('persilPane');
+        pp.style.zIndex = 360;
+        pp.style.pointerEvents = 'none';
+      }
       const persilBase = getBpnGatewayBase();
+      const slider = document.getElementById('persilOpacity');
+      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
       if (persilBase) {
         persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`, {
+          pane: 'persilPane',
           minZoom: 15,
           maxZoom: 26,
           maxNativeZoom: 19,
-          opacity: 0.9,
-          zIndex: 500,
+          opacity: currentOpacity,
+          zIndex: 360,
           updateWhenZooming: false,
           updateInterval: 100
+        });
+        let fallbackTriggered = false;
+        persilLayer.on('tileerror', function() {
+          if (!fallbackTriggered) {
+            fallbackTriggered = true;
+            if (map.hasLayer(persilLayer)) {
+              map.removeLayer(persilLayer);
+              persilLayer = L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
+                layers: 'bhumi:Persil',
+                format: 'image/png',
+                transparent: true,
+                version: '1.1.1',
+                pane: 'persilPane',
+                minZoom: 15,
+                maxZoom: 26,
+                opacity: currentOpacity,
+                zIndex: 360,
+                updateWhenZooming: false,
+                updateInterval: 100
+              });
+              map.addLayer(persilLayer);
+            }
+          }
         });
       } else {
         persilLayer = L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
@@ -56,10 +88,11 @@ function getBpnGatewayBase() {
           format: 'image/png',
           transparent: true,
           version: '1.1.1',
+          pane: 'persilPane',
           minZoom: 15,
           maxZoom: 26,
-          opacity: 0.9,
-          zIndex: 500,
+          opacity: currentOpacity,
+          zIndex: 360,
           updateWhenZooming: false,
           updateInterval: 100
         });
@@ -74,13 +107,15 @@ function getBpnGatewayBase() {
           await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
         } catch (e) {}
         if (persilLayer) {
-          persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
+          if (typeof persilLayer.setUrl === 'function') {
+            persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
+          }
           if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
           persilLayer.redraw();
         }
       } else {
         if (persilLayer) {
-          if (persilLayer.setParams) {
+          if (typeof persilLayer.setParams === 'function') {
             persilLayer.setParams({ _t: Date.now() });
           }
           if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
@@ -188,7 +223,7 @@ function getBpnGatewayBase() {
     function initCekingLayers() {
       if (!map.getPane('thematicPane')) {
         const tp = map.createPane('thematicPane');
-        tp.style.zIndex = 450;
+        tp.style.zIndex = 340;
         tp.style.pointerEvents = 'none';
       }
       const keys = Object.keys(cekingLayers);
@@ -240,6 +275,9 @@ function getBpnGatewayBase() {
 
     function togglePersilLayer(checked) {
       const badge = document.getElementById('badgeStatusBidang');
+      if (!persilLayer) {
+        setupPersilLayer();
+      }
       if (checked) {
         if (!map.hasLayer(persilLayer)) map.addLayer(persilLayer);
         if (badge) { badge.className = 'badge-pill green'; badge.innerText = 'Aktif'; }
@@ -377,7 +415,7 @@ function getBpnGatewayBase() {
 
       const endpointsToTry = [];
       const persilApiBase = getBpnGatewayBase();
-      if (persilApiBase && persilApiBase.startsWith('https://')) {
+      if (persilApiBase && (persilApiBase.startsWith('https://') || persilApiBase.startsWith('http://'))) {
         endpointsToTry.push({ url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 12000 });
       }
 
@@ -432,12 +470,8 @@ function getBpnGatewayBase() {
       };
 
       const endpoints = [];
-      const origin = window.location.origin;
-      if (origin && (origin.indexOf('localhost') !== -1 || origin.indexOf('127.0.0.1') !== -1 || origin.startsWith('http'))) {
-        endpoints.push(`${origin}/api/spatial-status?lat=${lat}&lng=${lng}`);
-      }
       const customBase = getBpnGatewayBase();
-      if (customBase && customBase.startsWith('https://')) {
+      if (customBase && (customBase.startsWith('https://') || customBase.startsWith('http://'))) {
         endpoints.push(`${customBase}/api/spatial-status?lat=${lat}&lng=${lng}`);
       }
       const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
@@ -1000,7 +1034,7 @@ function getBpnGatewayBase() {
       let addr = null;
       let data = null;
 
-      if (isProxyActive && persilApiBase && persilApiBase.startsWith('https://')) {
+      if (isProxyActive && persilApiBase && (persilApiBase.startsWith('https://') || persilApiBase.startsWith('http://'))) {
         try {
           const url = `${persilApiBase}/api/reverse-geocode?lat=${lat}&lng=${lng}`;
           const res = await fetch(url);
@@ -1294,7 +1328,7 @@ function getBpnGatewayBase() {
       const badge = document.getElementById('proxyBadge');
       const text = document.getElementById('proxyText');
       const persilBase = getBpnGatewayBase();
-      if (persilBase && persilBase.startsWith('https://')) {
+      if (persilBase && (persilBase.startsWith('https://') || persilBase.startsWith('http://'))) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 2000);

@@ -219,6 +219,10 @@ async function geocodeAndFly(query, zoomLevel = 14) {
             persilLayer.redraw();
           }
         } else if (persilLayer) {
+          if (typeof persilLayer.setParams === 'function') {
+            persilLayer.setParams({ _t: timestamp });
+          }
+          if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
           persilLayer.redraw();
         }
         if (currentBaseLayer) {

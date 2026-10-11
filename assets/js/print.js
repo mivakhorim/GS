@@ -597,11 +597,11 @@ function togglePrintDimensions(show) {
 
         if (!printMapInstance.getPane('thematicPane')) {
           printMapInstance.createPane('thematicPane');
-          printMapInstance.getPane('thematicPane').style.zIndex = 300;
+          printMapInstance.getPane('thematicPane').style.zIndex = 340;
         }
         if (!printMapInstance.getPane('persilPane')) {
           printMapInstance.createPane('persilPane');
-          printMapInstance.getPane('persilPane').style.zIndex = 350;
+          printMapInstance.getPane('persilPane').style.zIndex = 360;
         }
 
         printMapInstance.on('moveend zoomend', () => {
@@ -611,11 +611,11 @@ function togglePrintDimensions(show) {
       } else {
         if (!printMapInstance.getPane('thematicPane')) {
           printMapInstance.createPane('thematicPane');
-          printMapInstance.getPane('thematicPane').style.zIndex = 300;
+          printMapInstance.getPane('thematicPane').style.zIndex = 340;
         }
         if (!printMapInstance.getPane('persilPane')) {
           printMapInstance.createPane('persilPane');
-          printMapInstance.getPane('persilPane').style.zIndex = 350;
+          printMapInstance.getPane('persilPane').style.zIndex = 360;
         }
       }
 
@@ -663,14 +663,29 @@ function togglePrintDimensions(show) {
         const persilBase = (typeof getBpnGatewayBase === 'function') ? getBpnGatewayBase() : '';
         const pOpacity = (typeof persilLayer.options?.opacity !== 'undefined') ? persilLayer.options.opacity : 0.9;
         if (persilBase) {
-          L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
+          const printPersil = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
             pane: 'persilPane',
             maxZoom: 26,
             maxNativeZoom: 19,
             opacity: pOpacity,
-            zIndex: 350,
+            zIndex: 360,
             crossOrigin: 'anonymous'
           }).addTo(printMapInstance);
+          printPersil.on('tileerror', function() {
+            if (printMapInstance.hasLayer(printPersil)) {
+              printMapInstance.removeLayer(printPersil);
+              L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
+                layers: 'bhumi:Persil',
+                format: 'image/png',
+                transparent: true,
+                version: '1.1.1',
+                pane: 'persilPane',
+                maxZoom: 26,
+                opacity: pOpacity,
+                zIndex: 360
+              }).addTo(printMapInstance);
+            }
+          });
         } else {
           L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
             layers: 'bhumi:Persil',
@@ -680,7 +695,7 @@ function togglePrintDimensions(show) {
             pane: 'persilPane',
             maxZoom: 26,
             opacity: pOpacity,
-            zIndex: 350
+            zIndex: 360
           }).addTo(printMapInstance);
         }
       }

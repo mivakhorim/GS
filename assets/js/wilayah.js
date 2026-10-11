@@ -41,7 +41,7 @@ function copyActiveWilayahToKop() {
       ddProv.disabled = true;
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
+      const hasBackend = Boolean(apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://')));
       if (hasBackend) {
         try {
           const res = await fetch(`${apiBase}/api/wilayah/provinsi`);
@@ -116,7 +116,7 @@ function copyActiveWilayahToKop() {
       }
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
+      const hasBackend = Boolean(apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://')));
       let kabs = null;
 
       if (cacheKabupaten.has(provKode)) {
@@ -182,7 +182,7 @@ function copyActiveWilayahToKop() {
       }
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
+      const hasBackend = Boolean(apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://')));
       let kecs = null;
 
       if (cacheKecamatan.has(kabKode)) {
@@ -249,7 +249,7 @@ function copyActiveWilayahToKop() {
       }
 
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
+      const hasBackend = Boolean(apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://')));
       let desas = null;
 
       if (cacheDesa.has(kecKode)) {
@@ -338,7 +338,7 @@ function copyActiveWilayahToKop() {
       if (!currentSelectedWilayah) return;
       const w = currentSelectedWilayah;
       const apiBase = getBpnGatewayBase();
-      const hasBackend = Boolean(apiBase && apiBase.startsWith('https://'));
+      const hasBackend = Boolean(apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://')));
 
       if (kelurahanHighlightLayer) {
         map.removeLayer(kelurahanHighlightLayer);
@@ -425,7 +425,7 @@ function copyActiveWilayahToKop() {
         try {
           const apiBase = getBpnGatewayBase();
           let items = [];
-          if (isProxyActive && apiBase && apiBase.startsWith('https://')) {
+          if (isProxyActive && apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://'))) {
             try {
               const res = await fetch(`${apiBase}/api/wilayah/search?q=${encodeURIComponent(q)}`);
               if (res.ok) items = await res.json();
