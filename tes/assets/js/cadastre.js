@@ -51,7 +51,9 @@ function getBpnGatewayBase() {
     });
 
     var cadastreVectorLayer = null;
+    var cadastreSvgRenderer = null;
     var cadastreVectorParcelCache = new Map();
+    var isViewportVectorLoading = false;
 
     function setupCadastreVectorLayer() {
       if (!map) return;
@@ -59,8 +61,54 @@ function getBpnGatewayBase() {
         const cvp = map.createPane('cadastreVectorPane');
         cvp.style.zIndex = 370;
       }
+      if (!cadastreSvgRenderer) {
+        cadastreSvgRenderer = L.svg({ padding: 0.5, pane: 'cadastreVectorPane' });
+      }
       if (!cadastreVectorLayer) {
         cadastreVectorLayer = L.featureGroup([], { pane: 'cadastreVectorPane' }).addTo(map);
+      }
+      setupViewportCadastreListener();
+    }
+
+    function setupViewportCadastreListener() {
+      if (!map || map._viewportCadastreAttached) return;
+      map._viewportCadastreAttached = true;
+      let debounceTimer = null;
+      map.on('moveend', () => {
+        if (map.getZoom() < 16) return;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          loadViewportCadastreSvgParcels();
+        }, 450);
+      });
+    }
+
+    async function loadViewportCadastreSvgParcels() {
+      if (!map || map.getZoom() < 16 || isViewportVectorLoading) return;
+      const center = map.getCenter();
+      isViewportVectorLoading = true;
+      try {
+        const persilBase = getBpnGatewayBase();
+        let targetUrl = '';
+        if (isProxyActive && persilBase && (persilBase.startsWith('http://') || persilBase.startsWith('https://'))) {
+          targetUrl = `${persilBase}/api/persil-info?lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${map.getZoom()}`;
+        } else {
+          targetUrl = `http://127.0.0.1:8085/api/persil-info?lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${map.getZoom()}`;
+        }
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 3500);
+        const res = await fetch(targetUrl, { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.found) {
+            const pList = (Array.isArray(data.all_parcels) && data.all_parcels.length > 0) ? data.all_parcels : [data];
+            renderCadastreVectorParcels(pList);
+          }
+        }
+      } catch (e) {
+      } finally {
+        isViewportVectorLoading = false;
       }
     }
 
@@ -81,19 +129,21 @@ function getBpnGatewayBase() {
 
         const latlngs = coords.map(pt => [pt.lat, pt.lng]);
         const vectorPoly = L.polygon(latlngs, {
+          renderer: cadastreSvgRenderer,
           pane: 'cadastreVectorPane',
-          className: 'cadastre-vector-parcel',
+          className: 'cadastre-svg-parcel',
           color: '#0284c7',
           weight: 2,
           opacity: currentOpacity,
           fillColor: '#0ea5e9',
-          fillOpacity: currentOpacity * 0.15,
+          fillOpacity: currentOpacity * 0.16,
           interactive: true,
           bubblingMouseEvents: false
         });
 
         const nibLabel = parcel.nib && parcel.nib !== '-' ? `NIB ${parcel.nib}` : 'Bidang Terdaftar';
-        const luasLabel = parcel.luas_m2 || parcel.luas ? `${Math.round(parcel.luas_m2 || parcel.luas).toLocaleString('id-ID')} m²` : '';
+        const exactGeodeticArea = calculatePolygonArea(coords);
+        const luasLabel = exactGeodeticArea > 0 ? `${Math.round(exactGeodeticArea).toLocaleString('id-ID')} m²` : '';
         vectorPoly.bindTooltip(`<div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#0a2e5c;">${nibLabel}</div>${luasLabel ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#0284c7;">${luasLabel}</div>` : ''}`, {
           sticky: true,
           direction: 'top',
@@ -112,7 +162,7 @@ function getBpnGatewayBase() {
           this.setStyle({
             weight: 2,
             color: '#0284c7',
-            fillOpacity: currentOpacity * 0.15
+            fillOpacity: currentOpacity * 0.16
           });
         });
 
@@ -133,7 +183,83 @@ function getBpnGatewayBase() {
 
       const lat = clickLatLng ? clickLatLng.lat : coords[0].lat;
       const lng = clickLatLng ? clickLatLng.lng : coords[0].lng;
-      handleMapClick(lat, lng, true);
+      const exactArea = calculatePolygonArea(coords);
+
+      isParcelLocked = false;
+      isGeometryManuallyEdited = false;
+      rawInitialBboxCoords = coords;
+
+      activePinData = {
+        lat: lat,
+        lng: lng,
+        fid: parcel.fid || parcel.persilpasifid || ('BIDANG-' + (parcel.nib || 'TERDAFTAR')),
+        nib: parcel.nib && parcel.nib !== '-' ? parcel.nib : '-',
+        nib_lengkap: parcel.nib_lengkap || parcel.nib || '-',
+        luas_m2: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
+        luas_ha: (parcel.luas_m2 && parcel.luas_m2 > 0) ? roundAreaHa6(parcel.luas_m2) : roundAreaHa6(exactArea),
+        luas_bpn: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
+        tipe_hak: parcel.tipe_hak || 'TERDAFTAR ATR/BPN',
+        nomor_hak: parcel.nomor_hak || '-',
+        tahun: parcel.tahun || '-',
+        wilayah: parcel.wilayah || '-',
+        kelurahan: parcel.kelurahan || parcel.desa || '-',
+        kecamatan: parcel.kecamatan || '-',
+        kabupaten: parcel.kabupaten || '-',
+        polygon_coords: coords,
+        all_parcels: parcel.all_parcels || [parcel],
+        is_official_cadastre: true,
+        status_validasi: 'Kadaster Resmi Presisi',
+        source: 'VEKTOR PERSIL SVG PRESISI'
+      };
+
+      initCanvasRebuilder(lat, lng, activePinData.luas_m2, coords);
+
+      const badge = document.getElementById('badgeRebuildStatus');
+      if (badge) {
+        badge.className = 'badge-pill green';
+        badge.innerText = 'Kadaster Resmi Presisi';
+      }
+
+      const hud = document.getElementById('canvasHud');
+      if (hud) {
+        hud.style.display = 'flex';
+        const elHudNib = document.getElementById('hudNib');
+        if (elHudNib) elHudNib.innerText = activePinData.nib !== '-' ? `NIB: ${activePinData.nib}` : 'Bidang Terdaftar';
+        const elHudArea = document.getElementById('hudBpnArea');
+        if (elHudArea) elHudArea.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+      }
+
+      const noPin = document.getElementById('noPinAlert');
+      const foundBox = document.getElementById('persilFoundBox');
+      const notFoundBox = document.getElementById('persilNotFoundBox');
+      if (noPin) noPin.style.display = 'none';
+      if (notFoundBox) notFoundBox.style.display = 'none';
+      if (foundBox) {
+        foundBox.style.display = 'flex';
+        foundBox.classList.remove('data-loading');
+      }
+
+      const elCoords = document.getElementById('pinCoordsText');
+      if (elCoords) elCoords.innerText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const elNib = document.getElementById('dtNib');
+      if (elNib) elNib.innerText = activePinData.nib;
+      const elLuas = document.getElementById('dtLuas');
+      if (elLuas) elLuas.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+
+      showToast(`Bidang persil resmi terdeteksi: NIB ${activePinData.nib}`, 'success');
+
+      if (!parcel.wilayah || parcel.wilayah === '-') {
+        fetchLocationDetails(lat, lng).then(loc => {
+          if (loc && activePinData) {
+            const locStr = [loc.subdistrict || loc.village, loc.district, loc.city || loc.regency].filter(Boolean).join(', ');
+            if (locStr) {
+              activePinData.wilayah = locStr;
+              const elLoc = document.getElementById('dtWilayah');
+              if (elLoc) elLoc.innerText = locStr;
+            }
+          }
+        });
+      }
     }
 
     function setupPersilLayer() {
