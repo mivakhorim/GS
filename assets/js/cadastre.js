@@ -51,46 +51,76 @@ function getBpnGatewayBase() {
       const persilBase = getBpnGatewayBase();
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
-      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
-      const cloudTileUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=tile&z={z}&x={x}&y={y}`;
-      const tileUrl = persilBase
-        ? `${persilBase}/persil/{z}/{x}/{y}.webp`
-        : cloudTileUrl;
 
-      persilLayer = L.tileLayer(tileUrl, {
-        pane: 'persilPane',
-        minZoom: 15,
-        maxZoom: 26,
-        maxNativeZoom: 19,
-        opacity: currentOpacity,
-        zIndex: 360,
-        updateWhenZooming: false,
-        updateInterval: 100
-      });
+      if (persilBase) {
+        persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
+          pane: 'persilPane',
+          minZoom: 15,
+          maxZoom: 26,
+          maxNativeZoom: 19,
+          opacity: currentOpacity,
+          zIndex: 360,
+          updateWhenZooming: false,
+          updateInterval: 100
+        });
+        persilLayer.on('tileerror', function() {
+          if (!persilLayer._fallbackActive) {
+            persilLayer._fallbackActive = true;
+            if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
+            persilLayer = L.tileLayer.wms('https://bhumi.atrbpn.go.id/mprx/service', {
+              layers: 'bhumi_persil',
+              format: 'image/png',
+              transparent: true,
+              version: '1.3.0',
+              crs: L.CRS.EPSG3857,
+              pane: 'persilPane',
+              minZoom: 15,
+              maxZoom: 26,
+              opacity: currentOpacity,
+              zIndex: 360,
+              updateWhenZooming: false,
+              updateInterval: 100
+            });
+            map.addLayer(persilLayer);
+          }
+        });
+      } else {
+        persilLayer = L.tileLayer.wms('https://bhumi.atrbpn.go.id/mprx/service', {
+          layers: 'bhumi_persil',
+          format: 'image/png',
+          transparent: true,
+          version: '1.3.0',
+          crs: L.CRS.EPSG3857,
+          pane: 'persilPane',
+          minZoom: 15,
+          maxZoom: 26,
+          opacity: currentOpacity,
+          zIndex: 360,
+          updateWhenZooming: false,
+          updateInterval: 100
+        });
+      }
       persilLayer.addTo(map);
     }
 
     async function refreshPersilTiles() {
       const persilBase = getBpnGatewayBase();
-      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
       if (persilBase) {
         try {
           await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
         } catch (e) {}
-        if (persilLayer) {
-          if (typeof persilLayer.setUrl === 'function') {
-            persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
-          }
+        if (persilLayer && typeof persilLayer.setUrl === 'function') {
+          persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
           if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
           persilLayer.redraw();
         }
       } else {
         if (persilLayer) {
-          if (typeof persilLayer.setUrl === 'function') {
-            persilLayer.setUrl(`${sbUrl}/functions/v1/cadastre-gateway?action=tile&z={z}&x={x}&y={y}&t=${Date.now()}`);
+          if (typeof persilLayer.setParams === 'function') {
+            persilLayer.setParams({ t: Date.now() });
+          } else if (typeof persilLayer.redraw === 'function') {
+            persilLayer.redraw();
           }
-          if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
-          persilLayer.redraw();
         }
       }
       showToast('Peta bidang persil diperbarui.', 'success');
@@ -286,6 +316,11 @@ function getBpnGatewayBase() {
           url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`,
           timeout: 6000
         });
+      } else {
+        endpointsToTry.push({
+          url: `http://127.0.0.1:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`,
+          timeout: 2500
+        });
       }
 
       const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
@@ -293,7 +328,7 @@ function getBpnGatewayBase() {
       endpointsToTry.push({
         url: `${sbUrl}/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-        timeout: 10000
+        timeout: 8000
       });
 
       for (const item of endpointsToTry) {
@@ -693,7 +728,7 @@ function getBpnGatewayBase() {
               elLuasBpn.innerText = `${Math.round(activePinData.luas_terdaftar_m2).toLocaleString('id-ID')} m²`;
             } else {
               elLuasBpn.className = 'stat-value offline';
-              elLuasBpn.innerText = 'Belum Terhubung Server';
+              elLuasBpn.innerText = 'Server Offline';
             }
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
@@ -835,7 +870,7 @@ function getBpnGatewayBase() {
           const elLuasBpn = document.getElementById('pinLuasBpnText');
           if (elLuasBpn) {
             elLuasBpn.className = 'stat-value offline';
-            elLuasBpn.innerText = 'Belum Terhubung Server';
+            elLuasBpn.innerText = 'Server Offline';
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
@@ -849,7 +884,7 @@ function getBpnGatewayBase() {
           const elStatusValidasi = document.getElementById('pinStatusValidasiText');
           if (elStatusValidasi) {
             elStatusValidasi.className = 'status-offline-tag';
-            elStatusValidasi.innerText = 'Belum Terhubung Server';
+            elStatusValidasi.innerText = 'Server Offline';
           }
           const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
           if (elPinServer) {
@@ -886,7 +921,7 @@ function getBpnGatewayBase() {
             if (elHudNib) elHudNib.innerText = lokasiFallback;
             const elHudArea = document.getElementById('hudBpnArea');
             if (elHudArea) {
-              elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+              elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
             }
           }
 

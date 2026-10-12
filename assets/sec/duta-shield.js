@@ -97,7 +97,7 @@
   }
 
   async function loadPayload(url) {
-    const cacheBust = '?v=0.90_' + Date.now();
+    const cacheBust = '?v=0.92_' + Date.now();
     const resp = await fetch(url + cacheBust);
     if (!resp.ok) {
       throw new Error('Arsip data tidak dapat diakses.');

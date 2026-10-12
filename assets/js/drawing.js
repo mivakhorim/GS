@@ -96,7 +96,7 @@ function createPolygonFromBatchCoords() {
       const elLuasBpn = document.getElementById('pinLuasBpnText');
       if (elLuasBpn) {
         elLuasBpn.className = 'stat-value offline';
-        elLuasBpn.innerText = 'Belum Terhubung Server';
+        elLuasBpn.innerText = 'Server Offline';
       }
       const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
       if (typeof renderCadastralProFields === 'function') {
@@ -105,11 +105,11 @@ function createPolygonFromBatchCoords() {
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
       if (elStatusValidasi) {
         elStatusValidasi.className = 'status-offline-tag';
-        elStatusValidasi.innerText = 'Belum Terhubung Server';
+        elStatusValidasi.innerText = 'Server Offline';
       }
       const elHudArea = document.getElementById('hudBpnArea');
       if (elHudArea) {
-        elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+        elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
       }
       const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
       if (elPinServer && typeof getCadastreServerMode === 'function') {
@@ -149,7 +149,7 @@ function createPolygonFromBatchCoords() {
         return;
       }
       const serverName = (typeof getCadastreServerMode === 'function' && getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
-      const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0) ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : 'Belum Terhubung Server';
+      const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0) ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : 'Server Offline';
       const summary = `DATA RESMI BIDANG TANAH KADASTRAL
 
 Nomor Identifikasi Bidang (NIB): ${activePinData.nib || '-'}
@@ -869,7 +869,7 @@ Server Sumber Data: ${serverName}`;
           elLuasBpn.innerText = formatAreaM2(registeredBpnArea);
         } else {
           elLuasBpn.className = 'stat-value offline';
-          elLuasBpn.innerText = 'Belum Terhubung Server';
+          elLuasBpn.innerText = 'Server Offline';
         }
       }
 
@@ -884,8 +884,8 @@ Server Sumber Data: ${serverName}`;
       } else {
         const diffPctEl = document.getElementById('diffPercentText');
         const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
-        if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+        if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
+        if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
       }
 
       if (isGeometryManuallyEdited) {

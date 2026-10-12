@@ -900,6 +900,7 @@ function latLngToUtm(lat, lon) {
     window.checkPaymentStatusLive = function() {};
     window.cancelAndClearCurrentPendingPayment = function() {};
     window.isMemberProActive = function() { return false; };
+    window.isMemberAdminActive = function() { return false; };
     window.currentMemberProfile = function() {
       return { role: 'free', status: 'none', email: '', name: '', expires_at: null };
     };

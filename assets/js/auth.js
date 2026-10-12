@@ -37,9 +37,22 @@ function closeServerModal() {
     function verifyProLicenseIntegrity() {
       if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) return false;
       if (!currentMemberSession.access_token) return false;
-      if (_memberSecureState.role !== 'pro' || _memberSecureState.status !== 'active') return false;
+      const role = String(_memberSecureState.role || '').toLowerCase();
+      const status = String(_memberSecureState.status || '').toLowerCase();
+      const isAllowed = (role === 'pro' || role === 'admin');
+      if (!isAllowed || status !== 'active') return false;
       if (_memberSecureState.email !== currentMemberSession.user.email) return false;
-      if (_memberSecureState.expires_at && new Date(_memberSecureState.expires_at) <= new Date()) return false;
+      if (role !== 'admin' && _memberSecureState.expires_at && new Date(_memberSecureState.expires_at) <= new Date()) return false;
+      return true;
+    }
+
+    function verifyAdminLicenseIntegrity() {
+      if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) return false;
+      if (!currentMemberSession.access_token) return false;
+      const role = String(_memberSecureState.role || '').toLowerCase();
+      const status = String(_memberSecureState.status || '').toLowerCase();
+      if (role !== 'admin' || status !== 'active') return false;
+      if (_memberSecureState.email !== currentMemberSession.user.email) return false;
       return true;
     }
 
@@ -49,8 +62,14 @@ function closeServerModal() {
         writable: false,
         configurable: false
       });
+      Object.defineProperty(window, 'isMemberAdminActive', {
+        value: verifyAdminLicenseIntegrity,
+        writable: false,
+        configurable: false
+      });
     } catch (e) {
       window.isMemberProActive = verifyProLicenseIntegrity;
+      window.isMemberAdminActive = verifyAdminLicenseIntegrity;
     }
 
     function initSupabase() {
@@ -276,10 +295,14 @@ function closeServerModal() {
       const userBody = document.getElementById('memberModalBodyUser');
 
       const isPro = isMemberProActive();
+      const isAdmin = (typeof isMemberAdminActive === 'function') ? isMemberAdminActive() : (_memberSecureState.role === 'admin');
       const isLoggedIn = !!currentMemberSession?.user;
 
       if (headerBadge) {
-        if (isPro) {
+        if (isAdmin) {
+          headerBadge.textContent = 'ADMIN';
+          headerBadge.className = 'tier-tag pro';
+        } else if (isPro) {
           headerBadge.textContent = 'PRO';
           headerBadge.className = 'tier-tag pro';
         } else {
@@ -389,7 +412,16 @@ function closeServerModal() {
         if (emailEl) emailEl.textContent = currentMemberProfile.email || '-';
         if (avatarEl) avatarEl.textContent = (currentMemberProfile.name || currentMemberProfile.email || 'M').charAt(0).toUpperCase();
 
-        if (isPro) {
+        if (isAdmin) {
+          if (badgeEl) {
+            badgeEl.className = 'member-plan-badge pro';
+            badgeEl.textContent = 'ADMINISTRATOR';
+          }
+          if (alertEl) alertEl.style.display = 'none';
+          if (thankYouCard) thankYouCard.style.display = 'block';
+          if (qrisBtn) qrisBtn.style.display = 'none';
+          if (upgradeBtn) upgradeBtn.style.display = 'none';
+        } else if (isPro) {
           if (badgeEl) {
             badgeEl.className = 'member-plan-badge pro';
             badgeEl.textContent = 'PRO MEMBER RESMI';
