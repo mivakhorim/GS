@@ -646,8 +646,11 @@ function closeServerModal() {
 
     function initSecurityShield() {
       document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        return false;
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+          e.preventDefault();
+          return false;
+        }
       }, true);
 
       document.addEventListener('keydown', function(e) {
@@ -665,42 +668,6 @@ function closeServerModal() {
           return false;
         }
       }, true);
-
-      const securityObserver = new MutationObserver(function(mutations) {
-        for (let i = 0; i < mutations.length; i++) {
-          const m = mutations[i];
-          if (m.removedNodes && m.removedNodes.length > 0) {
-            for (let j = 0; j < m.removedNodes.length; j++) {
-              const node = m.removedNodes[j];
-              const tag = node.nodeName ? node.nodeName.toUpperCase() : '';
-              if (tag === 'SCRIPT' || tag === 'LINK' || (node.id && (node.id === 'map' || node.id === 'sidebar' || node.id === 'boxEkspor'))) {
-                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#ffffff;font-family:sans-serif;text-align:center;padding:2rem;"><div><h2 style="color:#ef4444;margin-bottom:0.75rem;">Peringatan Keamanan</h2><p>Komponen sistem terdeteksi dimanipulasi atau dihapus. Memuat ulang sistem...</p></div></div>';
-                setTimeout(() => { window.location.reload(); }, 400);
-                return;
-              }
-            }
-          }
-        }
-      });
-      securityObserver.observe(document.documentElement, { childList: true, subtree: true });
-
-      setInterval(function() {
-        const scripts = document.querySelectorAll('script[src*="assets/js/"]');
-        if (scripts.length < 5) {
-          window.location.reload();
-        }
-      }, 2000);
-
-      setInterval(function() {
-        const start = Date.now();
-        (function() {}.constructor('debugger')());
-        if (Date.now() - start > 100) {
-          try {
-            console.clear();
-            console.warn('%cPERINGATAN KEAMANAN: Sistem Duta GeoSpasi dilindungi oleh Security Shield. Segala tindakan inspeksi kode atau injeksi skrip dilarang keras.', 'color:#dc2626;font-size:14px;font-weight:bold;');
-          } catch (e) {}
-        }
-      }, 3000);
 
       const criticalGlobals = [
         'isMemberProActive',

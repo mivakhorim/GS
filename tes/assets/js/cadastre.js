@@ -336,6 +336,7 @@ function getBpnGatewayBase() {
       if (customBase && (customBase.startsWith('https://') || customBase.startsWith('http://'))) {
         endpoints.push(`${customBase}/api/spatial-status?lat=${lat}&lng=${lng}`);
       }
+      endpoints.push(`/api/spatial-status?lat=${lat}&lng=${lng}`);
       const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
       const sbUrl = SUPABASE_PROJECT_URL || 'https://vezruyffzmabhtylxigc.supabase.co';
       endpoints.push({
@@ -890,10 +891,8 @@ function getBpnGatewayBase() {
             badge.className = 'badge-pill yellow';
             badge.innerText = 'Delineasi Mandiri Aktif';
           }
-          showToast('Batas bidang tanah dibuat aktif di titik klik. Titik patok dapat langsung digeser, ditambah, atau disesuaikan.', 'info');
         }
       } catch (err) {
-        showToast('Terjadi kesalahan saat memuat data bidang. Silakan coba kembali.', 'warn');
       } finally {
         if (loadingBar) loadingBar.classList.remove('active');
         if (foundBox) foundBox.classList.remove('data-loading');
