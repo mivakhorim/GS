@@ -936,28 +936,50 @@ Server Sumber Data: ${serverName}`;
 
         partList.forEach((v, idx) => {
           const nodeLabel = parts.length > 1 ? `${pfx}${idx + 1}` : `P${idx + 1}`;
+          const isLocked = isVertexLocked(pIdx, idx);
           const nodeIcon = L.divIcon({
             className: 'vertex-pin',
-            html: `<div class="custom-vertex-node">${nodeLabel}</div>`,
-            iconSize: [18, 18],
-            iconAnchor: [9, 9]
+            html: `<div class="custom-vertex-node ${isLocked ? 'vertex-locked' : ''}">${nodeLabel}${isLocked ? ' 🔒' : ''}</div>`,
+            iconSize: [isLocked ? 24 : 18, 18],
+            iconAnchor: [isLocked ? 12 : 9, 9]
           });
 
           const marker = L.marker([v.lat, v.lng], {
             icon: nodeIcon,
-            draggable: true,
-            zIndexOffset: 1000
+            draggable: !isLocked,
+            zIndexOffset: isLocked ? 1200 : 1000
           }).addTo(map);
+          marker._partIdx = pIdx;
+          marker._vertIdx = idx;
 
           const popupContent = `
-            <div style="font-family:'Inter',sans-serif;font-size:11px;padding:4px;min-width:160px;">
+            <div style="font-family:'Inter',sans-serif;font-size:11px;padding:4px;min-width:170px;">
               <div style="font-weight:700;margin-bottom:3px;color:var(--text-main);display:flex;justify-content:space-between;align-items:center;">
-                <span>Patok ${nodeLabel}</span>
+                <span>Patok ${nodeLabel} ${isLocked ? '<span style="color:#dc2626;font-size:9.5px;font-weight:800;">[Terkunci]</span>' : ''}</span>
                 <span style="font-family:'JetBrains Mono',monospace;color:var(--text-muted);font-size:9.5px;">#${idx+1}</span>
               </div>
               <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-sub);margin-bottom:6px;background:var(--bg-subtle);padding:3px 6px;border-radius:4px;border:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
-                <span>${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</span>
+                <span id="vCoordText_${pIdx}_${idx}">${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</span>
                 <button type="button" style="border:none;background:none;cursor:pointer;color:var(--brand-primary);font-size:10px;font-weight:700;padding:0 2px;" onclick="window.editVertexCoordinate(${pIdx}, ${idx})" title="Edit Koordinat">Edit</button>
+              </div>
+              <div style="margin-bottom:6px;background:var(--bg-subtle);padding:5px;border-radius:4px;border:1px solid var(--border-light);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                  <span style="font-weight:700;font-size:9.5px;color:var(--text-main);">Geser Akurat 1 cm</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--accent);font-weight:700;">±0.01m</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3, 28px);gap:3px;justify-content:center;">
+                  <div></div>
+                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'up', 1)" title="Geser 1 cm ke Utara (Atas)">▲</button>
+                  <div></div>
+                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'left', 1)" title="Geser 1 cm ke Barat (Kiri)">◀</button>
+                  <button type="button" class="btn-lock-toggle ${isLocked ? 'locked' : ''}" onclick="window.toggleVertexLockFromPopup(${pIdx}, ${idx})" title="${isLocked ? 'Buka Kunci Patok' : 'Kunci Patok (Statis saat Reskala Luas)'}">
+                    ${isLocked ? '🔒' : '🔓'}
+                  </button>
+                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'right', 1)" title="Geser 1 cm ke Timur (Kanan)">▶</button>
+                  <div></div>
+                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'down', 1)" title="Geser 1 cm ke Selatan (Bawah)">▼</button>
+                  <div></div>
+                </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
@@ -2376,4 +2398,78 @@ Server Sumber Data: ${serverName}`;
       cleanActiveVerticesManual();
       showToast('Titik sudut batas berhasil dirapikan.', 'success');
     }
+
+    window.lockedVertexSet = window.lockedVertexSet || new Set();
+
+    function isVertexLocked(pIdx, idx) {
+      return window.lockedVertexSet.has(`${pIdx}_${idx}`);
+    }
+
+    function toggleVertexLock(pIdx, idx) {
+      const k = `${pIdx}_${idx}`;
+      if (window.lockedVertexSet.has(k)) {
+        window.lockedVertexSet.delete(k);
+      } else {
+        window.lockedVertexSet.add(k);
+      }
+      return window.lockedVertexSet.has(k);
+    }
+
+    function unlockAllVertices() {
+      window.lockedVertexSet.clear();
+      renderCanvasPolygon(true);
+      showToast('Seluruh patok berhasil dibuka kunci (bebas diskala).', 'info');
+    }
+
+    function toggleVertexLockFromPopup(pIdx, idx) {
+      const locked = toggleVertexLock(pIdx, idx);
+      showToast(locked ? `Patok #${idx+1} dikunci (posisi statis saat penyesuaian luas).` : `Patok #${idx+1} dibuka (bebas diskala luas).`, 'info');
+      renderCanvasPolygon(true);
+    }
+
+    function nudgeVertexRealCm(pIdx, idx, dir, cm = 1.0) {
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const targetPart = parts[pIdx] || activeVertices;
+      if (!targetPart || !targetPart[idx]) return;
+
+      const v = targetPart[idx];
+      const meters = (Number(cm) || 1.0) / 100.0;
+      const dLat = meters / 111320.0;
+      const cosLat = Math.cos(v.lat * Math.PI / 180.0);
+      const dLng = meters / (111320.0 * (Math.abs(cosLat) > 0.0001 ? cosLat : 1.0));
+
+      let newLat = v.lat;
+      let newLng = v.lng;
+
+      if (dir === 'up') newLat += dLat;
+      else if (dir === 'down') newLat -= dLat;
+      else if (dir === 'left') newLng -= dLng;
+      else if (dir === 'right') newLng += dLng;
+
+      newLat = Number(newLat.toFixed(7));
+      newLng = Number(newLng.toFixed(7));
+
+      targetPart[idx] = { lat: newLat, lng: newLng };
+      if (parts.length === 1) activeVertices[idx] = { lat: newLat, lng: newLng };
+      isGeometryManuallyEdited = true;
+
+      if (vertexMarkers && vertexMarkers.length > 0) {
+        const targetMarker = vertexMarkers.find(m => m && m._partIdx === pIdx && m._vertIdx === idx);
+        if (targetMarker) {
+          targetMarker.setLatLng([newLat, newLng]);
+        }
+      }
+
+      const coordEl = document.getElementById(`vCoordText_${pIdx}_${idx}`);
+      if (coordEl) coordEl.innerText = `${newLat.toFixed(6)}, ${newLng.toFixed(6)}`;
+
+      renderCanvasPolygon(false);
+    }
+
+    window.isVertexLocked = isVertexLocked;
+    window.toggleVertexLock = toggleVertexLock;
+    window.unlockAllVertices = unlockAllVertices;
+    window.toggleVertexLockFromPopup = toggleVertexLockFromPopup;
+    window.nudgeVertexRealCm = nudgeVertexRealCm;
+
 

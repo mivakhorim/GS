@@ -925,6 +925,19 @@
     .btn-block {
       width: 100%;
     }
+    .btn-grid-action {
+      min-width: 0;
+      padding: 0.45rem 0.35rem;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-grid-action span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .btn-group {
       display: flex;
       gap: 0.45rem;

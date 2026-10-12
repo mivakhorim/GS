@@ -50,15 +50,119 @@ function getBpnGatewayBase() {
       }
     });
 
+    var cadastreVectorLayer = null;
+    var cadastreVectorParcelCache = new Map();
+
+    function setupCadastreVectorLayer() {
+      if (!map) return;
+      if (!map.getPane('cadastreVectorPane')) {
+        const cvp = map.createPane('cadastreVectorPane');
+        cvp.style.zIndex = 370;
+      }
+      if (!cadastreVectorLayer) {
+        cadastreVectorLayer = L.featureGroup([], { pane: 'cadastreVectorPane' }).addTo(map);
+      }
+    }
+
+    function renderCadastreVectorParcels(parcelsList) {
+      if (!map || !Array.isArray(parcelsList) || parcelsList.length === 0) return;
+      setupCadastreVectorLayer();
+
+      const slider = document.getElementById('persilOpacity');
+      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
+
+      parcelsList.forEach(parcel => {
+        if (!parcel) return;
+        const coords = parcel.polygon_coords || parcel.coordinates;
+        if (!Array.isArray(coords) || coords.length < 3) return;
+
+        const pid = String(parcel.fid || parcel.persilpasifid || parcel.nib || `${coords[0].lat.toFixed(5)}_${coords[0].lng.toFixed(5)}`);
+        if (cadastreVectorParcelCache.has(pid)) return;
+
+        const latlngs = coords.map(pt => [pt.lat, pt.lng]);
+        const vectorPoly = L.polygon(latlngs, {
+          pane: 'cadastreVectorPane',
+          className: 'cadastre-vector-parcel',
+          color: '#0284c7',
+          weight: 2,
+          opacity: currentOpacity,
+          fillColor: '#0ea5e9',
+          fillOpacity: currentOpacity * 0.15,
+          interactive: true,
+          bubblingMouseEvents: false
+        });
+
+        const nibLabel = parcel.nib && parcel.nib !== '-' ? `NIB ${parcel.nib}` : 'Bidang Terdaftar';
+        const luasLabel = parcel.luas_m2 || parcel.luas ? `${Math.round(parcel.luas_m2 || parcel.luas).toLocaleString('id-ID')} m²` : '';
+        vectorPoly.bindTooltip(`<div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#0a2e5c;">${nibLabel}</div>${luasLabel ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#0284c7;">${luasLabel}</div>` : ''}`, {
+          sticky: true,
+          direction: 'top',
+          offset: [0, -6]
+        });
+
+        vectorPoly.on('mouseover', function() {
+          this.setStyle({
+            weight: 3,
+            color: '#0369a1',
+            fillOpacity: Math.min(0.38, currentOpacity * 0.35)
+          });
+        });
+
+        vectorPoly.on('mouseout', function() {
+          this.setStyle({
+            weight: 2,
+            color: '#0284c7',
+            fillOpacity: currentOpacity * 0.15
+          });
+        });
+
+        vectorPoly.on('click', function(e) {
+          L.DomEvent.stopPropagation(e);
+          selectCadastreVectorParcel(parcel, e.latlng);
+        });
+
+        vectorPoly.addTo(cadastreVectorLayer);
+        cadastreVectorParcelCache.set(pid, { parcel, layer: vectorPoly });
+      });
+    }
+
+    function selectCadastreVectorParcel(parcel, clickLatLng) {
+      if (!parcel) return;
+      const coords = parcel.polygon_coords || parcel.coordinates;
+      if (!coords || coords.length < 3) return;
+
+      const lat = clickLatLng ? clickLatLng.lat : coords[0].lat;
+      const lng = clickLatLng ? clickLatLng.lng : coords[0].lng;
+      handleMapClick(lat, lng, true);
+    }
+
     function setupPersilLayer() {
       if (!map.getPane('persilPane')) {
         const pp = map.createPane('persilPane');
         pp.style.zIndex = 360;
         pp.style.pointerEvents = 'none';
       }
+      setupCadastreVectorLayer();
       const persilBase = getBpnGatewayBase();
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
+
+      if (slider && !slider._vectorListenerAttached) {
+        slider._vectorListenerAttached = true;
+        slider.addEventListener('input', function() {
+          const val = parseFloat(this.value) / 100;
+          if (persilLayer && typeof persilLayer.setOpacity === 'function') {
+            persilLayer.setOpacity(val);
+          }
+          if (cadastreVectorLayer) {
+            cadastreVectorLayer.eachLayer(layer => {
+              if (layer && typeof layer.setStyle === 'function') {
+                layer.setStyle({ opacity: val, fillOpacity: val * 0.15 });
+              }
+            });
+          }
+        });
+      }
 
       function createCadastreProxyLayer() {
         return new CadastreWmsLayer('https://bhumi.atrbpn.go.id/mprx/service', {
@@ -809,6 +913,7 @@ function getBpnGatewayBase() {
 
           rawInitialBboxCoords = effectivePersil.polygon_coords;
           initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
+          renderCadastreVectorParcels(effectivePersil.all_parcels && effectivePersil.all_parcels.length > 0 ? effectivePersil.all_parcels : [effectivePersil]);
 
           const badge = document.getElementById('badgeRebuildStatus');
           if (badge) {
@@ -1281,3 +1386,6 @@ function getBpnGatewayBase() {
     window.switchCadastreServer = switchCadastreServer;
     window.updateCadastreServerUI = updateCadastreServerUI;
     window.renderCadastralProFields = renderCadastralProFields;
+    window.renderCadastreVectorParcels = renderCadastreVectorParcels;
+    window.selectCadastreVectorParcel = selectCadastreVectorParcel;
+    window.cadastreVectorLayer = cadastreVectorLayer;

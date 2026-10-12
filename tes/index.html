@@ -363,11 +363,11 @@
 
               <div style="display: flex; flex-direction: column; gap: 0.45rem;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
-                  <button type="button" class="btn btn-primary" onclick="autoScaleToBpnArea()" style="font-weight: 700; justify-content: center; height: 36px;" title="Menyesuaikan luas bidang di gambar ke luas resmi secara presisi">
+                  <button type="button" class="btn btn-primary btn-grid-action" onclick="autoScaleToBpnArea()" style="font-weight: 700; justify-content: center; height: 36px;" title="Menyesuaikan luas bidang di gambar ke luas resmi secara presisi">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
-                    <span>Sesuaikan Bidang</span>
+                    <span>Atur Luas</span>
                   </button>
-                  <button type="button" id="btnToggleMerge" class="btn btn-outline" onclick="toggleMergeMode()" style="font-weight: 700; color: var(--accent); border-color: var(--accent); justify-content: center; height: 36px;" title="Tambah dan Gabungkan Bidang Tanah Bersebelahan">
+                  <button type="button" id="btnToggleMerge" class="btn btn-outline btn-grid-action" onclick="toggleMergeMode()" style="font-weight: 700; color: var(--accent); border-color: var(--accent); justify-content: center; height: 36px;" title="Tambah dan Gabungkan Bidang Tanah Bersebelahan">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                     <span id="txtToggleMerge">Gabung Bidang</span>
                   </button>
@@ -471,13 +471,13 @@
 
               <div style="display: flex; flex-direction: column; gap: 0.65rem;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem;">
-                  <button type="button" class="btn btn-outline" onclick="openRescaleModal('bpn')" style="font-size: 0.72rem; font-weight: 700; padding: 0.45rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                  <button type="button" class="btn btn-outline btn-grid-action" onclick="openRescaleModal('bpn')" style="font-size: 0.72rem; font-weight: 700; padding: 0.45rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;" title="Skala Geometri terhadap Luas Sertifikat / Surat Ukur BPN">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                    <span>Penyesuaian Luas BPN</span>
+                    <span>Skala BPN</span>
                   </button>
-                  <button type="button" class="btn btn-outline" onclick="openRescaleModal('oss')" style="font-size: 0.72rem; font-weight: 700; padding: 0.45rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                  <button type="button" class="btn btn-outline btn-grid-action" onclick="openRescaleModal('oss')" style="font-size: 0.72rem; font-weight: 700; padding: 0.45rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;" title="Skala Geometri Kompensasi Sistem OSS RBA">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/></svg>
-                    <span>Penyesuaian Luas OSS</span>
+                    <span>Skala OSS</span>
                   </button>
                 </div>
 
@@ -924,7 +924,7 @@
               Mulai Gambar Poligon Baru
             </button>
             <button class="btn btn-outline btn-block" onclick="clearDrawnLayers()">
-              Bersihkan Hasil Gambar
+              Reset Gambar
             </button>
           </div>
 
@@ -1936,6 +1936,21 @@
             <span style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.74rem; color: var(--text-muted); font-weight: 700; pointer-events: none;">m²</span>
           </div>
           <div id="rescaleInputHelp" style="font-size: 0.66rem; color: var(--text-sub);">Masukkan angka luas yang tertera saat hasil ekspor pertama diunggah ke sistem OSS RBA.</div>
+        <div style="background-color: var(--bg-surface); border: 1px solid var(--border-light); padding: 0.75rem 0.85rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.45rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.05em;">Kunci Patok Statis (Tidak Ikut Diskala)</div>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn btn-outline" style="padding: 1px 6px; font-size: 0.65rem;" onclick="unlockAllVerticesForRescale()">Buka Semua</button>
+              <button type="button" class="btn btn-outline" style="padding: 1px 6px; font-size: 0.65rem;" onclick="lockAlternateVerticesForRescale()">Kunci Separuh</button>
+            </div>
+          </div>
+          <div style="font-size: 0.66rem; color: var(--text-sub); line-height: 1.3;">
+            Klik patok untuk mengunci posisinya (100% statis). Perubahan skala hanya menggeser patok yang bebas (tidak terkunci).
+          </div>
+          <div id="rescalePatokChipsContainer" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 110px; overflow-y: auto; padding: 2px 0;"></div>
+          <div id="rescaleLockedWarn" style="display: none; font-size: 0.68rem; color: var(--crimson); font-weight: 600;">
+            Minimal 1 patok harus bebas (tidak terkunci) agar luas dapat diskala.
+          </div>
         </div>
 
         <div style="background-color: var(--bg-surface); border: 1px solid var(--border-light); padding: 0.75rem 0.85rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.45rem;">
