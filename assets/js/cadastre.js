@@ -11,6 +11,9 @@ function getBpnGatewayBase() {
         if (port === '8085' || port === '8089') {
           return window.location.origin;
         }
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          return window.location.origin;
+        }
       }
       return '';
     }
@@ -48,9 +51,11 @@ function getBpnGatewayBase() {
       const persilBase = getBpnGatewayBase();
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+      const cloudTileUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=tile&z={z}&x={x}&y={y}`;
       const tileUrl = persilBase
         ? `${persilBase}/persil/{z}/{x}/{y}.webp`
-        : `/persil/{z}/{x}/{y}.webp`;
+        : cloudTileUrl;
 
       persilLayer = L.tileLayer(tileUrl, {
         pane: 'persilPane',
@@ -67,6 +72,7 @@ function getBpnGatewayBase() {
 
     async function refreshPersilTiles() {
       const persilBase = getBpnGatewayBase();
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
       if (persilBase) {
         try {
           await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
@@ -80,8 +86,8 @@ function getBpnGatewayBase() {
         }
       } else {
         if (persilLayer) {
-          if (typeof persilLayer.setParams === 'function') {
-            persilLayer.setParams({ _t: Date.now() });
+          if (typeof persilLayer.setUrl === 'function') {
+            persilLayer.setUrl(`${sbUrl}/functions/v1/cadastre-gateway?action=tile&z={z}&x={x}&y={y}&t=${Date.now()}`);
           }
           if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
           persilLayer.redraw();
@@ -104,18 +110,6 @@ function getBpnGatewayBase() {
     }
 
     function createThematicLayer(layerKey) {
-      const persilBase = getBpnGatewayBase();
-      const tileUrl = persilBase
-        ? `${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`
-        : `/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`;
-      return L.tileLayer(tileUrl, {
-        pane: 'thematicPane',
-        maxZoom: 26,
-        maxNativeZoom: 19,
-        opacity: (layerKey === 'jalan') ? 0.85 : 0.75,
-        zIndex: 450
-      });
-    }
       if (layerKey === 'jalan') {
         return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
           pane: 'thematicPane',
@@ -124,7 +118,18 @@ function getBpnGatewayBase() {
           zIndex: 450
         });
       }
-      return null;
+      const persilBase = getBpnGatewayBase();
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+      const tileUrl = persilBase
+        ? `${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`
+        : `${sbUrl}/functions/v1/cadastre-gateway?action=layer-ceking&layer=${layerKey}&z={z}&x={x}&y={y}`;
+      return L.tileLayer(tileUrl, {
+        pane: 'thematicPane',
+        maxZoom: 26,
+        maxNativeZoom: 19,
+        opacity: 0.75,
+        zIndex: 450
+      });
     }
 
     function initCekingLayers() {
@@ -276,14 +281,17 @@ function getBpnGatewayBase() {
 
       const endpointsToTry = [];
       const persilApiBase = getBpnGatewayBase();
-      const localUrl = persilApiBase
-        ? `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`
-        : `/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`;
-      endpointsToTry.push({ url: localUrl, timeout: 8000 });
+      if (persilApiBase) {
+        endpointsToTry.push({
+          url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`,
+          timeout: 6000
+        });
+      }
 
-      const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
       endpointsToTry.push({
-        url: `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
+        url: `${sbUrl}/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
         timeout: 10000
       });
@@ -291,7 +299,7 @@ function getBpnGatewayBase() {
       for (const item of endpointsToTry) {
         try {
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), item.timeout || 12000);
+          const tid = setTimeout(() => controller.abort(), item.timeout || 10000);
           const reqOpt = { signal: controller.signal, mode: 'cors' };
           if (item.headers) reqOpt.headers = item.headers;
           const res = await fetch(item.url, reqOpt);
@@ -324,9 +332,9 @@ function getBpnGatewayBase() {
       const statusRes = {
         rtrw: '-',
         rdtr: '-',
-        lsd: '-',
-        lbs: '-',
-        hutan: '-',
+        lsd: 'Bukan Kawasan LSD',
+        lbs: 'Bukan Lahan Baku Sawah',
+        hutan: 'Bukan Kawasan Hutan (APL)',
         znt: '-',
         znt_range: '-'
       };
@@ -336,9 +344,8 @@ function getBpnGatewayBase() {
       if (customBase && (customBase.startsWith('https://') || customBase.startsWith('http://'))) {
         endpoints.push(`${customBase}/api/spatial-status?lat=${lat}&lng=${lng}`);
       }
-      endpoints.push(`/api/spatial-status?lat=${lat}&lng=${lng}`);
-      const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-      const sbUrl = SUPABASE_PROJECT_URL || 'https://vezruyffzmabhtylxigc.supabase.co';
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
       endpoints.push({
         url: `${sbUrl}/functions/v1/cadastre-gateway?action=spatial-status&lat=${lat}&lng=${lng}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
@@ -350,14 +357,14 @@ function getBpnGatewayBase() {
         const targetHeaders = (typeof ep === 'object' && ep.headers) ? ep.headers : undefined;
         try {
           const ctrl = new AbortController();
-          const tid = setTimeout(() => ctrl.abort(), 5000);
+          const tid = setTimeout(() => ctrl.abort(), 6000);
           const opt = { signal: ctrl.signal, mode: 'cors' };
           if (targetHeaders) opt.headers = targetHeaders;
           const resp = await fetch(targetUrl, opt);
           clearTimeout(tid);
           if (resp.ok) {
             const json = await resp.json();
-            if (json && (json.lsd || json.lbs || json.rtrw)) {
+            if (json && (json.lsd || json.lbs || json.rtrw || json.hutan)) {
               return Object.assign(statusRes, json);
             }
           }
@@ -549,7 +556,7 @@ function getBpnGatewayBase() {
         const elNomorHak = document.getElementById('pinNomorHakText');
         if (elNomorHak) elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
         const rowNomorHak = document.getElementById('itemPinNomorHak');
-        if (rowNomorHak) rowNomorHak.style.display = 'flex';
+        if (rowNomorHak) rowNomorHak.style.display = 'none';
       }
     }
 
@@ -697,7 +704,7 @@ function getBpnGatewayBase() {
             elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
           }
           const rowNomorHak = document.getElementById('itemPinNomorHak');
-          if (rowNomorHak) rowNomorHak.style.display = 'flex';
+          if (rowNomorHak) rowNomorHak.style.display = 'none';
 
           renderCadastralProFields();
           fetchSpatialStatusData(lat, lng).then(status => {
@@ -1014,7 +1021,6 @@ function getBpnGatewayBase() {
       if (isPro) {
         summary += `\nDATA DETAIL KADASTER & TATA RUANG (PRO):\n`;
         summary += `NIB Lengkap: ${activePinData.nib_lengkap || activePinData.nib || '-'}\n`;
-        summary += `Nomor Hak: ${activePinData.nomor_hak || '-'}\n`;
         summary += `Kantah: ${activePinData.kantah || '-'}\n`;
         summary += `Kluster PTSL: ${activePinData.kluster_ptsl || '-'}\n`;
         summary += `Akurasi & Alat: ${activePinData.akurasibidang || '-'}\n`;
