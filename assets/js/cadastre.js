@@ -42,6 +42,14 @@ function getBpnGatewayBase() {
       });
     }
 
+    const CadastreWmsLayer = L.TileLayer.WMS.extend({
+      getTileUrl: function(coords) {
+        const originalUrl = L.TileLayer.WMS.prototype.getTileUrl.call(this, coords);
+        const cleanUrl = originalUrl.replace(/^https?:\/\//i, '');
+        return 'https://images.weserv.nl/?url=' + encodeURIComponent(cleanUrl);
+      }
+    });
+
     function setupPersilLayer() {
       if (!map.getPane('persilPane')) {
         const pp = map.createPane('persilPane');
@@ -51,6 +59,23 @@ function getBpnGatewayBase() {
       const persilBase = getBpnGatewayBase();
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
+
+      function createCadastreProxyLayer() {
+        return new CadastreWmsLayer('https://bhumi.atrbpn.go.id/mprx/service', {
+          layers: 'bhumi_persil',
+          format: 'image/png',
+          transparent: true,
+          version: '1.3.0',
+          crs: L.CRS.EPSG3857,
+          pane: 'persilPane',
+          minZoom: 15,
+          maxZoom: 26,
+          opacity: currentOpacity,
+          zIndex: 360,
+          updateWhenZooming: false,
+          updateInterval: 100
+        });
+      }
 
       if (persilBase) {
         persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
@@ -67,38 +92,12 @@ function getBpnGatewayBase() {
           if (!persilLayer._fallbackActive) {
             persilLayer._fallbackActive = true;
             if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
-            persilLayer = L.tileLayer.wms('https://bhumi.atrbpn.go.id/mprx/service', {
-              layers: 'bhumi_persil',
-              format: 'image/png',
-              transparent: true,
-              version: '1.3.0',
-              crs: L.CRS.EPSG3857,
-              pane: 'persilPane',
-              minZoom: 15,
-              maxZoom: 26,
-              opacity: currentOpacity,
-              zIndex: 360,
-              updateWhenZooming: false,
-              updateInterval: 100
-            });
+            persilLayer = createCadastreProxyLayer();
             map.addLayer(persilLayer);
           }
         });
       } else {
-        persilLayer = L.tileLayer.wms('https://bhumi.atrbpn.go.id/mprx/service', {
-          layers: 'bhumi_persil',
-          format: 'image/png',
-          transparent: true,
-          version: '1.3.0',
-          crs: L.CRS.EPSG3857,
-          pane: 'persilPane',
-          minZoom: 15,
-          maxZoom: 26,
-          opacity: currentOpacity,
-          zIndex: 360,
-          updateWhenZooming: false,
-          updateInterval: 100
-        });
+        persilLayer = createCadastreProxyLayer();
       }
       persilLayer.addTo(map);
     }

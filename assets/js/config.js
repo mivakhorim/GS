@@ -823,87 +823,32 @@ function latLngToUtm(lat, lon) {
       );
     }
 
-    window.initSupabase = function() {};
-    window.ensureSupabaseClient = function() { return null; };
-    window.initGoogleIdentityServices = function() {};
-    window.handleGoogleSignInResponse = function() {};
-    window.configureGoogleClientId = function() {};
-    window.loginWithGoogle = function() { showToast('Layanan otentikasi sedang offline.', 'warn'); };
-    window.fallbackGoogleOAuthRedirect = function() { showToast('Layanan otentikasi sedang offline.', 'warn'); };
-    window.logoutMember = function() {};
-    window.fetchMemberProfile = function() { return Promise.resolve(null); };
-    window.verifyProLicenseIntegrity = function() { return false; };
-    window.updateMemberUI = function() {
-      const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
-      const attrInputIds = ['shpPemrakarsa', 'shpKegiatan', 'shpTahun', 'shpProvinsi', 'shpKeterangan', 'shpLayer'];
-      const tabBtnOss = document.getElementById('tabBtnOss');
-      const tabBtnCustom = document.getElementById('tabBtnCustom');
-      const attrModeBadge = document.getElementById('attrModeBadge');
-      const boxEkspor = document.getElementById('boxEkspor');
-
-      if (!isPro) {
-        attrInputIds.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) {
-            el.disabled = false;
-            el.style.backgroundColor = '';
-            el.style.cursor = '';
-          }
-        });
-
-        if (tabBtnCustom) {
-          tabBtnCustom.disabled = true;
-          tabBtnCustom.style.opacity = '0.7';
-          tabBtnCustom.style.cursor = 'pointer';
+    if (typeof window.openMemberModal !== 'function') {
+      window.openMemberModal = function() {
+        const m = document.getElementById('memberModal');
+        if (m) m.style.display = 'flex';
+        if (typeof initGoogleIdentityServices === 'function') initGoogleIdentityServices();
+      };
+    }
+    if (typeof window.closeMemberModal !== 'function') {
+      window.closeMemberModal = function() {
+        const m = document.getElementById('memberModal');
+        if (m) m.style.display = 'none';
+      };
+    }
+    if (typeof window.closeQrisPaymentModal !== 'function') {
+      window.closeQrisPaymentModal = function() {
+        const q = document.getElementById('modalQrisPayment');
+        if (q) q.style.display = 'none';
+      };
+    }
+    if (typeof window.loginWithGoogle !== 'function') {
+      window.loginWithGoogle = function() {
+        if (typeof window.fallbackGoogleOAuthRedirect === 'function') {
+          window.fallbackGoogleOAuthRedirect();
         }
-        if (tabBtnOss) {
-          tabBtnOss.disabled = false;
-          tabBtnOss.style.cursor = 'pointer';
-        }
-        if (attrModeBadge) {
-          attrModeBadge.className = '';
-          attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--text-sub);';
-          attrModeBadge.innerText = 'Free User Max 150 M2';
-        }
-        let freeNotice = document.getElementById('shpFreeAttrNotice');
-        if (!freeNotice && boxEkspor) {
-          freeNotice = document.createElement('div');
-          freeNotice.id = 'shpFreeAttrNotice';
-          freeNotice.style.cssText = 'font-size: 0.71rem; color: var(--text-sub); margin: 4px 0 6px 0; line-height: 1.45;';
-          freeNotice.innerHTML = 'Untuk mengedit atribut peta memerlukan akses PRO (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
-          const tabNav = boxEkspor.querySelector('div[style*="border-bottom"]');
-          if (tabNav) {
-            boxEkspor.insertBefore(freeNotice, tabNav);
-          }
-        } else if (freeNotice) {
-          freeNotice.style.display = 'block';
-        }
-      }
-      if (typeof renderCadastralProFields === 'function') {
-        renderCadastralProFields();
-      }
-    };
-    window.openMemberModal = function() { showToast('Layanan akun sedang offline.', 'info'); };
-    window.closeMemberModal = function() {
-      const m = document.getElementById('modalMember');
-      if (m) m.style.display = 'none';
-    };
-    window.generateQrisPayment = function() { showToast('Sistem pembayaran sedang offline.', 'warn'); };
-    window.savePendingPaymentRecord = function() { return Promise.resolve(); };
-    window.openQrisPaymentModal = function() {};
-    window.closeQrisPaymentModal = function() {
-      const q = document.getElementById('modalQrisPayment');
-      if (q) q.style.display = 'none';
-    };
-    window.copyQrisAmount = function() {};
-    window.confirmPaymentWhatsApp = function() {};
-    window.checkPaymentStatusLive = function() {};
-    window.cancelAndClearCurrentPendingPayment = function() {};
-    window.isMemberProActive = function() { return false; };
-    window.isMemberAdminActive = function() { return false; };
-    window.currentMemberProfile = function() {
-      return { role: 'free', status: 'none', email: '', name: '', expires_at: null };
-    };
+      };
+    }
 
     window.handlePrintMapTrigger = function() {};
     window.processDirectMobilePdfPrint = function() {};

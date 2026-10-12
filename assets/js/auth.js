@@ -215,9 +215,12 @@ function closeServerModal() {
     }
 
     async function loginWithGoogle() {
-      if (!ensureSupabaseClient()) return;
       if (window.location.protocol === 'file:') {
         showToast('Otentikasi Google membutuhkan koneksi online. Silakan buka aplikasi pada domain resmi https://geospasi.dutamik.id', 'warn');
+        return;
+      }
+      if (!ensureSupabaseClient()) {
+        showToast('Menghubungkan layanan akun, silakan klik kembali dalam beberapa detik.', 'info');
         return;
       }
       if (!GOOGLE_CLIENT_ID) {
@@ -757,4 +760,6 @@ function closeServerModal() {
     window.confirmPaymentWhatsApp = confirmPaymentWhatsApp;
     window.checkPaymentStatusLive = checkPaymentStatusLive;
     window.cancelAndClearCurrentPendingPayment = cancelAndClearCurrentPendingPayment;
-
+    if (typeof window.supabase !== 'undefined') {
+      initSupabase();
+    }

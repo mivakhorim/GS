@@ -1370,6 +1370,12 @@ Server Sumber Data: ${serverName}`;
         cancelMergeMode();
         return;
       }
+      const isProOrAdmin = (typeof isMemberProActive === 'function' && isMemberProActive()) || (typeof isMemberAdminActive === 'function' && isMemberAdminActive());
+      if (!isProOrAdmin) {
+        showToast('Fitur seleksi & penggabungan multi-bidang memerlukan akses PRO atau ADMIN. Silakan masuk akun.', 'warn');
+        if (typeof openMemberModal === 'function') openMemberModal();
+        return;
+      }
       if (!activeVertices || activeVertices.length < 3) {
         showToast('Pilih bidang tanah awal terlebih dahulu dengan mengklik peta.', 'warn');
         return;
