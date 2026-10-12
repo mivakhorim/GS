@@ -48,55 +48,20 @@ function getBpnGatewayBase() {
       const persilBase = getBpnGatewayBase();
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
-      if (persilBase) {
-        persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`, {
-          pane: 'persilPane',
-          minZoom: 15,
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          opacity: currentOpacity,
-          zIndex: 360,
-          updateWhenZooming: false,
-          updateInterval: 100
-        });
-        let fallbackTriggered = false;
-        persilLayer.on('tileerror', function() {
-          if (!fallbackTriggered) {
-            fallbackTriggered = true;
-            if (map.hasLayer(persilLayer)) {
-              map.removeLayer(persilLayer);
-              persilLayer = L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-                layers: 'bhumi:Persil',
-                format: 'image/png',
-                transparent: true,
-                version: '1.1.1',
-                pane: 'persilPane',
-                minZoom: 15,
-                maxZoom: 26,
-                opacity: currentOpacity,
-                zIndex: 360,
-                updateWhenZooming: false,
-                updateInterval: 100
-              });
-              map.addLayer(persilLayer);
-            }
-          }
-        });
-      } else {
-        persilLayer = L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'bhumi:Persil',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'persilPane',
-          minZoom: 15,
-          maxZoom: 26,
-          opacity: currentOpacity,
-          zIndex: 360,
-          updateWhenZooming: false,
-          updateInterval: 100
-        });
-      }
+      const tileUrl = persilBase
+        ? `${persilBase}/persil/{z}/{x}/{y}.webp`
+        : `/persil/{z}/{x}/{y}.webp`;
+
+      persilLayer = L.tileLayer(tileUrl, {
+        pane: 'persilPane',
+        minZoom: 15,
+        maxZoom: 26,
+        maxNativeZoom: 19,
+        opacity: currentOpacity,
+        zIndex: 360,
+        updateWhenZooming: false,
+        updateInterval: 100
+      });
       persilLayer.addTo(map);
     }
 
@@ -140,75 +105,17 @@ function getBpnGatewayBase() {
 
     function createThematicLayer(layerKey) {
       const persilBase = getBpnGatewayBase();
-      if (persilBase) {
-        return L.tileLayer(`${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`, {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          opacity: (layerKey === 'jalan') ? 0.85 : 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'hutan') {
-        return new ArcGisExportLayer('https://geoportal.planologi.kehutanan.go.id/server/rest/services/Peta_Interaktif_2026/KWSHUTAN_AR_250K/MapServer/export', {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'lsd') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'umum:lsd_merge',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'lbs') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'geonode:lbs_parsial',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'peruntukan') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'petabpn:rtrwn_2025',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'rtrw') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'rtr-online:rtrw_kabkot',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
+      const tileUrl = persilBase
+        ? `${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`
+        : `/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`;
+      return L.tileLayer(tileUrl, {
+        pane: 'thematicPane',
+        maxZoom: 26,
+        maxNativeZoom: 19,
+        opacity: (layerKey === 'jalan') ? 0.85 : 0.75,
+        zIndex: 450
+      });
+    }
       if (layerKey === 'jalan') {
         return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
           pane: 'thematicPane',
@@ -367,63 +274,18 @@ function getBpnGatewayBase() {
         return cached.data;
       }
 
-      const sMode = getCadastreServerMode();
-      if (sMode === 'server2') {
-        const r = 6378137.0;
-        const cx = r * (lng * Math.PI / 180);
-        const cy = r * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
-        const d = 30.0;
-        const minx = cx - d, maxx = cx + d, miny = cy - d, maxy = cy + d;
-        const bpnDirectUrl = `https://atlas.atrbpn.go.id/geoserver/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=bhumi:Persil&QUERY_LAYERS=bhumi:Persil&CRS=EPSG:3857&BBOX=${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json&FEATURE_COUNT=50`;
-
-        let rawGeoJson = null;
-        try {
-          const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), 4000);
-          const res = await fetch(bpnDirectUrl, { signal: controller.signal, mode: 'cors' });
-          clearTimeout(tid);
-          if (res.ok) {
-            rawGeoJson = await res.json();
-          }
-        } catch (_) {}
-
-        if (!rawGeoJson) {
-          try {
-            const proxyTarget = `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=proxy-wms&url=${encodeURIComponent(bpnDirectUrl)}`;
-            const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-            const controller = new AbortController();
-            const tid = setTimeout(() => controller.abort(), 9000);
-            const res = await fetch(proxyTarget, {
-              signal: controller.signal,
-              headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
-            });
-            clearTimeout(tid);
-            if (res.ok) {
-              rawGeoJson = await res.json();
-            }
-          } catch (_) {}
-        }
-
-        if (rawGeoJson && Array.isArray(rawGeoJson.features) && rawGeoJson.features.length > 0) {
-          const parsed = parseGeoServerPersilGeoJson(rawGeoJson, lat, lng);
-          if (parsed && parsed.found && Array.isArray(parsed.polygon_coords) && parsed.polygon_coords.length >= 3) {
-            persilClientCache.set(cacheKey, { data: parsed, time: Date.now() });
-            return parsed;
-          }
-        }
-      }
-
       const endpointsToTry = [];
       const persilApiBase = getBpnGatewayBase();
-      if (persilApiBase && (persilApiBase.startsWith('https://') || persilApiBase.startsWith('http://'))) {
-        endpointsToTry.push({ url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 12000 });
-      }
+      const localUrl = persilApiBase
+        ? `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`
+        : `/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`;
+      endpointsToTry.push({ url: localUrl, timeout: 8000 });
 
       const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
       endpointsToTry.push({
         url: `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-        timeout: 12000
+        timeout: 10000
       });
 
       for (const item of endpointsToTry) {
@@ -474,6 +336,7 @@ function getBpnGatewayBase() {
       if (customBase && (customBase.startsWith('https://') || customBase.startsWith('http://'))) {
         endpoints.push(`${customBase}/api/spatial-status?lat=${lat}&lng=${lng}`);
       }
+      endpoints.push(`/api/spatial-status?lat=${lat}&lng=${lng}`);
       const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
       const sbUrl = SUPABASE_PROJECT_URL || 'https://vezruyffzmabhtylxigc.supabase.co';
       endpoints.push({
@@ -1028,10 +891,8 @@ function getBpnGatewayBase() {
             badge.className = 'badge-pill yellow';
             badge.innerText = 'Delineasi Mandiri Aktif';
           }
-          showToast('Batas bidang tanah dibuat aktif di titik klik. Titik patok dapat langsung digeser, ditambah, atau disesuaikan.', 'info');
         }
       } catch (err) {
-        showToast('Terjadi kesalahan saat memuat data bidang. Silakan coba kembali.', 'warn');
       } finally {
         if (loadingBar) loadingBar.classList.remove('active');
         if (foundBox) foundBox.classList.remove('data-loading');

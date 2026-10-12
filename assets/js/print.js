@@ -666,42 +666,17 @@ function togglePrintDimensions(show) {
       if (typeof persilLayer !== 'undefined' && persilLayer && map && map.hasLayer(persilLayer)) {
         const persilBase = (typeof getBpnGatewayBase === 'function') ? getBpnGatewayBase() : '';
         const pOpacity = (typeof persilLayer.options?.opacity !== 'undefined') ? persilLayer.options.opacity : 0.9;
-        if (persilBase) {
-          const printPersil = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
-            pane: 'persilPane',
-            maxZoom: 26,
-            maxNativeZoom: 19,
-            opacity: pOpacity,
-            zIndex: 360,
-            crossOrigin: 'anonymous'
-          }).addTo(printMapInstance);
-          printPersil.on('tileerror', function() {
-            if (printMapInstance.hasLayer(printPersil)) {
-              printMapInstance.removeLayer(printPersil);
-              L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-                layers: 'bhumi:Persil',
-                format: 'image/png',
-                transparent: true,
-                version: '1.1.1',
-                pane: 'persilPane',
-                maxZoom: 26,
-                opacity: pOpacity,
-                zIndex: 360
-              }).addTo(printMapInstance);
-            }
-          });
-        } else {
-          L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-            layers: 'bhumi:Persil',
-            format: 'image/png',
-            transparent: true,
-            version: '1.1.1',
-            pane: 'persilPane',
-            maxZoom: 26,
-            opacity: pOpacity,
-            zIndex: 360
-          }).addTo(printMapInstance);
-        }
+        const tileUrl = persilBase
+          ? `${persilBase}/persil/{z}/{x}/{y}.webp`
+          : `/persil/{z}/{x}/{y}.webp`;
+        L.tileLayer(tileUrl, {
+          pane: 'persilPane',
+          maxZoom: 26,
+          maxNativeZoom: 19,
+          opacity: pOpacity,
+          zIndex: 360,
+          crossOrigin: 'anonymous'
+        }).addTo(printMapInstance);
       }
 
       if (typeof kelurahanHighlightLayer !== 'undefined' && kelurahanHighlightLayer && map && map.hasLayer(kelurahanHighlightLayer)) {
