@@ -366,6 +366,8 @@ function getBpnGatewayBase() {
           } else if (typeof persilLayer.redraw === 'function') {
             persilLayer.redraw();
           }
+        }
+      }
       if (cadastreVectorLayer) {
         cadastreVectorLayer.clearLayers();
       }
