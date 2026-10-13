@@ -149,6 +149,7 @@ function getBpnGatewayBase() {
           pane: 'cadastreVectorPane',
           interactive: true
         });
+        polyLayer._parcelData = parcel;
 
         const nibLabel = (parcel.nib && parcel.nib !== '-') ? `NIB: ${parcel.nib}` : 'Bidang Terdaftar';
         const luasLabel = parcel.luas_m2 ? `${Math.round(parcel.luas_m2).toLocaleString('id-ID')} m²` : '';
@@ -197,13 +198,31 @@ function getBpnGatewayBase() {
       const coords = parcel.polygon_coords || parcel.coordinates;
       if (!coords || coords.length < 3) return;
 
-      const lat = clickLatLng ? clickLatLng.lat : coords[0].lat;
-      const lng = clickLatLng ? clickLatLng.lng : coords[0].lng;
+      const lat = clickLatLng ? clickLatLng.lat : (coords.reduce((s, c) => s + c.lat, 0) / coords.length);
+      const lng = clickLatLng ? clickLatLng.lng : (coords.reduce((s, c) => s + c.lng, 0) / coords.length);
       const exactArea = calculatePolygonArea(coords);
 
       isParcelLocked = false;
       isGeometryManuallyEdited = false;
       rawInitialBboxCoords = coords;
+
+      if (activePinMarker) {
+        map.removeLayer(activePinMarker);
+      }
+      const pinIcon = L.divIcon({
+        className: 'custom-pin-marker',
+        html: `<div style="background-color:var(--accent); width:20px; height:20px; border-radius:50%; border:2px solid #ffffff; box-shadow:0 3px 8px rgba(10,46,92,0.35); display:flex; align-items:center; justify-content:center;"><div style="width:6px; height:6px; border-radius:50%; background:#ffffff;"></div></div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      activePinMarker = L.marker([lat, lng], {
+        icon: pinIcon,
+        draggable: true
+      }).addTo(map);
+      activePinMarker.on('dragend', function(ev) {
+        const pos = ev.target.getLatLng();
+        handleMapClick(pos.lat, pos.lng, false);
+      });
 
       activePinData = {
         lat: lat,
@@ -212,38 +231,88 @@ function getBpnGatewayBase() {
         nib: parcel.nib && parcel.nib !== '-' ? parcel.nib : '-',
         nib_lengkap: parcel.nib_lengkap || parcel.nib || '-',
         luas_m2: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
+        luas_terdaftar_m2: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
         luas_ha: (parcel.luas_m2 && parcel.luas_m2 > 0) ? roundAreaHa6(parcel.luas_m2) : roundAreaHa6(exactArea),
         luas_bpn: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
         tipe_hak: parcel.tipe_hak || 'TERDAFTAR ATR/BPN',
         nomor_hak: parcel.nomor_hak || '-',
         tahun: parcel.tahun || '-',
         wilayah: parcel.wilayah || '-',
-        kelurahan: parcel.kelurahan || parcel.desa || '-',
+        desa: parcel.desa || parcel.kelurahan || '-',
         kecamatan: parcel.kecamatan || '-',
-        kabupaten: parcel.kabupaten || '-',
+        kabkot: parcel.kabkot || parcel.kabupaten || '-',
+        provinsi: parcel.provinsi || '-',
+        kodepos: parcel.kodepos || '-',
+        kantah: parcel.kantah || 'Kantor Pertanahan ATR/BPN',
         polygon_coords: coords,
         all_parcels: parcel.all_parcels || [parcel],
         is_official_cadastre: true,
         status_validasi: 'Kadaster Resmi Presisi',
-        source: 'VEKTOR PERSIL SVG PRESISI'
+        source: 'VEKTOR PERSIL SVG PRESISI',
+        alamat: parcel.alamat || '-'
       };
 
-      initCanvasRebuilder(lat, lng, activePinData.luas_m2, coords);
+      const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
+        ? `${activePinData.desa}, ${activePinData.kecamatan}`
+        : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : (activePinData.nib !== '-' ? `NIB ${activePinData.nib}` : 'Bidang Tanah')));
 
-      const badge = document.getElementById('badgeRebuildStatus');
-      if (badge) {
-        badge.className = 'badge-pill green';
-        badge.innerText = 'Kadaster Resmi Presisi';
+      const elCoords = document.getElementById('pinCoordsText');
+      if (elCoords) elCoords.innerText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const elDms = document.getElementById('pinDmsText');
+      if (elDms) elDms.innerText = toDMS(lat, lng);
+      const elUtm = document.getElementById('pinUtmText');
+      if (elUtm) elUtm.innerText = getUtmZone(lat, lng);
+      const elMercator = document.getElementById('pinMercatorText');
+      if (elMercator) {
+        const merc = toWebMercator(lat, lng);
+        elMercator.innerText = `X: ${Math.round(merc.x)}, Y: ${Math.round(merc.y)}`;
       }
 
-      const hud = document.getElementById('canvasHud');
-      if (hud) {
-        hud.style.display = 'flex';
-        const elHudNib = document.getElementById('hudNib');
-        if (elHudNib) elHudNib.innerText = activePinData.nib !== '-' ? `NIB: ${activePinData.nib}` : 'Bidang Terdaftar';
-        const elHudArea = document.getElementById('hudBpnArea');
-        if (elHudArea) elHudArea.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+      const elLokasi = document.getElementById('pinLokasiUtamaText');
+      if (elLokasi) elLokasi.innerText = lokasiUtama;
+
+      const elLuasBpn = document.getElementById('pinLuasBpnText');
+      if (elLuasBpn) {
+        elLuasBpn.className = 'stat-value emerald';
+        elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
       }
+      const elTipeHak = document.getElementById('pinTipeHakText');
+      if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
+      const badgeTipeHak = document.getElementById('badgeTipeHak');
+      if (badgeTipeHak) badgeTipeHak.innerText = activePinData.tipe_hak;
+
+      const elStatusValidasi = document.getElementById('pinStatusValidasiText');
+      if (elStatusValidasi) {
+        elStatusValidasi.className = 'spec-value emerald';
+        elStatusValidasi.innerText = 'Kadaster Resmi Presisi';
+      }
+
+      const elLegalitas = document.getElementById('legalitasSummaryText');
+      if (elLegalitas) {
+        elLegalitas.innerText = `Terverifikasi Resmi : Status ${activePinData.tipe_hak}`;
+      }
+
+      const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
+      const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
+      const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = activePinData.desa;
+      const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
+      const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
+      const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = activePinData.kantah;
+
+      const elShpProv = document.getElementById('shpProvinsi');
+      if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
+      const elShpKeterangan = document.getElementById('shpKeterangan');
+      if (elShpKeterangan) {
+        const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Bidang ${activePinData.nib !== '-' ? 'NIB ' + activePinData.nib : ''} ${activePinData.kabkot}`;
+        elShpKeterangan.value = rawKet.toUpperCase();
+      }
+      if (typeof updateShpLuasDisplay === 'function') updateShpLuasDisplay();
+
+      const bhumiUrl = `https://bhumi.atrbpn.go.id/peta?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}&zoom=19`;
+      const btnBhumi = document.getElementById('btnLinkBhumi');
+      if (btnBhumi) btnBhumi.href = bhumiUrl;
+      const btnGmaps = document.getElementById('btnLinkGoogleMaps');
+      if (btnGmaps) btnGmaps.href = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
 
       const noPin = document.getElementById('noPinAlert');
       const foundBox = document.getElementById('persilFoundBox');
@@ -255,27 +324,55 @@ function getBpnGatewayBase() {
         foundBox.classList.remove('data-loading');
       }
 
-      const elCoords = document.getElementById('pinCoordsText');
-      if (elCoords) elCoords.innerText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      const elNib = document.getElementById('dtNib');
-      if (elNib) elNib.innerText = activePinData.nib;
-      const elLuas = document.getElementById('dtLuas');
-      if (elLuas) elLuas.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+      const hud = document.getElementById('canvasHud');
+      if (hud) {
+        hud.style.display = 'flex';
+        const elHudNib = document.getElementById('hudNib');
+        if (elHudNib) elHudNib.innerText = lokasiUtama;
+        const elHudArea = document.getElementById('hudBpnArea');
+        if (elHudArea) elHudArea.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+      }
 
+      const badge = document.getElementById('badgeRebuildStatus');
+      if (badge) {
+        badge.className = 'badge-pill green';
+        badge.innerText = 'Kadaster Resmi Presisi';
+      }
+
+      const currentActiveTab = document.querySelector('.tab-view.active')?.id;
+      if (currentActiveTab === 'tab-info' || currentActiveTab === 'tab-search' || !currentActiveTab) {
+        switchTab('tab-bidang');
+      }
+
+      initCanvasRebuilder(lat, lng, activePinData.luas_m2, coords);
       showToast(`Bidang persil resmi terdeteksi: NIB ${activePinData.nib}`, 'success');
 
-      if (!parcel.wilayah || parcel.wilayah === '-') {
-        fetchLocationDetails(lat, lng).then(loc => {
-          if (loc && activePinData) {
-            const locStr = [loc.subdistrict || loc.village, loc.district, loc.city || loc.regency].filter(Boolean).join(', ');
-            if (locStr) {
-              activePinData.wilayah = locStr;
-              const elLoc = document.getElementById('dtWilayah');
-              if (elLoc) elLoc.innerText = locStr;
-            }
-          }
-        });
-      }
+      fetchLocationDetails(lat, lng).then(loc => {
+        if (loc && activePinData) {
+          if (loc.desa && loc.desa !== '-') activePinData.desa = loc.desa;
+          if (loc.kecamatan && loc.kecamatan !== '-') activePinData.kecamatan = loc.kecamatan;
+          if (loc.kabkot && loc.kabkot !== '-') activePinData.kabkot = loc.kabkot;
+          if (loc.provinsi && loc.provinsi !== '-') activePinData.provinsi = loc.provinsi;
+          if (loc.kodepos && loc.kodepos !== '-') activePinData.kodepos = loc.kodepos;
+          if (loc.kantah && loc.kantah !== '-') activePinData.kantah = loc.kantah;
+          if (loc.jalan && loc.jalan !== '-') activePinData.alamat = loc.jalan;
+          const refreshedLokasi = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
+            ? `${activePinData.desa}, ${activePinData.kecamatan}`
+            : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : (activePinData.nib !== '-' ? `NIB ${activePinData.nib}` : 'Bidang Tanah')));
+          const elLok = document.getElementById('pinLokasiUtamaText');
+          if (elLok) elLok.innerText = refreshedLokasi;
+          const elHNib = document.getElementById('hudNib');
+          if (elHNib) elHNib.innerText = refreshedLokasi;
+          const elD = document.getElementById('pinDesaText'); if (elD) elD.innerText = activePinData.desa;
+          const elKc = document.getElementById('pinKecamatanText'); if (elKc) elKc.innerText = activePinData.kecamatan;
+          const elKb = document.getElementById('pinKabkotText'); if (elKb) elKb.innerText = activePinData.kabkot;
+          const elPr = document.getElementById('pinProvinsiText'); if (elPr) elPr.innerText = activePinData.provinsi;
+          const elKp = document.getElementById('pinKodePosText'); if (elKp) elKp.innerText = activePinData.kodepos;
+          const elKn = document.getElementById('pinKantahText'); if (elKn) elKn.innerText = activePinData.kantah;
+          const elAlm = document.getElementById('pinAlamatGmapsText');
+          if (elAlm) elAlm.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.desa}, ${activePinData.kecamatan}, ${activePinData.kabkot}`;
+        }
+      });
     }
 
     function setupPersilLayer() {
@@ -1168,6 +1265,21 @@ function getBpnGatewayBase() {
         switchTab('tab-bidang');
       }
 
+      if (cadastreVectorParcelCache && cadastreVectorParcelCache.size > 0) {
+        for (const [pid, layer] of cadastreVectorParcelCache.entries()) {
+          const pData = layer._parcelData;
+          if (pData) {
+            const pCoords = pData.polygon_coords || pData.coordinates;
+            if (pCoords && pCoords.length >= 3 && isPointInsideOrNearPolygon(lat, lng, pCoords, 1.2)) {
+              if (loadingBar) loadingBar.classList.remove('active');
+              if (foundBox) foundBox.classList.remove('data-loading');
+              selectCadastreVectorParcel(pData, { lat, lng });
+              return;
+            }
+          }
+        }
+      }
+
       try {
         const persilPromise = fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
         const geoPromise = fetchLocationDetails(lat, lng);
@@ -1178,282 +1290,39 @@ function getBpnGatewayBase() {
         }
 
         const effectivePersil = persilData;
-        if (effectivePersil && effectivePersil.found && effectivePersil.polygon_coords && effectivePersil.polygon_coords.length >= 3) {
-          isGeometryManuallyEdited = false;
-
-          const decoded = (typeof decodeBpnCadastralStructure === 'function')
-            ? decodeBpnCadastralStructure({
-                nomor: effectivePersil.nomor_hak || effectivePersil.nomor,
-                nib: effectivePersil.nib,
-                tipehak: effectivePersil.tipe_hak,
-                tahun: effectivePersil.tahun,
-                nosu: effectivePersil.nosu,
-                provinsi: effectivePersil.provinsi || (geoData && geoData.provinsi),
-                kabupaten: effectivePersil.kabkot || (geoData && geoData.kabkot),
-                kecamatan: effectivePersil.kecamatan || (geoData && geoData.kecamatan),
-                desa: effectivePersil.desa || (geoData && geoData.desa),
-                kantah: effectivePersil.kantah || (geoData && geoData.kantah)
-              }, lat, lng, geoData)
-            : null;
-
-          activePinData = {
-            lat: lat,
-            lng: lng,
-            fid: effectivePersil.fid || (decoded ? decoded.nib_lengkap : '-'),
-            nib: decoded ? decoded.nib : (effectivePersil.nib || '-'),
-            nib_lengkap: decoded ? decoded.nib_lengkap : (effectivePersil.nib_lengkap || effectivePersil.nib || '-'),
-            tipe_hak: decoded ? decoded.tipe_hak : (effectivePersil.tipe_hak || '-'),
-            nomor_hak: decoded ? decoded.nomor_hak : (effectivePersil.nomor_hak || '-'),
-            nomor_hak_raw: decoded ? decoded.nomor_hak_raw : (effectivePersil.nomor_hak_raw || '-'),
-            nosu: decoded ? decoded.nosu : (effectivePersil.nosu || '-'),
-            tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '-'),
-            luas_m2: effectivePersil.luas_m2 || 0,
-            luas_terdaftar_m2: effectivePersil.luas_m2 || 0,
-            all_parcels: effectivePersil.all_parcels || [],
-            desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
-            kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
-            kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
-            provinsi: decoded ? decoded.provinsi : ((effectivePersil.provinsi && effectivePersil.provinsi !== '-') ? effectivePersil.provinsi : ((geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-')),
-            kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: decoded ? decoded.kantah : ((effectivePersil.kantah && effectivePersil.kantah !== '-') ? effectivePersil.kantah : ((geoData && geoData.kantah && geoData.kantah !== 'Kantor Pertanahan') ? geoData.kantah : '-')),
-            kluster_ptsl: decoded ? decoded.kluster_ptsl : '-',
-            akurasibidang: decoded ? decoded.akurasibidang : '-',
-            alatukur: decoded ? decoded.alatukur : '-',
-            status_validasi: decoded ? decoded.status_validasi : (effectivePersil.status_validasi || 'Terdaftar di Basis Data'),
-            rtrw: 'Memuat status RTRW...',
-            rdtr: 'Memuat status RDTR...',
-            lsd: 'Memverifikasi status LSD...',
-            lbs: 'Memverifikasi status LBS...',
-            hutan: 'Memeriksa status Kawasan Hutan...',
-            znt: 'Memuat Zona Nilai Tanah...',
-            znt_range: 'Memuat rentang nilai...',
-            alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : [decoded?.desa, decoded?.kecamatan, decoded?.kabkot].filter(v => v && v !== '-').join(', ') || 'Lokasi Titik Bidang'
-          };
-
-          window.currentCadastreParcelsPool = effectivePersil.all_parcels || [];
-
-          const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
-            ? `${activePinData.desa}, ${activePinData.kecamatan}`
-            : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
-
-          const elLokasi = document.getElementById('pinLokasiUtamaText');
-          if (elLokasi) elLokasi.innerText = lokasiUtama;
-
-          const elLuasBpn = document.getElementById('pinLuasBpnText');
-          if (elLuasBpn) {
-            if (activePinData.luas_terdaftar_m2 > 0 && !effectivePersil.is_auto_traced) {
-              elLuasBpn.className = 'stat-value emerald';
-              elLuasBpn.innerText = `${Math.round(activePinData.luas_terdaftar_m2).toLocaleString('id-ID')} m²`;
-            } else {
-              elLuasBpn.className = 'stat-value offline';
-              elLuasBpn.innerText = 'Server Offline';
-            }
-          }
-          const elTipeHak = document.getElementById('pinTipeHakText');
-          if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
-
-          const elNomorHak = document.getElementById('pinNomorHakText');
-          if (elNomorHak) {
-            elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
-          }
-          const rowNomorHak = document.getElementById('itemPinNomorHak');
-          if (rowNomorHak) rowNomorHak.style.display = 'none';
-
-          renderCadastralProFields();
-          fetchSpatialStatusData(lat, lng).then(status => {
-            if (activePinData && Math.abs(activePinData.lat - lat) < 0.001 && Math.abs(activePinData.lng - lng) < 0.001) {
-              Object.assign(activePinData, status);
-              renderCadastralProFields();
-            }
-          });
-          const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-          if (elStatusValidasi) {
-            elStatusValidasi.className = 'spec-value emerald';
-            elStatusValidasi.innerText = activePinData.status_validasi || 'Kadaster Resmi Presisi';
-          }
-          const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
-          if (elPinServer) {
-            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
-          }
-
-          const badgeEl = document.getElementById('badgeTipeHak');
-          if (badgeEl) badgeEl.innerText = activePinData.tipe_hak;
-
-          const elLegalitas = document.getElementById('legalitasSummaryText');
-          if (elLegalitas) {
-            elLegalitas.innerText = `Terverifikasi Resmi : Status ${activePinData.tipe_hak || 'Hak Milik'}`;
-          }
-
-          const elAlamatGmaps = document.getElementById('pinAlamatGmapsText');
-          if (elAlamatGmaps) {
-            elAlamatGmaps.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.kabkot}, ${activePinData.provinsi}`;
-          }
-
-          const elShpProv = document.getElementById('shpProvinsi');
-          if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
-
-          const elShpKeterangan = document.getElementById('shpKeterangan');
-          if (elShpKeterangan) {
-            const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Bidang ${activePinData.kabkot}`;
-            elShpKeterangan.value = rawKet.toUpperCase();
-          }
-          updateShpLuasDisplay();
-
-          const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
-          const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
-          const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
-
-          const bhumiUrl = `https://bhumi.atrbpn.go.id/peta?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}&zoom=19`;
-          const btnBhumi = document.getElementById('btnLinkBhumi');
-          if (btnBhumi) btnBhumi.href = bhumiUrl;
-          const btnGmaps = document.getElementById('btnLinkGoogleMaps');
-          if (btnGmaps) btnGmaps.href = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-
-          if (foundBox) foundBox.style.display = 'flex';
-          if (notFoundBox) notFoundBox.style.display = 'none';
-
+        if (!effectivePersil || !effectivePersil.found || !effectivePersil.polygon_coords || effectivePersil.polygon_coords.length < 3) {
+          clearCanvasRebuilderLayers();
+          if (foundBox) foundBox.style.display = 'none';
+          if (notFoundBox) notFoundBox.style.display = 'block';
           const hud = document.getElementById('canvasHud');
-          if (hud) {
-            hud.style.display = 'flex';
-            const elHudNib = document.getElementById('hudNib');
-            if (elHudNib) elHudNib.innerText = lokasiUtama;
-            const elHudArea = document.getElementById('hudBpnArea');
-            if (elHudArea) elHudArea.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : 'Server Offline';
-          }
+          if (hud) hud.style.display = 'none';
+          showToast('Bidang tanah tidak terpetakan di titik koordinat ini.', 'info');
+          return;
+        }
 
-          if (effectivePersil.tahun && parseInt(effectivePersil.tahun)) {
-            const elShpTahun = document.getElementById('shpTahun');
-            if (elShpTahun) elShpTahun.value = parseInt(effectivePersil.tahun);
-          }
-
-          rawInitialBboxCoords = effectivePersil.polygon_coords;
-          initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
-          if (cadastreVectorLayer) {
-            cadastreVectorLayer.clearLayers();
-          }
-
-          const badge = document.getElementById('badgeRebuildStatus');
-          if (badge) {
-            badge.className = 'badge-pill green';
-            badge.innerText = effectivePersil.is_official_cadastre ? 'Kadaster Resmi Presisi' : (effectivePersil.is_auto_traced ? 'Batas Bidang Terdeteksi' : 'Batas Bidang Aktif');
-          }
-          showToast(`Bidang persil resmi terdeteksi: NIB ${effectivePersil.nib || '-'}`, 'success');
-        } else {
-          const deltaLat = 0.000070;
-          const deltaLng = 0.000070 / Math.cos(lat * Math.PI / 180);
-          const defaultBox = [
-            { lat: +(lat + deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) },
-            { lat: +(lat + deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-            { lat: +(lat - deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-            { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
-          ];
-          const estArea = Math.round(calculatePolygonArea(defaultBox));
-          isGeometryManuallyEdited = false;
-          activePinData = {
-            lat: lat,
-            lng: lng,
-            fid: 'BIDANG-MANDIRI-' + Math.floor(1000 + Math.random() * 9000),
-            nib: '-',
-            nib_lengkap: '-',
-            tipe_hak: 'Delineasi Mandiri',
-            nomor_hak: '-',
-            nomor_hak_raw: '-',
-            nosu: '-',
-            tahun: '-',
-            luas_m2: estArea,
-            desa: (geoData && geoData.desa !== '-') ? geoData.desa : '-',
-            kecamatan: (geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-',
-            kabkot: (geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-',
-            provinsi: (geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-',
-            kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: (geoData && geoData.kantah && geoData.kantah !== 'Kantor Pertanahan') ? geoData.kantah : '-',
-            kluster_ptsl: '-',
-            akurasibidang: 'Delineasi Mandiri Pengguna',
-            alatukur: 'Digitasi Kartometrik Satelit',
-            status_validasi: 'Belum Terdaftar di BPN',
-            rtrw: 'Memuat status RTRW...',
-            rdtr: 'Memuat status RDTR...',
-            lsd: 'Memverifikasi status LSD...',
-            lbs: 'Memverifikasi status LBS...',
-            hutan: 'Memeriksa status Kawasan Hutan...',
-            znt: 'Memuat Zona Nilai Tanah...',
-            znt_range: 'Memuat rentang nilai...',
-            alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
-          };
-
-          const lokasiFallback = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
-            ? `${activePinData.desa}, ${activePinData.kecamatan}`
-            : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
-
-          const elLokasi = document.getElementById('pinLokasiUtamaText');
-          if (elLokasi) elLokasi.innerText = lokasiFallback;
-
-          const elLuasBpn = document.getElementById('pinLuasBpnText');
-          if (elLuasBpn) {
-            elLuasBpn.className = 'stat-value offline';
-            elLuasBpn.innerText = 'Server Offline';
-          }
-          const elTipeHak = document.getElementById('pinTipeHakText');
-          if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
-          renderCadastralProFields();
-          fetchSpatialStatusData(lat, lng).then(status => {
-            if (activePinData && Math.abs(activePinData.lat - lat) < 0.001 && Math.abs(activePinData.lng - lng) < 0.001) {
-              Object.assign(activePinData, status);
-              renderCadastralProFields();
-            }
-          });
-          const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-          if (elStatusValidasi) {
-            elStatusValidasi.className = 'status-offline-tag';
-            elStatusValidasi.innerText = 'Server Offline';
-          }
-          const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
-          if (elPinServer) {
-            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
-          }
-
-          const badgeEl = document.getElementById('badgeTipeHak');
-          if (badgeEl) badgeEl.innerText = 'DELINEASI MANDIRI';
-
-          const elLegalitas = document.getElementById('legalitasSummaryText');
-          if (elLegalitas) {
-            elLegalitas.innerText = 'Mode Delineasi Mandiri : Batas Bidang Siap Disesuaikan';
-          }
-
-          const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
-          const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
-
-          const elShpProv = document.getElementById('shpProvinsi');
-          if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
-
-          const elShpKeterangan = document.getElementById('shpKeterangan');
-          if (elShpKeterangan) {
-            const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Desa ${activePinData.desa}, Kec. ${activePinData.kecamatan}`;
-            elShpKeterangan.value = rawKet.toUpperCase();
-          }
-
-          if (foundBox) foundBox.style.display = 'flex';
-          if (notFoundBox) notFoundBox.style.display = 'none';
-
+        if (!isPointInsideOrNearPolygon(lat, lng, effectivePersil.polygon_coords, 1.5)) {
+          clearCanvasRebuilderLayers();
+          if (foundBox) foundBox.style.display = 'none';
+          if (notFoundBox) notFoundBox.style.display = 'block';
           const hud = document.getElementById('canvasHud');
-          if (hud) {
-            hud.style.display = 'flex';
-            const elHudNib = document.getElementById('hudNib');
-            if (elHudNib) elHudNib.innerText = lokasiFallback;
-            const elHudArea = document.getElementById('hudBpnArea');
-            if (elHudArea) {
-              elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
-            }
-          }
+          if (hud) hud.style.display = 'none';
+          showToast('Titik koordinat berada di luar bidang tanah terdaftar (jalan atau ruang terbuka).', 'info');
+          return;
+        }
 
-          rawInitialBboxCoords = defaultBox;
-          initCanvasRebuilder(lat, lng, estArea, defaultBox);
+        if (geoData) {
+          if (geoData.desa && geoData.desa !== '-') effectivePersil.desa = geoData.desa;
+          if (geoData.kecamatan && geoData.kecamatan !== '-') effectivePersil.kecamatan = geoData.kecamatan;
+          if (geoData.kabkot && geoData.kabkot !== '-') effectivePersil.kabkot = geoData.kabkot;
+          if (geoData.provinsi && geoData.provinsi !== '-') effectivePersil.provinsi = geoData.provinsi;
+          if (geoData.kodepos && geoData.kodepos !== '-') effectivePersil.kodepos = geoData.kodepos;
+          if (geoData.kantah && geoData.kantah !== '-') effectivePersil.kantah = geoData.kantah;
+          if (geoData.jalan && geoData.jalan !== '-') effectivePersil.alamat = geoData.jalan;
+        }
 
-          const badge = document.getElementById('badgeRebuildStatus');
-          if (badge) {
-            badge.className = 'badge-pill yellow';
-            badge.innerText = 'Delineasi Mandiri Aktif';
-          }
+        selectCadastreVectorParcel(effectivePersil, { lat, lng });
+        if (typeof renderCadastreVectorParcels === 'function') {
+          renderCadastreVectorParcels([effectivePersil]);
         }
       } catch (err) {
       } finally {

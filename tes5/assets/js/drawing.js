@@ -308,7 +308,47 @@ Server Sumber Data: ${serverName}`;
     }
     window.ensureBidangHatchPattern = ensureBidangHatchPattern;
 
-    function cleanAndDeduplicateVertices(coords, minMeters = 0.05, maxDeg = 0.5) {
+    function isPointInsideOrNearPolygon(ptLat, ptLng, polyCoords, toleranceMeters = 1.0) {
+      if (!polyCoords || polyCoords.length < 3) return false;
+      const normCoords = polyCoords.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
+      let inside = false;
+      const n = normCoords.length;
+      for (let i = 0, j = n - 1; i < n; j = i++) {
+        const xi = normCoords[i].lng, yi = normCoords[i].lat;
+        const xj = normCoords[j].lng, yj = normCoords[j].lat;
+        const intersect = ((yi > ptLat) !== (yj > ptLat)) && (ptLng < (xj - xi) * (ptLat - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      if (inside) return true;
+      for (let i = 0, j = n - 1; i < n; j = i++) {
+        const p1 = normCoords[i];
+        const p2 = normCoords[j];
+        const midLat = (p1.lat + p2.lat) * 0.5;
+        const cosLat = Math.cos(midLat * Math.PI / 180);
+        const px = ptLng * 111320 * cosLat;
+        const py = ptLat * 111320;
+        const ax = p1.lng * 111320 * cosLat;
+        const ay = p1.lat * 111320;
+        const bx = p2.lng * 111320 * cosLat;
+        const by = p2.lat * 111320;
+        const abx = bx - ax;
+        const aby = by - ay;
+        const lenSq = abx * abx + aby * aby;
+        let dist = 999999;
+        if (lenSq === 0) {
+          dist = Math.hypot(px - ax, py - ay);
+        } else {
+          let t = ((px - ax) * abx + (py - ay) * aby) / lenSq;
+          t = Math.max(0, Math.min(1, t));
+          dist = Math.hypot(px - (ax + t * abx), py - (ay + t * aby));
+        }
+        if (dist <= toleranceMeters) return true;
+      }
+      return false;
+    }
+    window.isPointInsideOrNearPolygon = isPointInsideOrNearPolygon;
+
+    function cleanAndDeduplicateVertices(coords, minMeters = 0.30, maxDeg = 5.0) {
       if (!coords || coords.length < 3) return coords;
       let pts = coords.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
@@ -363,11 +403,12 @@ Server Sumber Data: ${serverName}`;
       }
       return pts;
     }
+    window.cleanAndDeduplicateVertices = cleanAndDeduplicateVertices;
 
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.15, 1.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.35, 6.0);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
@@ -390,11 +431,7 @@ Server Sumber Data: ${serverName}`;
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.0000005 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.0000005) {
         pts.pop();
       }
-      activeVertices = pts.filter((p, i) => {
-        if (i === 0) return true;
-        const prev = pts[i - 1];
-        return Math.abs(p.lat - prev.lat) > 0.00000001 || Math.abs(p.lng - prev.lng) > 0.00000001;
-      });
+      activeVertices = cleanAndDeduplicateVertices(pts, 0.30, 5.0);
 
       const toolbar = document.getElementById('mapPrecisionToolbar');
       if (toolbar) toolbar.style.display = 'flex';
@@ -821,11 +858,11 @@ Server Sumber Data: ${serverName}`;
       ensureBidangHatchPattern(map);
       if (!activePolygonLayer) {
         activePolygonLayer = L.polygon(latlngs, {
-          color: '#ffffff',
+          color: '#ea580c',
           weight: 3.5,
           opacity: 1,
-          fillColor: 'url(#bidangHatchPattern)',
-          fillOpacity: 1,
+          fillColor: '#ffffff',
+          fillOpacity: 0.82,
           className: 'active-cadastre-polygon',
           interactive: true
         }).addTo(map);
@@ -833,11 +870,11 @@ Server Sumber Data: ${serverName}`;
       } else {
         activePolygonLayer.setLatLngs(latlngs);
         activePolygonLayer.setStyle({
-          color: '#ffffff',
+          color: '#ea580c',
           weight: 3.5,
           opacity: 1,
-          fillColor: 'url(#bidangHatchPattern)',
-          fillOpacity: 1,
+          fillColor: '#ffffff',
+          fillOpacity: 0.82,
           className: 'active-cadastre-polygon'
         });
       }
@@ -1511,60 +1548,106 @@ Server Sumber Data: ${serverName}`;
       }
     }
 
-    function snapSharedBoundaryVertices(newCoords, existingPolys, snapThresholdMeters = 2.5) {
-      if (!newCoords || newCoords.length < 3 || !existingPolys || existingPolys.length === 0) {
+    function snapAndAlignAdjacentParcel(newCoords, existingParcelsCoords, snapThresholdMeters = 3.5) {
+      if (!newCoords || newCoords.length < 3 || !existingParcelsCoords || existingParcelsCoords.length === 0) {
         return newCoords;
       }
+      function toPt(p) {
+        if (!p) return { lat: 0, lng: 0 };
+        if (Array.isArray(p)) {
+          if (Math.abs(p[0]) > 90 || Math.abs(p[1]) <= 90 && Math.abs(p[0]) > Math.abs(p[1])) {
+            return { lat: Number(p[1]), lng: Number(p[0]) };
+          }
+          return { lat: Number(p[0]), lng: Number(p[1]) };
+        }
+        return { lat: Number(p.lat), lng: Number(p.lng) };
+      }
       function distM(p1, p2) {
-        const dlat = (p1.lat - p2.lat) * 111320;
-        const midLat = (p1.lat + p2.lat) * 0.5;
-        const dlng = (p1.lng - p2.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
+        const pt1 = toPt(p1);
+        const pt2 = toPt(p2);
+        const dlat = (pt1.lat - pt2.lat) * 111320;
+        const midLat = (pt1.lat + pt2.lat) * 0.5;
+        const dlng = (pt1.lng - pt2.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
         return Math.hypot(dlat, dlng);
       }
-      function distToSegmentM(p, a, b) {
-        const dlat = (b.lat - a.lat) * 111320;
-        const midLat = (a.lat + b.lat) * 0.5;
-        const dlng = (b.lng - a.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
-        const segLen2 = dlat * dlat + dlng * dlng;
-        if (segLen2 === 0) return { dist: distM(p, a), pt: a };
-        const pLat = (p.lat - a.lat) * 111320;
-        const pLng = (p.lng - a.lng) * (111320 * Math.cos(midLat * Math.PI / 180));
-        const t = Math.max(0, Math.min(1, (pLat * dlat + pLng * dlng) / segLen2));
-        const projLat = a.lat + (t * (b.lat - a.lat));
-        const projLng = a.lng + (t * (b.lng - a.lng));
-        return { dist: distM(p, { lat: projLat, lng: projLng }), pt: { lat: projLat, lng: projLng } };
-      }
-
-      return newCoords.map(v => {
-        let bestSnap = null;
-        let minD = snapThresholdMeters;
-        existingPolys.forEach(poly => {
-          if (!poly || poly.length < 3) return;
-          const m = poly.length;
-          for (let j = 0; j < m; j++) {
-            const rawA = poly[j];
-            const a = Array.isArray(rawA) ? { lat: rawA[1], lng: rawA[0] } : { lat: rawA.lat, lng: rawA.lng };
-            const d = distM(v, a);
-            if (d < minD) {
-              minD = d;
-              bestSnap = { lat: a.lat, lng: a.lng };
-            }
-          }
-          for (let j = 0; j < m; j++) {
-            const rawA = poly[j];
-            const rawB = poly[(j + 1) % m];
-            const a = Array.isArray(rawA) ? { lat: rawA[1], lng: rawA[0] } : { lat: rawA.lat, lng: rawA.lng };
-            const b = Array.isArray(rawB) ? { lat: rawB[1], lng: rawB[0] } : { lat: rawB.lat, lng: rawB.lng };
-            const res = distToSegmentM(v, a, b);
-            if (res.dist < minD) {
-              minD = res.dist;
-              bestSnap = res.pt;
-            }
-          }
-        });
-        return bestSnap ? { lat: Number(bestSnap.lat.toFixed(7)), lng: Number(bestSnap.lng.toFixed(7)) } : { lat: Number(v.lat.toFixed(7)), lng: Number(v.lng.toFixed(7)) };
+      let snapped = newCoords.map(p => {
+        const pt = toPt(p);
+        return { lat: pt.lat, lng: pt.lng };
       });
+      const n = snapped.length;
+      for (let eIdx = 0; eIdx < existingParcelsCoords.length; eIdx++) {
+        const rawExist = existingParcelsCoords[eIdx];
+        if (!rawExist || rawExist.length < 3) continue;
+        const exist = rawExist.map(toPt);
+        const m = exist.length;
+        let foundShared = false;
+        for (let i = 0; i < n; i++) {
+          const b1 = snapped[i];
+          const b2 = snapped[(i + 1) % n];
+          for (let j = 0; j < m; j++) {
+            const a1 = exist[j];
+            const a2 = exist[(j + 1) % m];
+            const d1 = distM(b1, a2);
+            const d2 = distM(b2, a1);
+            if (d1 <= snapThresholdMeters && d2 <= snapThresholdMeters) {
+              snapped[i] = { lat: a2.lat, lng: a2.lng };
+              snapped[(i + 1) % n] = { lat: a1.lat, lng: a1.lng };
+              foundShared = true;
+              if (n === 4 && m === 4) {
+                const pStart = snapped[i];
+                const pEnd = snapped[(i + 1) % n];
+                const dlatEdge = pEnd.lat - pStart.lat;
+                const dlngEdge = pEnd.lng - pStart.lng;
+                const cosLat = Math.cos(pStart.lat * Math.PI / 180);
+                const edgeMy = dlatEdge * 111320;
+                const edgeMx = dlngEdge * 111320 * cosLat;
+                const edgeLen = Math.hypot(edgeMx, edgeMy);
+                if (edgeLen > 0) {
+                  let perpMx = -edgeMy / edgeLen;
+                  let perpMy = edgeMx / edgeLen;
+                  const origOther1 = toPt(newCoords[(i + 3) % 4]);
+                  const origW = Math.hypot(
+                    (origOther1.lat - pStart.lat) * 111320,
+                    (origOther1.lng - pStart.lng) * 111320 * cosLat
+                  );
+                  const dot = ((origOther1.lng - pStart.lng) * 111320 * cosLat) * perpMx +
+                              ((origOther1.lat - pStart.lat) * 111320) * perpMy;
+                  if (dot < 0) {
+                    perpMx = -perpMx;
+                    perpMy = -perpMy;
+                  }
+                  snapped[(i + 3) % 4] = {
+                    lat: Number((pStart.lat + (perpMy * origW) / 111320).toFixed(7)),
+                    lng: Number((pStart.lng + (perpMx * origW) / (111320 * cosLat)).toFixed(7))
+                  };
+                  snapped[(i + 2) % 4] = {
+                    lat: Number((pEnd.lat + (perpMy * origW) / 111320).toFixed(7)),
+                    lng: Number((pEnd.lng + (perpMx * origW) / (111320 * cosLat)).toFixed(7))
+                  };
+                }
+              }
+              break;
+            }
+            const d1s = distM(b1, a1);
+            const d2s = distM(b2, a2);
+            if (d1s <= snapThresholdMeters && d2s <= snapThresholdMeters) {
+              snapped[i] = { lat: a1.lat, lng: a1.lng };
+              snapped[(i + 1) % n] = { lat: a2.lat, lng: a2.lng };
+              foundShared = true;
+              break;
+            }
+          }
+          if (foundShared) break;
+        }
+      }
+      return snapped;
     }
+
+    function snapSharedBoundaryVertices(newCoords, existingPolys, snapThresholdMeters = 3.5) {
+      return snapAndAlignAdjacentParcel(newCoords, existingPolys, snapThresholdMeters);
+    }
+    window.snapAndAlignAdjacentParcel = snapAndAlignAdjacentParcel;
+    window.snapSharedBoundaryVertices = snapSharedBoundaryVertices;
 
     async function handleMergeParcelClick(lat, lng) {
       const statusBanner = document.getElementById('mergeBannerText');
@@ -1625,7 +1708,7 @@ Server Sumber Data: ${serverName}`;
         rawCoords = cleanAndDeduplicateVertices(rawCoords, 0.05, 0.5);
 
         const existingPolys = [activeVertices, ...mergeParcelsList.map(p => p.coords)];
-        const snappedCoords = snapSharedBoundaryVertices(rawCoords, existingPolys, 2.5);
+        const snappedCoords = snapSharedBoundaryVertices(rawCoords, existingPolys, 3.5);
 
         const newParcelLuas = (persilData.luas_m2 && persilData.luas_m2 > 0)
           ? roundArea2(persilData.luas_m2)
