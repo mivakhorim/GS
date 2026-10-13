@@ -974,24 +974,22 @@ Server Sumber Data: ${serverName}`;
                   <span>Geser Presisi</span>
                   <span class="nudge-unit">±1 cm</span>
                 </div>
-                <div class="patok-nudge-grid">
-                  <div></div>
-                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'up', 1)" title="Geser 1 cm ke Utara (Atas)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+                <div class="patok-nudge-pad">
+                  <button type="button" class="btn-nudge-dir btn-nudge-up" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'up', 1)" title="Geser 1 cm ke Utara (Atas)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
                   </button>
-                  <div></div>
-                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'left', 1)" title="Geser 1 cm ke Barat (Kiri)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                  <div class="patok-nudge-mid-row">
+                    <button type="button" class="btn-nudge-dir btn-nudge-left" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'left', 1)" title="Geser 1 cm ke Barat (Kiri)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div class="btn-nudge-center" title="Akurasi Geodetik 1 cm">1cm</div>
+                    <button type="button" class="btn-nudge-dir btn-nudge-right" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'right', 1)" title="Geser 1 cm ke Timur (Kanan)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+                    </button>
+                  </div>
+                  <button type="button" class="btn-nudge-dir btn-nudge-down" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'down', 1)" title="Geser 1 cm ke Selatan (Bawah)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
-                  <div class="btn-nudge-center" title="Akurasi Geodetik 1 cm">1cm</div>
-                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'right', 1)" title="Geser 1 cm ke Timur (Kanan)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
-                  </button>
-                  <div></div>
-                  <button type="button" class="btn-nudge-dir" onclick="window.nudgeVertexRealCm(${pIdx}, ${idx}, 'down', 1)" title="Geser 1 cm ke Selatan (Bawah)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                  </button>
-                  <div></div>
                 </div>
               </div>
               <div class="patok-popup-actions">

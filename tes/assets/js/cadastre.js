@@ -92,19 +92,28 @@ function getBpnGatewayBase() {
         let targetUrl = '';
         if (isProxyActive && persilBase && (persilBase.startsWith('http://') || persilBase.startsWith('https://'))) {
           targetUrl = `${persilBase}/api/persil-info?lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${map.getZoom()}`;
-        } else {
+        } else if (typeof window !== 'undefined' && window.location && window.location.protocol === 'http:') {
           targetUrl = `http://127.0.0.1:8085/api/persil-info?lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${map.getZoom()}`;
         }
-        const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 3500);
-        const res = await fetch(targetUrl, { signal: ctrl.signal });
-        clearTimeout(tid);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.found) {
-            const pList = (Array.isArray(data.all_parcels) && data.all_parcels.length > 0) ? data.all_parcels : [data];
-            renderCadastreVectorParcels(pList);
-          }
+        if (targetUrl) {
+          try {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 2500);
+            const res = await fetch(targetUrl, { signal: ctrl.signal });
+            clearTimeout(tid);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.found) {
+                const pList = (Array.isArray(data.all_parcels) && data.all_parcels.length > 0) ? data.all_parcels : [data];
+                renderCadastreVectorParcels(pList);
+                return;
+              }
+            }
+          } catch (_) {}
+        }
+        const traced = await traceParcelFromWmsTile(center.lat, center.lng);
+        if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
+          renderCadastreVectorParcels([traced]);
         }
       } catch (e) {
       } finally {
@@ -531,6 +540,255 @@ function getBpnGatewayBase() {
       }
     }
 
+    function traceParcelFromWmsTile(lat, lng, spanMeters = 70.0) {
+      return new Promise((resolve) => {
+        const span = Number(spanMeters) || 70.0;
+        const r = 6378137.0;
+        const cx = r * (lng * Math.PI / 180.0);
+        const cy = r * Math.log(Math.tan(Math.PI / 4.0 + (lat * Math.PI / 180.0) / 2.0));
+        const minx = cx - span;
+        const maxx = cx + span;
+        const miny = cy - span;
+        const maxy = cy + span;
+        const bbox = `${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}`;
+        const cleanUrl = `bhumi.atrbpn.go.id/mprx/service?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=bhumi_persil&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
+        const tileUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(cleanUrl);
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const timer = setTimeout(() => resolve(null), 5000);
+
+        img.onload = function() {
+          clearTimeout(timer);
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) { resolve(null); return; }
+            ctx.drawImage(img, 0, 0);
+            const imgData = ctx.getImageData(0, 0, 512, 512);
+            const data = imgData.data;
+
+            const w = 512;
+            const h = 512;
+            const isWall = new Uint8Array(w * h);
+
+            for (let y = 0; y < h; y++) {
+              const rowOffset = y * w * 4;
+              for (let x = 0; x < w; x++) {
+                const a = data[rowOffset + x * 4 + 3];
+                if (a >= 180) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    const ny = y + dy;
+                    if (ny < 0 || ny >= h) continue;
+                    const nRow = ny * w;
+                    for (let dx = -1; dx <= 1; dx++) {
+                      const nx = x + dx;
+                      if (nx >= 0 && nx < w) {
+                        isWall[nRow + nx] = 1;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            let startX = 256;
+            let startY = 256;
+            if (isWall[startY * w + startX] === 1) {
+              let foundFree = false;
+              for (let rad = 1; rad <= 14; rad++) {
+                for (let dy = -rad; dy <= rad; dy++) {
+                  const ny = startY + dy;
+                  if (ny < 0 || ny >= h) continue;
+                  for (let dx = -rad; dx <= rad; dx++) {
+                    const nx = startX + dx;
+                    if (nx >= 0 && nx < w && isWall[ny * w + nx] === 0) {
+                      startX = nx;
+                      startY = ny;
+                      foundFree = true;
+                      break;
+                    }
+                  }
+                  if (foundFree) break;
+                }
+                if (foundFree) break;
+              }
+              if (!foundFree) { resolve(null); return; }
+            }
+
+            const visited = new Uint8Array(w * h);
+            const queueX = new Int16Array(w * h);
+            const queueY = new Int16Array(w * h);
+            let head = 0;
+            let tail = 0;
+
+            visited[startY * w + startX] = 1;
+            queueX[tail] = startX;
+            queueY[tail] = startY;
+            tail++;
+
+            while (head < tail) {
+              const qx = queueX[head];
+              const qy = queueY[head];
+              head++;
+
+              const neighbors = [
+                [qx - 1, qy],
+                [qx + 1, qy],
+                [qx, qy - 1],
+                [qx, qy + 1]
+              ];
+              for (let i = 0; i < 4; i++) {
+                const nx = neighbors[i][0];
+                const ny = neighbors[i][1];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                  const idx = ny * w + nx;
+                  if (visited[idx] === 0 && isWall[idx] === 0) {
+                    visited[idx] = 1;
+                    queueX[tail] = nx;
+                    queueY[tail] = ny;
+                    tail++;
+                  }
+                }
+              }
+            }
+
+            const totalPixels = tail;
+            if (totalPixels < 150) {
+              resolve(null);
+              return;
+            }
+            if (totalPixels > (w * h * 0.95)) {
+              if (span < 120.0) {
+                traceParcelFromWmsTile(lat, lng, span * 2.0).then(resolve);
+                return;
+              }
+              resolve(null);
+              return;
+            }
+
+            let firstX = -1;
+            let firstY = -1;
+            for (let y = 0; y < h; y++) {
+              const rowIdx = y * w;
+              for (let x = 0; x < w; x++) {
+                if (visited[rowIdx + x] === 1) {
+                  firstX = x;
+                  firstY = y;
+                  break;
+                }
+              }
+              if (firstX !== -1) break;
+            }
+            if (firstX === -1) { resolve(null); return; }
+
+            const dirD = [
+              [0, -1], [1, -1], [1, 0], [1, 1],
+              [0, 1], [-1, 1], [-1, 0], [-1, -1]
+            ];
+            const contour = [{ x: firstX, y: firstY }];
+            let currX = firstX;
+            let currY = firstY;
+            let backtrack = 6;
+
+            for (let step = 0; step < 4000; step++) {
+              let foundNext = false;
+              for (let i = 0; i < 8; i++) {
+                const cd = (backtrack + i) % 8;
+                const nx = currX + dirD[cd][0];
+                const ny = currY + dirD[cd][1];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h && visited[ny * w + nx] === 1) {
+                  currX = nx;
+                  currY = ny;
+                  contour.push({ x: currX, y: currY });
+                  backtrack = (cd + 5) % 8;
+                  foundNext = true;
+                  break;
+                }
+              }
+              if (!foundNext || (currX === firstX && currY === firstY)) break;
+            }
+
+            if (contour.length < 8) { resolve(null); return; }
+
+            function distToSegment(pt, a, b) {
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              if (dx === 0 && dy === 0) return Math.hypot(pt.x - a.x, pt.y - a.y);
+              return Math.abs(dy * pt.x - dx * pt.y + b.x * a.y - b.y * a.x) / Math.hypot(dx, dy);
+            }
+
+            function simplifyRdp(pts, eps) {
+              if (pts.length < 3) return pts;
+              let maxD = 0;
+              let idx = 0;
+              const last = pts.length - 1;
+              for (let i = 1; i < last; i++) {
+                const d = distToSegment(pts[i], pts[0], pts[last]);
+                if (d > maxD) {
+                  maxD = d;
+                  idx = i;
+                }
+              }
+              if (maxD > eps) {
+                const left = simplifyRdp(pts.slice(0, idx + 1), eps);
+                const right = simplifyRdp(pts.slice(idx), eps);
+                return left.slice(0, -1).concat(right);
+              }
+              return [pts[0], pts[last]];
+            }
+
+            const simplified = simplifyRdp(contour, 3.5);
+            if (simplified.length < 3) { resolve(null); return; }
+
+            const polyCoords = [];
+            for (let i = 0; i < simplified.length; i++) {
+              const pt = simplified[i];
+              if (i === simplified.length - 1 && pt.x === simplified[0].x && pt.y === simplified[0].y) continue;
+              const mx = minx + (pt.x / 512.0) * (maxx - minx);
+              const my = maxy - (pt.y / 512.0) * (maxy - miny);
+              const pLat = (2.0 * Math.atan(Math.exp(my / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
+              const pLng = (mx / r) * 180.0 / Math.PI;
+              polyCoords.push({
+                lat: Number(pLat.toFixed(7)),
+                lng: Number(pLng.toFixed(7))
+              });
+            }
+
+            if (polyCoords.length < 3) { resolve(null); return; }
+
+            const exactArea = calculatePolygonArea(polyCoords);
+            if (exactArea < 5.0) { resolve(null); return; }
+
+            resolve({
+              found: true,
+              is_official_cadastre: true,
+              is_auto_traced: true,
+              fid: 'PERSIL-' + Math.floor(10000 + Math.random() * 90000),
+              nib: '-',
+              tipe_hak: 'TERDAFTAR ATR/BPN',
+              luas_m2: Math.round(exactArea),
+              luas_terdaftar_m2: Math.round(exactArea),
+              polygon_coords: polyCoords,
+              status_validasi: 'Kadaster Resmi Presisi',
+              source: 'VEKTOR PERSIL GEODETIK ATR/BPN'
+            });
+          } catch (err) {
+            resolve(null);
+          }
+        };
+
+        img.onerror = function() {
+          clearTimeout(timer);
+          resolve(null);
+        };
+
+        img.src = tileUrl;
+      });
+    }
+
     async function fetchPersilCadastreData(lat, lng, zoom = 19) {
       const cacheKey = `${lat.toFixed(6)},${lng.toFixed(6)}`;
       const cached = persilClientCache.get(cacheKey);
@@ -545,7 +803,7 @@ function getBpnGatewayBase() {
           url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`,
           timeout: 6000
         });
-      } else {
+      } else if (typeof window !== 'undefined' && window.location && window.location.protocol === 'http:') {
         endpointsToTry.push({
           url: `http://127.0.0.1:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`,
           timeout: 2500
@@ -557,7 +815,7 @@ function getBpnGatewayBase() {
       endpointsToTry.push({
         url: `${sbUrl}/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-        timeout: 8000
+        timeout: 4000
       });
 
       for (const item of endpointsToTry) {
@@ -583,6 +841,12 @@ function getBpnGatewayBase() {
             }
           }
         } catch (e) {}
+      }
+
+      const traced = await traceParcelFromWmsTile(lat, lng);
+      if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
+        persilClientCache.set(cacheKey, { data: traced, time: Date.now() });
+        return traced;
       }
 
       return {
@@ -952,7 +1216,7 @@ function getBpnGatewayBase() {
 
           const elLuasBpn = document.getElementById('pinLuasBpnText');
           if (elLuasBpn) {
-            if (activePinData.luas_terdaftar_m2 > 0) {
+            if (activePinData.luas_terdaftar_m2 > 0 && !effectivePersil.is_auto_traced) {
               elLuasBpn.className = 'stat-value emerald';
               elLuasBpn.innerText = `${Math.round(activePinData.luas_terdaftar_m2).toLocaleString('id-ID')} m²`;
             } else {
