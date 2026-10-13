@@ -179,140 +179,6 @@ function exportCoordinatesXls() {
     let currentRescaleMode = 'oss';
     let currentRescaleInitialM2 = 0;
 
-    function renderRescalePatokChips(rawParts) {
-      const container = document.getElementById('rescalePatokChipsContainer');
-      if (!container) return;
-      container.innerHTML = '';
-      const partPrefixes = ['A', 'B', 'C', 'D', 'E', 'F'];
-      rawParts.forEach((part, pIdx) => {
-        const pfx = rawParts.length > 1 ? (partPrefixes[pIdx] || `P${pIdx+1}`) : 'P';
-        part.forEach((v, idx) => {
-          const nodeLabel = rawParts.length > 1 ? `${pfx}${idx + 1}` : `P${idx + 1}`;
-          const isLocked = (typeof window.isVertexLocked === 'function') ? window.isVertexLocked(pIdx, idx) : false;
-          const chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = `patok-lock-chip ${isLocked ? 'locked' : ''}`;
-          chip.title = isLocked ? `Patok ${nodeLabel} TERKUNCI (Klik untuk membebaskan)` : `Patok ${nodeLabel} BEBAS (Klik untuk mengunci)`;
-          chip.innerHTML = `${nodeLabel} ${isLocked ? '🔒 Terkunci' : '🔓 Bebas'}`;
-          chip.onclick = () => {
-            if (typeof window.toggleVertexLock === 'function') {
-              window.toggleVertexLock(pIdx, idx);
-              renderRescalePatokChips(rawParts);
-              updateRescalePreview();
-            }
-          };
-          container.appendChild(chip);
-        });
-      });
-    }
-
-    function unlockAllVerticesForRescale() {
-      if (typeof window.unlockAllVertices === 'function') {
-        window.unlockAllVertices();
-      } else if (window.lockedVertexSet) {
-        window.lockedVertexSet.clear();
-      }
-      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      renderRescalePatokChips(rawParts);
-      updateRescalePreview();
-    }
-
-    function lockAlternateVerticesForRescale() {
-      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      rawParts.forEach((part, pIdx) => {
-        part.forEach((v, idx) => {
-          if (idx % 2 === 0) {
-            if (typeof window.lockedVertexSet !== 'undefined') window.lockedVertexSet.add(`${pIdx}_${idx}`);
-          } else {
-            if (typeof window.lockedVertexSet !== 'undefined') window.lockedVertexSet.delete(`${pIdx}_${idx}`);
-          }
-        });
-      });
-      renderRescalePatokChips(rawParts);
-      updateRescalePreview();
-    }
-
-    function computePartialRescaleParts(rawParts, targetCleanM2) {
-      let anyUnlocked = false;
-      rawParts.forEach((part, pIdx) => {
-        part.forEach((v, idx) => {
-          if (!window.isVertexLocked || !window.isVertexLocked(pIdx, idx)) {
-            anyUnlocked = true;
-          }
-        });
-      });
-      if (!anyUnlocked) return null;
-
-      let currentTotalM2 = 0;
-      rawParts.forEach(p => { currentTotalM2 += calculatePolygonArea(p); });
-      if (currentTotalM2 <= 0) return rawParts;
-
-      return rawParts.map((part, pIdx) => {
-        const lockedIndices = [];
-        const unlockedIndices = [];
-        part.forEach((v, idx) => {
-          if (typeof window.isVertexLocked === 'function' && window.isVertexLocked(pIdx, idx)) {
-            lockedIndices.push(idx);
-          } else {
-            unlockedIndices.push(idx);
-          }
-        });
-
-        if (unlockedIndices.length === 0) {
-          return part.map(v => ({ lat: v.lat, lng: v.lng }));
-        }
-
-        const curPartArea = calculatePolygonArea(part);
-        const partRatio = curPartArea / currentTotalM2;
-        const targetPartArea = targetCleanM2 * partRatio;
-
-        if (lockedIndices.length === 0) {
-          let sumLat = 0, sumLng = 0;
-          part.forEach(v => { sumLat += v.lat; sumLng += v.lng; });
-          const cLat = sumLat / part.length;
-          const cLng = sumLng / part.length;
-          const s = Math.sqrt(Math.max(0.0001, targetPartArea / curPartArea));
-          return part.map(v => ({
-            lat: Number((cLat + s * (v.lat - cLat)).toFixed(7)),
-            lng: Number((cLng + s * (v.lng - cLng)).toFixed(7))
-          }));
-        }
-
-        let sumFreeLat = 0, sumFreeLng = 0;
-        unlockedIndices.forEach(i => {
-          sumFreeLat += part[i].lat;
-          sumFreeLng += part[i].lng;
-        });
-        const anchorLat = sumFreeLat / unlockedIndices.length;
-        const anchorLng = sumFreeLng / unlockedIndices.length;
-
-        let low = 0.001;
-        let high = 15.0;
-        let bestPts = part;
-
-        for (let it = 0; it < 36; it++) {
-          const mid = (low + high) / 2.0;
-          const testPts = part.map((v, idx) => {
-            if (lockedIndices.includes(idx)) {
-              return { lat: v.lat, lng: v.lng };
-            }
-            return {
-              lat: Number((anchorLat + mid * (v.lat - anchorLat)).toFixed(7)),
-              lng: Number((anchorLng + mid * (v.lng - anchorLng)).toFixed(7))
-            };
-          });
-          const testArea = calculatePolygonArea(testPts);
-          if (testArea < targetPartArea) {
-            low = mid;
-          } else {
-            high = mid;
-          }
-          bestPts = testPts;
-        }
-        return bestPts;
-      });
-    }
-
     function openRescaleModal(mode = 'oss') {
       ensureActiveVerticesFromDraw();
       const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
@@ -357,7 +223,6 @@ function exportCoordinatesXls() {
         if (helpEl) helpEl.innerText = 'Masukkan angka luas resmi yang tertera pada sertifikat tanah / Surat Ukur BPN.';
       }
 
-      renderRescalePatokChips(rawParts);
       updateRescalePreview();
       if (modal) modal.style.display = 'flex';
     }
@@ -373,32 +238,6 @@ function exportCoordinatesXls() {
       const newAreaEl = document.getElementById('rescalePreviewNewM2');
       const scaleRatioEl = document.getElementById('rescalePreviewScaleRatio');
       const btnConfirm = document.getElementById('btnConfirmRescale');
-      const warnEl = document.getElementById('rescaleLockedWarn');
-
-      ensureActiveVerticesFromDraw();
-      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-
-      let totalPts = 0;
-      let lockedCount = 0;
-      rawParts.forEach((part, pIdx) => {
-        part.forEach((v, idx) => {
-          totalPts++;
-          if (typeof window.isVertexLocked === 'function' && window.isVertexLocked(pIdx, idx)) {
-            lockedCount++;
-          }
-        });
-      });
-
-      if (lockedCount >= totalPts && totalPts > 0) {
-        if (warnEl) warnEl.style.display = 'block';
-        if (targetCleanEl) targetCleanEl.innerText = '-';
-        if (newAreaEl) newAreaEl.innerText = '-';
-        if (scaleRatioEl) scaleRatioEl.innerText = 'Terkunci Semua';
-        if (btnConfirm) btnConfirm.disabled = true;
-        return;
-      } else {
-        if (warnEl) warnEl.style.display = 'none';
-      }
 
       const val = parseFloat(inputEl?.value);
       if (!val || isNaN(val) || val <= 0 || currentRescaleInitialM2 <= 0) {
@@ -423,20 +262,9 @@ function exportCoordinatesXls() {
         s = Math.sqrt(newArea / currentRescaleInitialM2);
       }
 
-      const rescaleResult = computePartialRescaleParts(rawParts, targetClean);
-      if (!rescaleResult) {
-        if (btnConfirm) btnConfirm.disabled = true;
-        return;
-      }
-
-      let actualRescaledM2 = 0;
-      rescaleResult.forEach(p => { actualRescaledM2 += calculatePolygonArea(p); });
-
       if (targetCleanEl) targetCleanEl.innerText = formatAreaM2(targetClean);
-      if (newAreaEl) newAreaEl.innerText = formatAreaM2(actualRescaledM2);
-      if (scaleRatioEl) {
-        scaleRatioEl.innerText = lockedCount > 0 ? `${s.toFixed(6)}x (${lockedCount} patok dikunci)` : `${s.toFixed(6)}x`;
-      }
+      if (newAreaEl) newAreaEl.innerText = formatAreaM2(newArea);
+      if (scaleRatioEl) scaleRatioEl.innerText = `${s.toFixed(6)}x`;
       if (btnConfirm) btnConfirm.disabled = false;
     }
 
@@ -456,19 +284,29 @@ function exportCoordinatesXls() {
       }
 
       let targetClean = 0;
+      let newArea = 0;
+      let s = 1;
+
       if (currentRescaleMode === 'oss') {
         targetClean = Math.max(0.01, currentRescaleInitialM2 - 0.10);
-        const newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
-        targetClean = newArea;
+        newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
+        s = Math.sqrt(newArea / currentRescaleInitialM2);
       } else {
         targetClean = Math.max(0.01, val - 0.10);
+        newArea = targetClean;
+        s = Math.sqrt(newArea / currentRescaleInitialM2);
       }
 
-      const newParts = computePartialRescaleParts(rawParts, targetClean);
-      if (!newParts) {
-        showToast('Minimal 1 patok harus bebas (tidak terkunci) agar luas bidang dapat diskala.', 'warn');
-        return;
-      }
+      const newParts = rawParts.map(part => {
+        let sumLat = 0, sumLng = 0;
+        part.forEach(v => { sumLat += v.lat; sumLng += v.lng; });
+        const cLat = sumLat / part.length;
+        const cLng = sumLng / part.length;
+        return part.map(v => ({
+          lat: Number((cLat + s * (v.lat - cLat)).toFixed(7)),
+          lng: Number((cLng + s * (v.lng - cLng)).toFixed(7))
+        }));
+      });
 
       if (activeMultiParts && activeMultiParts.length > 1) {
         activeMultiParts = newParts;
@@ -1321,9 +1159,6 @@ function exportCoordinatesXls() {
     window.closeRescaleModal = closeRescaleModal;
     window.updateRescalePreview = updateRescalePreview;
     window.applyRescaleAndDownload = applyRescaleAndDownload;
-    window.unlockAllVerticesForRescale = unlockAllVerticesForRescale;
-    window.lockAlternateVerticesForRescale = lockAlternateVerticesForRescale;
-    window.renderRescalePatokChips = renderRescalePatokChips;
     window.exportDXF = exportDXF;
     window.downloadCoordsCad = downloadCoordsCad;
     window.exportGeoJSON = exportGeoJSON;

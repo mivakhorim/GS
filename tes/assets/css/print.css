@@ -4,9 +4,8 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background-color: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      background-color: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(4px);
       z-index: 99999;
       display: none;
       align-items: center;
@@ -18,18 +17,18 @@
       width: 90vw;
       max-width: 680px;
       background-color: var(--bg-surface);
-      border: 1px solid rgba(226, 232, 240, 0.9);
-      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 24px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.06);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.22);
       overflow: hidden;
       margin: auto;
-      animation: coordsModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: coordsModalPop 0.18s ease-out;
     }
     @keyframes coordsModalPop {
-      from { transform: scale(0.96) translateY(6px); opacity: 0; }
-      to { transform: scale(1) translateY(0); opacity: 1; }
+      from { transform: scale(0.97); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
     .modal-coords-header {
       padding: 0.85rem 1.15rem;
@@ -48,7 +47,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 8px;
+      border-radius: 2px;
       flex-shrink: 0;
     }
     .modal-coords-title {
@@ -78,20 +77,19 @@
       }
     }
     .export-type-card {
-      background-color: #ffffff;
+      background-color: var(--bg-surface);
       border: 1px solid var(--border-light);
-      border-radius: 8px;
-      padding: 0.95rem;
+      border-radius: 2px;
+      padding: 0.9rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       gap: 0.8rem;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .export-type-card:hover {
-      transform: translateY(-2px);
       border-color: var(--accent);
-      box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.1);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
     }
     .export-type-badge {
       display: inline-block;
@@ -99,7 +97,7 @@
       font-weight: 700;
       letter-spacing: 0.05em;
       padding: 2px 6px;
-      border-radius: 4px;
+      border-radius: 2px;
       margin-bottom: 0.35rem;
       text-transform: uppercase;
     }
@@ -230,19 +228,11 @@
       flex: 1 1 0;
       min-height: 0;
       overflow: auto;
-      background-color: #334155;
-      padding: 1rem;
+      background-color: #525659;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-    }
-    .print-sheet-scale-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      margin: auto;
-      flex-shrink: 0;
     }
     .print-sheet-paper {
       background-color: #ffffff;
@@ -253,34 +243,28 @@
       box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
       display: flex;
       flex-direction: column;
-      padding: 6mm 7mm;
+      padding: 8mm;
       position: relative;
       font-family: 'Inter', sans-serif;
       margin: auto;
       flex-shrink: 0;
-      overflow: hidden;
     }
     .print-sheet-paper.a3 {
       width: 420mm;
       height: 297mm;
-      padding: 9mm 10mm;
-      overflow: hidden;
+      padding: 10mm;
     }
     #kopInsetBox {
-      height: 95px !important;
-      flex: none;
-      display: flex;
-      flex-direction: column;
+      height: 155px;
     }
     #printInsetContainer {
-      height: 75px !important;
-      width: 100%;
+      height: 130px;
     }
     .print-sheet-paper.a3 #kopInsetBox {
-      height: 185px !important;
+      height: 290px !important;
     }
     .print-sheet-paper.a3 #printInsetContainer {
-      height: 155px !important;
+      height: 260px !important;
     }
     .print-mobile-magnifier {
       display: none !important;
@@ -559,18 +543,18 @@
       flex-direction: column;
       height: 100%;
       min-height: 0;
-      overflow: hidden !important;
+      overflow-y: auto;
       background-color: #ffffff;
       font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 7.5px;
+      font-size: 8.5px;
       color: #0f172a;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: geometricPrecision;
     }
     .print-kop-box {
-      border-bottom: 1.2px solid #000000;
-      padding: 3px 6px;
+      border-bottom: 1.5px solid #000000;
+      padding: 6px 8px;
       box-sizing: border-box;
     }
     .print-kop-box:last-child {
@@ -578,28 +562,27 @@
     }
     .print-kop-box-title {
       font-weight: 700;
-      font-size: 7.5px;
+      font-size: 8.5px;
       letter-spacing: 0.02em;
       text-transform: uppercase;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
       border-bottom: 1px solid #cbd5e1;
-      padding-bottom: 1px;
+      padding-bottom: 2px;
       color: #0f172a;
     }
     .print-kop-field {
       display: grid;
-      grid-template-columns: 62px 1fr;
+      grid-template-columns: 78px 1fr;
       align-items: center;
-      gap: 4px;
-      margin-bottom: 1.5px;
-      line-height: 1.2;
+      gap: 6px;
+      margin-bottom: 3.5px;
+      line-height: 1.25;
     }
     .print-kop-label {
       color: #475569;
       font-weight: 600;
       letter-spacing: 0.01em;
       white-space: nowrap;
-      font-size: 7.5px;
     }
     .print-kop-val {
       font-weight: 600;
@@ -607,110 +590,53 @@
       color: #0f172a;
       word-break: break-word;
       letter-spacing: 0.01em;
-      font-size: 7.5px;
     }
     .print-legend-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
-      gap: 3px 6px;
-      overflow: hidden !important;
-      max-height: none !important;
-      align-content: start;
+      display: flex;
+      flex-direction: column;
+      gap: 3.5px;
     }
     .print-legend-item {
       display: flex;
       align-items: center;
-      gap: 5px;
-      line-height: 1.5 !important;
+      gap: 8px;
+      line-height: 1.25;
     }
     .print-legend-symbol {
-      width: 16px;
-      height: 10px;
+      width: 24px;
+      height: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
     .print-legend-swatch {
-      width: 14px;
-      height: 8px;
+      width: 20px;
+      height: 10px;
       border: 1px solid #000000;
       box-sizing: border-box;
     }
     .print-legend-line {
-      width: 14px;
-      height: 2px;
+      width: 20px;
+      height: 2.5px;
       box-sizing: border-box;
     }
     .print-legend-point {
-      width: 6.5px;
-      height: 6.5px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       box-sizing: border-box;
     }
     .print-legend-item span {
-      font-size: 7px;
+      font-size: 8px;
       font-weight: 500;
       color: #0f172a;
-      line-height: 1.5 !important;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     .print-scale-bar-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-top: 1px;
-    }
-    .print-sheet-paper.a3 .print-kop-column {
-      font-size: 9.5px;
-    }
-    .print-sheet-paper.a3 .print-kop-box {
-      border-bottom: 2px solid #000000;
-      padding: 6px 10px;
-    }
-    .print-sheet-paper.a3 .print-kop-box-title {
-      font-size: 9.5px;
-      margin-bottom: 4px;
-      padding-bottom: 2px;
-    }
-    .print-sheet-paper.a3 .print-kop-field {
-      grid-template-columns: 82px 1fr;
-      gap: 6px;
-      margin-bottom: 3.5px;
-      line-height: 1.3;
-    }
-    .print-sheet-paper.a3 .print-kop-label,
-    .print-sheet-paper.a3 .print-kop-val {
-      font-size: 9.5px;
-    }
-    .print-sheet-paper.a3 .print-legend-list {
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 4px 8px;
-    }
-    .print-sheet-paper.a3 .print-legend-item {
-      line-height: 1.5 !important;
-    }
-    .print-sheet-paper.a3 .print-legend-symbol {
-      width: 20px;
-      height: 12px;
-    }
-    .print-sheet-paper.a3 .print-legend-swatch {
-      width: 18px;
-      height: 9px;
-    }
-    .print-sheet-paper.a3 .print-legend-line {
-      width: 18px;
-      height: 2.5px;
-    }
-    .print-sheet-paper.a3 .print-legend-point {
-      width: 8px;
-      height: 8px;
-    }
-    .print-sheet-paper.a3 .print-legend-item span {
-      font-size: 8px;
-      line-height: 1.5 !important;
+      margin-top: 2px;
     }
     @page {
       size: A4 landscape;

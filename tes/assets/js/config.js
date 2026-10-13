@@ -413,62 +413,15 @@
       };
     }
 
-    function snapSharedBoundaryBends(baseCoords, otherRings, maxDistMeters = 1.8) {
-      if (!baseCoords || baseCoords.length < 3 || !otherRings || otherRings.length === 0) return baseCoords;
-      let out = baseCoords.map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }));
-
-      otherRings.forEach(ring => {
-        if (!ring || ring.length < 3) return;
-        ring.forEach(q => {
-          let bestSeg = -1;
-          let bestDist = Infinity;
-          const n = out.length;
-          for (let i = 0; i < n; i++) {
-            const p1 = out[i];
-            const p2 = out[(i + 1) % n];
-            const midLat = (p1.lat + p2.lat) * 0.5;
-            const cosLat = Math.cos(midLat * Math.PI / 180);
-
-            const vx = (p2.lng - p1.lng) * 111320 * cosLat;
-            const vy = (p2.lat - p1.lat) * 111320;
-            const segLenSq = vx * vx + vy * vy;
-            if (segLenSq < 0.09) continue;
-
-            const qx = (q.lng - p1.lng) * 111320 * cosLat;
-            const qy = (q.lat - p1.lat) * 111320;
-            const t = (qx * vx + qy * vy) / segLenSq;
-            if (t > 0.04 && t < 0.96) {
-              const px = vx * t;
-              const py = vy * t;
-              const d = Math.hypot(qx - px, qy - py);
-              if (d < maxDistMeters && d < bestDist) {
-                bestDist = d;
-                bestSeg = i;
-              }
-            }
-          }
-          if (bestSeg >= 0) {
-            const tooClose = out.some(v => {
-              const dlat = (q.lat - v.lat) * 111320;
-              const dlng = (q.lng - v.lng) * 111320 * Math.cos(q.lat * Math.PI / 180);
-              return Math.hypot(dlat, dlng) < 0.25;
-            });
-            if (!tooClose) {
-              out.splice(bestSeg + 1, 0, { lat: Number(q.lat.toFixed(7)), lng: Number(q.lng.toFixed(7)) });
-            }
-          }
-        });
-      });
-      return out;
-    }
-    window.snapSharedBoundaryBends = snapSharedBoundaryBends;
-
     function parseGeoServerPersilGeoJson(data, clickLat, clickLng) {
       if (!data || !Array.isArray(data.features) || data.features.length === 0) {
         return null;
       }
+      let chosenFeat = null;
+      let chosenCoords = null;
+      let bestDist = Infinity;
+      let foundExact = false;
 
-      let allParsedRings = [];
       for (const feat of data.features) {
         const geom = feat.geometry;
         if (!geom) continue;
@@ -494,60 +447,26 @@
               coords.pop();
             }
           }
-          if (coords.length >= 3) {
-            allParsedRings.push({ feat, coords });
+          if (coords.length < 3) continue;
+
+          if (isPointInsideOrNearPolygon(clickLat, clickLng, coords, 0.5)) {
+            chosenFeat = feat;
+            chosenCoords = coords;
+            foundExact = true;
+            break;
+          }
+          const d = distancePointToPolygonMeters(clickLat, clickLng, coords);
+          if (d <= 35.0 && d < bestDist) {
+            bestDist = d;
+            chosenFeat = feat;
+            chosenCoords = coords;
           }
         }
-      }
-
-      if (allParsedRings.length === 0) return null;
-
-      let strictlyInsideMatches = [];
-      let nearMatches = [];
-
-      for (const item of allParsedRings) {
-        let inside = false;
-        for (let i = 0, j = item.coords.length - 1; i < item.coords.length; j = i++) {
-          const xi = item.coords[i].lng, yi = item.coords[i].lat;
-          const xj = item.coords[j].lng, yj = item.coords[j].lat;
-          const intersect = ((yi > clickLat) !== (yj > clickLat)) && (clickLng < (xj - xi) * (clickLat - yi) / (yj - yi) + xi);
-          if (intersect) inside = !inside;
-        }
-
-        if (inside) {
-          let latSum = 0, lngSum = 0;
-          item.coords.forEach(p => { latSum += p.lat; lngSum += p.lng; });
-          const cLat = latSum / item.coords.length;
-          const cLng = lngSum / item.coords.length;
-          const distToC = Math.hypot((clickLat - cLat) * 111320, (clickLng - cLng) * 111320 * Math.cos(clickLat * Math.PI / 180));
-          strictlyInsideMatches.push({ ...item, distToC });
-        } else {
-          const d = distancePointToPolygonMeters(clickLat, clickLng, item.coords);
-          if (d <= 35.0) {
-            nearMatches.push({ ...item, d });
-          }
-        }
-      }
-
-      let chosenFeat = null;
-      let chosenCoords = null;
-      if (strictlyInsideMatches.length > 0) {
-        strictlyInsideMatches.sort((a, b) => a.distToC - b.distToC);
-        chosenFeat = strictlyInsideMatches[0].feat;
-        chosenCoords = strictlyInsideMatches[0].coords;
-      } else if (nearMatches.length > 0) {
-        nearMatches.sort((a, b) => a.d - b.d);
-        chosenFeat = nearMatches[0].feat;
-        chosenCoords = nearMatches[0].coords;
+        if (foundExact) break;
       }
 
       if (!chosenFeat || !chosenCoords || chosenCoords.length < 3) {
         return null;
-      }
-
-      const otherRings = allParsedRings.filter(item => item.feat !== chosenFeat).map(item => item.coords);
-      if (otherRings.length > 0) {
-        chosenCoords = snapSharedBoundaryBends(chosenCoords, otherRings, 1.8);
       }
 
       const props = chosenFeat.properties || {};
@@ -570,32 +489,6 @@
       const calcArea = Math.round(calculatePolygonArea(chosenCoords));
       const rawLuas = getPropVal(['luas', 'luas_m2', 'luastanah', 'luas_tertulis'], '');
       const luasM2 = (rawLuas && Number(rawLuas) > 0) ? Number(rawLuas) : calcArea;
-
-      const allParcelsList = allParsedRings.map((item, pIdx) => {
-        const itemProps = item.feat.properties || {};
-        const itemDecoded = decodeBpnCadastralStructure(itemProps, item.coords[0].lat, item.coords[0].lng);
-        const itemGeomArea = calculatePolygonArea(item.coords);
-        let itemRawLuas = null;
-        for (const k of ['luas', 'luas_m2', 'luastanah', 'luas_tertulis']) {
-          if (itemProps[k] !== undefined && itemProps[k] !== null && Number(itemProps[k]) > 0) {
-            itemRawLuas = Number(itemProps[k]);
-            break;
-          }
-        }
-        const itemLuasM2 = (itemRawLuas && itemRawLuas > 0) ? itemRawLuas : Math.round(itemGeomArea);
-        return {
-          coords: item.coords,
-          feat: item.feat,
-          fid: item.feat.id || itemDecoded.nib || `Bidang ${pIdx + 1}`,
-          nib: itemDecoded.nib,
-          nib_lengkap: itemDecoded.nib_lengkap,
-          nomor_hak: itemDecoded.nomor_hak,
-          nomor_hak_raw: itemDecoded.nomor_hak_raw,
-          tipe_hak: itemDecoded.tipe_hak,
-          luas_m2: itemLuasM2,
-          geom_area_m2: itemGeomArea
-        };
-      });
 
       return {
         found: true,
@@ -621,7 +514,6 @@
         fid: chosenFeat.id || (decoded.nib !== '-' ? decoded.nib : '-'),
         polygon_coords: chosenCoords,
         bbox_coords: chosenCoords,
-        all_parcels: allParcelsList,
         source: 'ATLAS GEOSERVER'
       };
     }
@@ -823,32 +715,86 @@ function latLngToUtm(lat, lon) {
       );
     }
 
-    if (typeof window.openMemberModal !== 'function') {
-      window.openMemberModal = function() {
-        const m = document.getElementById('memberModal');
-        if (m) m.style.display = 'flex';
-        if (typeof initGoogleIdentityServices === 'function') initGoogleIdentityServices();
-      };
-    }
-    if (typeof window.closeMemberModal !== 'function') {
-      window.closeMemberModal = function() {
-        const m = document.getElementById('memberModal');
-        if (m) m.style.display = 'none';
-      };
-    }
-    if (typeof window.closeQrisPaymentModal !== 'function') {
-      window.closeQrisPaymentModal = function() {
-        const q = document.getElementById('modalQrisPayment');
-        if (q) q.style.display = 'none';
-      };
-    }
-    if (typeof window.loginWithGoogle !== 'function') {
-      window.loginWithGoogle = function() {
-        if (typeof window.fallbackGoogleOAuthRedirect === 'function') {
-          window.fallbackGoogleOAuthRedirect();
+    window.initSupabase = function() {};
+    window.ensureSupabaseClient = function() { return null; };
+    window.initGoogleIdentityServices = function() {};
+    window.handleGoogleSignInResponse = function() {};
+    window.configureGoogleClientId = function() {};
+    window.loginWithGoogle = function() { showToast('Layanan otentikasi sedang offline.', 'warn'); };
+    window.fallbackGoogleOAuthRedirect = function() { showToast('Layanan otentikasi sedang offline.', 'warn'); };
+    window.logoutMember = function() {};
+    window.fetchMemberProfile = function() { return Promise.resolve(null); };
+    window.verifyProLicenseIntegrity = function() { return false; };
+    window.updateMemberUI = function() {
+      const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
+      const attrInputIds = ['shpPemrakarsa', 'shpKegiatan', 'shpTahun', 'shpProvinsi', 'shpKeterangan', 'shpLayer'];
+      const tabBtnOss = document.getElementById('tabBtnOss');
+      const tabBtnCustom = document.getElementById('tabBtnCustom');
+      const attrModeBadge = document.getElementById('attrModeBadge');
+      const boxEkspor = document.getElementById('boxEkspor');
+
+      if (!isPro) {
+        attrInputIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.disabled = false;
+            el.style.backgroundColor = '';
+            el.style.cursor = '';
+          }
+        });
+
+        if (tabBtnCustom) {
+          tabBtnCustom.disabled = true;
+          tabBtnCustom.style.opacity = '0.7';
+          tabBtnCustom.style.cursor = 'pointer';
         }
-      };
-    }
+        if (tabBtnOss) {
+          tabBtnOss.disabled = false;
+          tabBtnOss.style.cursor = 'pointer';
+        }
+        if (attrModeBadge) {
+          attrModeBadge.className = '';
+          attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--text-sub);';
+          attrModeBadge.innerText = 'Free User Max 150 M2';
+        }
+        let freeNotice = document.getElementById('shpFreeAttrNotice');
+        if (!freeNotice && boxEkspor) {
+          freeNotice = document.createElement('div');
+          freeNotice.id = 'shpFreeAttrNotice';
+          freeNotice.style.cssText = 'font-size: 0.71rem; color: var(--text-sub); margin: 4px 0 6px 0; line-height: 1.45;';
+          freeNotice.innerHTML = 'Untuk mengedit atribut peta memerlukan akses PRO (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
+          const tabNav = boxEkspor.querySelector('div[style*="border-bottom"]');
+          if (tabNav) {
+            boxEkspor.insertBefore(freeNotice, tabNav);
+          }
+        } else if (freeNotice) {
+          freeNotice.style.display = 'block';
+        }
+      }
+      if (typeof renderCadastralProFields === 'function') {
+        renderCadastralProFields();
+      }
+    };
+    window.openMemberModal = function() { showToast('Layanan akun sedang offline.', 'info'); };
+    window.closeMemberModal = function() {
+      const m = document.getElementById('modalMember');
+      if (m) m.style.display = 'none';
+    };
+    window.generateQrisPayment = function() { showToast('Sistem pembayaran sedang offline.', 'warn'); };
+    window.savePendingPaymentRecord = function() { return Promise.resolve(); };
+    window.openQrisPaymentModal = function() {};
+    window.closeQrisPaymentModal = function() {
+      const q = document.getElementById('modalQrisPayment');
+      if (q) q.style.display = 'none';
+    };
+    window.copyQrisAmount = function() {};
+    window.confirmPaymentWhatsApp = function() {};
+    window.checkPaymentStatusLive = function() {};
+    window.cancelAndClearCurrentPendingPayment = function() {};
+    window.isMemberProActive = function() { return false; };
+    window.currentMemberProfile = function() {
+      return { role: 'free', status: 'none', email: '', name: '', expires_at: null };
+    };
 
     window.handlePrintMapTrigger = function() {};
     window.processDirectMobilePdfPrint = function() {};
