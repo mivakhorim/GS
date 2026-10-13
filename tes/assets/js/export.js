@@ -1312,125 +1312,6 @@ function exportCoordinatesXls() {
       reader.readAsText(file);
     }
 
-    function exportParcelSVG() {
-      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : (activeVertices && activeVertices.length >= 3 ? [activeVertices] : null);
-      if (!rawParts || rawParts.length === 0 || rawParts[0].length < 3) {
-        showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn');
-        return;
-      }
-
-      const parts = getExportVerticesWithOssAdjustment(rawParts);
-      let allPts = [];
-      parts.forEach(p => allPts.push(...p));
-
-      let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-      allPts.forEach(pt => {
-        if (pt.lat < minLat) minLat = pt.lat;
-        if (pt.lat > maxLat) maxLat = pt.lat;
-        if (pt.lng < minLng) minLng = pt.lng;
-        if (pt.lng > maxLng) maxLng = pt.lng;
-      });
-
-      const centerLat = (minLat + maxLat) / 2;
-      const centerLng = (minLng + maxLng) / 2;
-      const cosLat = Math.cos(centerLat * Math.PI / 180);
-
-      const metricParts = parts.map(part => {
-        return part.map(pt => {
-          const x = (pt.lng - centerLng) * 111320 * cosLat;
-          const y = -(pt.lat - centerLat) * 111320;
-          return { x, y, lat: pt.lat, lng: pt.lng };
-        });
-      });
-
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      metricParts.forEach(part => {
-        part.forEach(pt => {
-          if (pt.x < minX) minX = pt.x;
-          if (pt.x > maxX) maxX = pt.x;
-          if (pt.y < minY) minY = pt.y;
-          if (pt.y > maxY) maxY = pt.y;
-        });
-      });
-
-      const widthM = maxX - minX;
-      const heightM = maxY - minY;
-      const padX = Math.max(12, widthM * 0.18);
-      const padY = Math.max(12, heightM * 0.18);
-      const vbMinX = (minX - padX).toFixed(2);
-      const vbMinY = (minY - padY - 24).toFixed(2);
-      const vbW = (widthM + padX * 2).toFixed(2);
-      const vbH = (heightM + padY * 2 + 36).toFixed(2);
-
-      let totalAreaM2 = 0;
-      parts.forEach(p => { totalAreaM2 += calculatePolygonArea(p); });
-      const nib = activePinData?.nib && activePinData.nib !== '-' ? activePinData.nib : 'BIDANG-PERSIL';
-      const wilayah = activePinData?.wilayah && activePinData.wilayah !== '-' ? activePinData.wilayah : '';
-
-      let svgPaths = '';
-      let svgPatoks = '';
-      let svgDistLabels = '';
-
-      metricParts.forEach((part, pIdx) => {
-        const pfx = metricParts.length > 1 ? `P${pIdx + 1}-` : 'P';
-        const ptsStr = part.map(pt => `${pt.x.toFixed(2)},${pt.y.toFixed(2)}`).join(' ');
-        svgPaths += `<polygon points="${ptsStr}" fill="#e0f2fe" fill-opacity="0.65" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
-
-        part.forEach((pt, idx) => {
-          const lbl = `${pfx}${idx + 1}`;
-          svgPatoks += `<g transform="translate(${pt.x.toFixed(2)}, ${pt.y.toFixed(2)})"><circle r="3.2" fill="#dc2626" stroke="#ffffff" stroke-width="1.2"/><text x="5" y="-5" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="700" fill="#0a2e5c">${lbl}</text></g>`;
-
-          const nextIdx = (idx + 1) % part.length;
-          const nextPt = part[nextIdx];
-          const midX = (pt.x + nextPt.x) / 2;
-          const midY = (pt.y + nextPt.y) / 2;
-          const distM = Math.hypot(nextPt.x - pt.x, nextPt.y - pt.y);
-          if (distM >= 1.0) {
-            svgDistLabels += `<text x="${midX.toFixed(2)}" y="${midY.toFixed(2)}" font-family="'JetBrains Mono', monospace" font-size="5" font-weight="600" fill="#0369a1" text-anchor="middle">${distM.toFixed(2)}m</text>`;
-          }
-        });
-      });
-
-      const titleY = (minY - padY - 12).toFixed(2);
-      const titleX = (minX - padX + 4).toFixed(2);
-      const footerY = (maxY + padY + 8).toFixed(2);
-
-      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbMinX} ${vbMinY} ${vbW} ${vbH}" width="100%" height="100%" style="background-color:#ffffff; font-family:'Inter', sans-serif;">
-  <defs>
-    <style>
-      text { font-family: 'Inter', -apple-system, sans-serif; }
-    </style>
-  </defs>
-  <g id="header-info">
-    <text x="${titleX}" y="${titleY}" font-size="7.5" font-weight="800" fill="#0a2e5c">BIDANG TANAH: ${nib}</text>
-    <text x="${titleX}" y="${(Number(titleY) + 7).toFixed(2)}" font-size="6" font-weight="600" fill="#0284c7">Luas: ${Math.round(totalAreaM2).toLocaleString('id-ID')} m² (${(totalAreaM2 / 10000).toFixed(4)} Ha) ${wilayah ? '| ' + wilayah : ''}</text>
-  </g>
-  <g id="cadastre-geometry">
-    ${svgPaths}
-    ${svgDistLabels}
-    ${svgPatoks}
-  </g>
-  <g id="footer-attribution">
-    <text x="${titleX}" y="${footerY}" font-size="4.8" font-weight="500" fill="#64748b">Duta Digital Agensi (dutamik.id) - Duta Media Informasi berKarya, Sukoharjo, Jawa Tengah</text>
-  </g>
-</svg>`;
-
-      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-      const cleanNib = (nib || 'bidang_persil').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `${cleanNib}_presisi.svg`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      showToast(`Vektor bidang persil SVG berhasil diunduh: ${filename}`, 'success');
-    }
-
     window.getExportVerticesWithOssAdjustment = getExportVerticesWithOssAdjustment;
     window.exportCoordinatesXls = exportCoordinatesXls;
     window.exportCoordinatesOnly = exportCoordinatesOnly;
@@ -1446,7 +1327,6 @@ function exportCoordinatesXls() {
     window.exportDXF = exportDXF;
     window.downloadCoordsCad = downloadCoordsCad;
     window.exportGeoJSON = exportGeoJSON;
-    window.exportParcelSVG = exportParcelSVG;
     window.switchAttrTab = switchAttrTab;
     window.addCustomAttrRow = addCustomAttrRow;
     window.removeCustomAttrRow = removeCustomAttrRow;

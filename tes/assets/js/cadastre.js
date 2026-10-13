@@ -60,6 +60,7 @@ function getBpnGatewayBase() {
       if (!map.getPane('cadastreVectorPane')) {
         const cvp = map.createPane('cadastreVectorPane');
         cvp.style.zIndex = 370;
+        cvp.style.pointerEvents = 'none';
       }
       if (!cadastreSvgRenderer) {
         cadastreSvgRenderer = L.svg({ padding: 0.5, pane: 'cadastreVectorPane' });
@@ -67,122 +68,17 @@ function getBpnGatewayBase() {
       if (!cadastreVectorLayer) {
         cadastreVectorLayer = L.featureGroup([], { pane: 'cadastreVectorPane' }).addTo(map);
       }
-      setupViewportCadastreListener();
     }
 
-    function setupViewportCadastreListener() {
-      if (!map || map._viewportCadastreAttached) return;
-      map._viewportCadastreAttached = true;
-      let debounceTimer = null;
-      map.on('moveend', () => {
-        if (map.getZoom() < 16) return;
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          loadViewportCadastreSvgParcels();
-        }, 450);
-      });
-    }
+    function setupViewportCadastreListener() {}
 
-    async function loadViewportCadastreSvgParcels() {
-      if (!map || map.getZoom() < 16 || isViewportVectorLoading) return;
-      const center = map.getCenter();
-      isViewportVectorLoading = true;
-      try {
-        const persilBase = getBpnGatewayBase();
-        let targetUrl = '';
-        if (isProxyActive && persilBase && (persilBase.startsWith('http://') || persilBase.startsWith('https://'))) {
-          targetUrl = `${persilBase}/api/persil-info?lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${map.getZoom()}`;
-        } else if (typeof window !== 'undefined' && window.location && window.location.protocol === 'http:') {
-          targetUrl = `http://127.0.0.1:8085/api/persil-info?lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${map.getZoom()}`;
-        }
-        if (targetUrl) {
-          try {
-            const ctrl = new AbortController();
-            const tid = setTimeout(() => ctrl.abort(), 2500);
-            const res = await fetch(targetUrl, { signal: ctrl.signal });
-            clearTimeout(tid);
-            if (res.ok) {
-              const data = await res.json();
-              if (data && data.found) {
-                const pList = (Array.isArray(data.all_parcels) && data.all_parcels.length > 0) ? data.all_parcels : [data];
-                renderCadastreVectorParcels(pList);
-                return;
-              }
-            }
-          } catch (_) {}
-        }
-        const traced = await traceParcelFromWmsTile(center.lat, center.lng);
-        if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
-          renderCadastreVectorParcels([traced]);
-        }
-      } catch (e) {
-      } finally {
-        isViewportVectorLoading = false;
-      }
-    }
+    async function loadViewportCadastreSvgParcels() {}
 
     function renderCadastreVectorParcels(parcelsList) {
-      if (!map || !Array.isArray(parcelsList) || parcelsList.length === 0) return;
-      setupCadastreVectorLayer();
-
-      const slider = document.getElementById('persilOpacity');
-      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
-
-      parcelsList.forEach(parcel => {
-        if (!parcel) return;
-        const coords = parcel.polygon_coords || parcel.coordinates;
-        if (!Array.isArray(coords) || coords.length < 3) return;
-
-        const pid = String(parcel.fid || parcel.persilpasifid || parcel.nib || `${coords[0].lat.toFixed(5)}_${coords[0].lng.toFixed(5)}`);
-        if (cadastreVectorParcelCache.has(pid)) return;
-
-        const latlngs = coords.map(pt => [pt.lat, pt.lng]);
-        const vectorPoly = L.polygon(latlngs, {
-          renderer: cadastreSvgRenderer,
-          pane: 'cadastreVectorPane',
-          className: 'cadastre-svg-parcel',
-          color: '#0284c7',
-          weight: 2,
-          opacity: currentOpacity,
-          fillColor: '#0ea5e9',
-          fillOpacity: currentOpacity * 0.16,
-          interactive: true,
-          bubblingMouseEvents: false
-        });
-
-        const nibLabel = parcel.nib && parcel.nib !== '-' ? `NIB ${parcel.nib}` : 'Bidang Terdaftar';
-        const exactGeodeticArea = calculatePolygonArea(coords);
-        const luasLabel = exactGeodeticArea > 0 ? `${Math.round(exactGeodeticArea).toLocaleString('id-ID')} m²` : '';
-        vectorPoly.bindTooltip(`<div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#0a2e5c;">${nibLabel}</div>${luasLabel ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#0284c7;">${luasLabel}</div>` : ''}`, {
-          sticky: true,
-          direction: 'top',
-          offset: [0, -6]
-        });
-
-        vectorPoly.on('mouseover', function() {
-          this.setStyle({
-            weight: 3,
-            color: '#0369a1',
-            fillOpacity: Math.min(0.38, currentOpacity * 0.35)
-          });
-        });
-
-        vectorPoly.on('mouseout', function() {
-          this.setStyle({
-            weight: 2,
-            color: '#0284c7',
-            fillOpacity: currentOpacity * 0.16
-          });
-        });
-
-        vectorPoly.on('click', function(e) {
-          L.DomEvent.stopPropagation(e);
-          selectCadastreVectorParcel(parcel, e.latlng);
-        });
-
-        vectorPoly.addTo(cadastreVectorLayer);
-        cadastreVectorParcelCache.set(pid, { parcel, layer: vectorPoly });
-      });
+      if (cadastreVectorLayer) {
+        cadastreVectorLayer.clearLayers();
+      }
+      cadastreVectorParcelCache.clear();
     }
 
     function selectCadastreVectorParcel(parcel, clickLatLng) {
@@ -578,7 +474,7 @@ function getBpnGatewayBase() {
               const rowOffset = y * w * 4;
               for (let x = 0; x < w; x++) {
                 const a = data[rowOffset + x * 4 + 3];
-                if (a >= 180) {
+                if (a >= 180 || a < 50) {
                   for (let dy = -1; dy <= 1; dy++) {
                     const ny = y + dy;
                     if (ny < 0 || ny >= h) continue;
@@ -829,6 +725,15 @@ function getBpnGatewayBase() {
           if (res.ok) {
             const data = await res.json();
             if (data && data.found && Array.isArray(data.polygon_coords) && data.polygon_coords.length >= 3) {
+              if (data.polygon_coords.length === 4) {
+                try {
+                  const traced = await traceParcelFromWmsTile(lat, lng);
+                  if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
+                    data.polygon_coords = traced.polygon_coords;
+                    data.source = 'VEKTOR PERSIL GEODETIK ATR/BPN';
+                  }
+                } catch (e) {}
+              }
               persilClientCache.set(cacheKey, { data, time: Date.now() });
               return data;
             }
@@ -1303,7 +1208,9 @@ function getBpnGatewayBase() {
 
           rawInitialBboxCoords = effectivePersil.polygon_coords;
           initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
-          renderCadastreVectorParcels(effectivePersil.all_parcels && effectivePersil.all_parcels.length > 0 ? effectivePersil.all_parcels : [effectivePersil]);
+          if (cadastreVectorLayer) {
+            cadastreVectorLayer.clearLayers();
+          }
 
           const badge = document.getElementById('badgeRebuildStatus');
           if (badge) {
