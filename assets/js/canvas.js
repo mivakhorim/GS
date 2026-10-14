@@ -168,10 +168,10 @@ function closeShpAttributesModal() {
 function renderShpAttributesTable(records, fields) {
   const thead = document.getElementById('shpAttrThead');
   const tbody = document.getElementById('shpAttrTbody');
-  const counter = document.getElementById('shpAttrFilterCount');
   if (!thead || !tbody) return;
 
   if (!fields || fields.length === 0 || !records || records.length === 0) {
+<<<<<<< HEAD
     thead.innerHTML = '<tr><th class="shp-attr-col-idx">#</th><th>Atribut</th></tr>';
     tbody.innerHTML = '<tr><td colspan="2" class="shp-attr-empty-cell"><div class="shp-attr-empty-content"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><span>Tidak ada data atribut di dalam berkas .dbf.</span></div></td></tr>';
     if (counter) counter.innerText = '0 record';
@@ -192,46 +192,54 @@ function renderShpAttributesTable(records, fields) {
         ${typeBadge}
       </div>
     </th>`;
+=======
+    thead.innerHTML = '<tr><th style="padding: 6px 8px; width: 40px; text-align: center;">#</th><th style="padding: 6px 8px; text-align: left;">Atribut</th></tr>';
+    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Tidak ada data atribut di dalam berkas .dbf.</td></tr>';
+    return;
+  }
+
+  let headHtml = '<tr><th style="padding: 6px 8px; width: 40px; text-align: center;">#</th>';
+  fields.forEach(f => {
+    headHtml += `<th style="padding: 6px 8px; text-align: left; white-space: nowrap;">${escapeHtml(f.name)} <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: normal;">(${escapeHtml(f.type)})</span></th>`;
+>>>>>>> parent of 9c74cb0 (up)
   });
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
 
   let bodyHtml = '';
   records.forEach((rec, idx) => {
+<<<<<<< HEAD
     bodyHtml += `<tr><td class="shp-attr-cell-idx">${idx + 1}</td>`;
     fields.forEach(f => {
       const val = rec[f.name];
       const displayVal = (val !== null && val !== undefined && String(val).trim() !== '') ? escapeHtml(String(val)) : '-';
       bodyHtml += `<td>${displayVal}</td>`;
+=======
+    bodyHtml += `<tr><td style="padding: 5px 8px; text-align: center; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">${idx + 1}</td>`;
+    fields.forEach(f => {
+      const val = rec[f.name];
+      const displayVal = (val !== null && val !== undefined && String(val).trim() !== '') ? escapeHtml(String(val)) : '-';
+      bodyHtml += `<td style="padding: 5px 8px; font-family: 'JetBrains Mono', monospace; white-space: nowrap;">${displayVal}</td>`;
+>>>>>>> parent of 9c74cb0 (up)
     });
     bodyHtml += '</tr>';
   });
   tbody.innerHTML = bodyHtml;
-
-  if (counter) counter.innerText = `Total ${records.length} record`;
 }
 
 function filterShpAttrTable(query) {
   const tbody = document.getElementById('shpAttrTbody');
-  const counter = document.getElementById('shpAttrFilterCount');
   if (!tbody) return;
   const q = (query || '').toLowerCase().trim();
   const rows = tbody.querySelectorAll('tr');
-  let visibleCount = 0;
   rows.forEach(r => {
     if (!q) {
       r.style.display = '';
-      visibleCount++;
       return;
     }
     const text = r.textContent.toLowerCase();
-    const matches = text.indexOf(q) !== -1;
-    r.style.display = matches ? '' : 'none';
-    if (matches) visibleCount++;
+    r.style.display = text.indexOf(q) !== -1 ? '' : 'none';
   });
-  if (counter) {
-    counter.innerText = q ? `Menampilkan ${visibleCount} dari ${rows.length} record` : `Total ${rows.length} record`;
-  }
 }
 
 function copyShpAttrCsv() {
@@ -502,29 +510,29 @@ async function handleImportZipFile(event) {
       fid: valNib || file.name,
       nib: valNib || '-',
       nib_lengkap: valNib || '-',
-      tipe_hak: valTipeHak || '-',
+      tipe_hak: valTipeHak || 'Hak Milik',
       nomor_hak: valNomorHak || '-',
       nomor_hak_raw: valNomorHak || '-',
       nosu: valNosu || '-',
-      tahun: valTahun || '-',
+      tahun: valTahun || '2026',
       luas_m2: valLuasBpn ? (parseFloat(valLuasBpn) || Math.round(totalArea)) : Math.round(totalArea),
       desa: valDesa || '-',
       kecamatan: valKec || '-',
       kabkot: valKab || '-',
       provinsi: valProv || '-',
-      kantah: valKantah || (valKab && valKab !== '-' ? `Kantor Pertanahan ${valKab.replace(/^(Kabupaten|Kota)\s*/i, '').trim()}` : '-'),
-      kluster_ptsl: valKluster || '-',
-      akurasibidang: 'Import ESRI Shapefile',
+      kantah: valKantah || 'Kantor Pertanahan',
+      kluster_ptsl: valKluster || 'Kluster K1 (Hak Terbit)',
+      akurasibidang: 'Terestrial / Import ESRI SHP',
       alatukur: 'ESRI Shapefile DBF Atribut',
       status_validasi: 'Import Atribut Valid',
-      rtrw: valRtrw || 'Memuat status RTRW...',
-      rdtr: valRdtr || 'Memuat status RDTR...',
-      lsd: valLsd || 'Memverifikasi status LSD...',
-      lbs: valLbs || 'Memverifikasi status LBS...',
-      hutan: valHutan || 'Memeriksa status Kawasan Hutan...',
-      znt: valZnt || 'Memuat Zona Nilai Tanah...',
-      znt_range: valZntRange || '-',
-      alamat: [valDesa, valKec, valKab].filter(v => v && v !== '-').join(', ') || '-'
+      rtrw: valRtrw || 'Kawasan Budidaya / Permukiman',
+      rdtr: valRdtr || 'Zonasi Perda RDTR Berlaku',
+      lsd: valLsd || 'Non-LSD (Bebas Alih Fungsi)',
+      lbs: valLbs || 'Bukan Lahan Baku Sawah',
+      hutan: valHutan || 'APL (Non Hutan Boleh Disertifikatkan)',
+      znt: valZnt || 'Zona Nilai Pasar Wajar',
+      znt_range: valZntRange || 'Belum Dipetakan ZNT Nasional',
+      alamat: [valDesa, valKec, valKab].filter(v => v && v !== '-').join(', ') || 'Lokasi Impor Shapefile'
     };
 
     const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
@@ -545,21 +553,6 @@ async function handleImportZipFile(event) {
 
     if (typeof renderCadastralProFields === 'function') {
       renderCadastralProFields();
-    }
-
-    if (typeof fetchSpatialStatusData === 'function' && (!valRtrw || !valLsd || !valZnt)) {
-      fetchSpatialStatusData(centerLat, centerLng).then(status => {
-        if (activePinData && Math.abs(activePinData.lat - centerLat) < 0.001) {
-          if (!valRtrw) activePinData.rtrw = status.rtrw || '-';
-          if (!valRdtr) activePinData.rdtr = status.rdtr || '-';
-          if (!valLsd) activePinData.lsd = status.lsd || '-';
-          if (!valLbs) activePinData.lbs = status.lbs || '-';
-          if (!valHutan) activePinData.hutan = status.hutan || '-';
-          if (!valZnt) activePinData.znt = status.znt || '-';
-          if (!valZntRange) activePinData.znt_range = status.znt_range || '-';
-          if (typeof renderCadastralProFields === 'function') renderCadastralProFields();
-        }
-      });
     }
 
     if (activePolygonLayer) {
