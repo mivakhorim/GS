@@ -677,21 +677,21 @@ function exportCoordinatesXls() {
       }
 
       const pData = activePinData || {};
-      const nib = pData.nib_lengkap || pData.nib || '02923';
-      const noHak = pData.nomor_hak_raw || (pData.nomor_hak ? pData.nomor_hak.replace(/^[^\d]*/, '') : '02160');
-      const hak = (pData.tipe_hak || 'HAK MILIK').toUpperCase();
-      const nosu = pData.nosu || `No. ${pData.nib || '02923'}/${pData.desa || 'Gatak'}/${pData.tahun || '2026'}`;
-      const desa = (pData.desa || 'GATAK').toUpperCase();
-      const kec = (pData.kecamatan || 'KLATEN UTARA').toUpperCase();
-      const kab = (pData.kabkot || 'KABUPATEN KLATEN').toUpperCase();
-      const prov = (pData.provinsi || 'JAWA TENGAH').toUpperCase();
-      const kantah = (pData.kantah || 'KANTAH KLATEN').toUpperCase();
-      const kluster = pData.kluster_ptsl ? pData.kluster_ptsl.toUpperCase().slice(0, 16) : 'K1 TERBIT RESMI';
-      const luasBpn = Number((pData.luas_m2 || areaM2 || 60).toFixed(2));
+      const nib = pData.nib_lengkap || pData.nib || '-';
+      const noHak = pData.nomor_hak_raw || (pData.nomor_hak ? pData.nomor_hak.replace(/^[^\d]*/, '') : '-');
+      const hak = (pData.tipe_hak || '-').toUpperCase();
+      const nosu = pData.nosu || '-';
+      const desa = (pData.desa || '-').toUpperCase();
+      const kec = (pData.kecamatan || '-').toUpperCase();
+      const kab = (pData.kabkot || '-').toUpperCase();
+      const prov = (pData.provinsi || '-').toUpperCase();
+      const kantah = (pData.kantah || '-').toUpperCase();
+      const kluster = pData.kluster_ptsl ? pData.kluster_ptsl.toUpperCase().slice(0, 16) : '-';
+      const luasBpn = Number((pData.luas_m2 || areaM2 || 0).toFixed(2));
       const luasUkur = Number(areaM2.toFixed(2));
       const selisih = Number(Math.abs(luasUkur - luasBpn).toFixed(2));
-      const tahun = Number(pData.tahun || 2026);
-      const statusVal = (pData.status_validasi || 'KADASTER RESMI').toUpperCase().slice(0, 18);
+      const tahun = Number(pData.tahun && pData.tahun !== '-' ? pData.tahun : 2026);
+      const statusVal = (pData.status_validasi || '-').toUpperCase().slice(0, 18);
 
       addCustomAttrRow('NIB', 'C', nib);
       addCustomAttrRow('NO_HAK', 'C', noHak);

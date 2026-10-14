@@ -168,25 +168,26 @@ function closeShpAttributesModal() {
 function renderShpAttributesTable(records, fields) {
   const thead = document.getElementById('shpAttrThead');
   const tbody = document.getElementById('shpAttrTbody');
+  const counter = document.getElementById('shpAttrFilterCount');
   if (!thead || !tbody) return;
 
   if (!fields || fields.length === 0 || !records || records.length === 0) {
-    thead.innerHTML = '<tr><th class="shp-attr-col-idx">#</th><th>Atribut</th></tr>';
-    tbody.innerHTML = '<tr><td colspan="2" class="shp-attr-empty-cell"><div class="shp-attr-empty-content"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><span>Tidak ada data atribut di dalam berkas .dbf.</span></div></td></tr>';
+    thead.innerHTML = '<tr><th style="padding: 8px 10px; width: 44px; text-align: center; background: var(--bg-subtle); border-bottom: 2px solid var(--border-light);">#</th><th style="padding: 8px 12px; text-align: left; background: var(--bg-subtle); border-bottom: 2px solid var(--border-light);">Atribut</th></tr>';
+    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: 2rem;">Tidak ada data atribut di dalam berkas .dbf.</td></tr>';
     if (counter) counter.innerText = '0 record';
     return;
   }
 
-  let headHtml = '<tr><th class="shp-attr-col-idx">#</th>';
+  let headHtml = '<tr><th style="padding: 8px 10px; width: 44px; text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); background: var(--bg-subtle); border-bottom: 2px solid var(--border-light); position: sticky; top: 0; z-index: 2;">#</th>';
   fields.forEach(f => {
-    let typeBadge = '<span class="shp-attr-type-pill text">Teks</span>';
+    let typeBadge = '<span style="font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; background: var(--bg-subtle); color: #475569; font-weight: 700; border: 1px solid var(--border-light);">Teks</span>';
     if (f.type === 'N' || f.type === 'F') {
-      typeBadge = '<span class="shp-attr-type-pill num">Angka</span>';
+      typeBadge = '<span style="font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; background: #eff6ff; color: #1d4ed8; font-weight: 700; border: 1px solid #bfdbfe;">Angka</span>';
     } else if (f.type === 'D') {
-      typeBadge = '<span class="shp-attr-type-pill date">Tanggal</span>';
+      typeBadge = '<span style="font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; background: #f0fdf4; color: #15803d; font-weight: 700; border: 1px solid #bbf7d0;">Tanggal</span>';
     }
-    headHtml += `<th>
-      <div class="shp-attr-col-header-inner">
+    headHtml += `<th style="padding: 8px 12px; text-align: left; white-space: nowrap; font-size: 0.73rem; font-weight: 700; color: var(--text-main); background: var(--bg-subtle); border-bottom: 2px solid var(--border-light); position: sticky; top: 0; z-index: 2;">
+      <div style="display: flex; align-items: center; gap: 6px;">
         <span>${escapeHtml(f.name)}</span>
         ${typeBadge}
       </div>
@@ -197,30 +198,40 @@ function renderShpAttributesTable(records, fields) {
 
   let bodyHtml = '';
   records.forEach((rec, idx) => {
-    bodyHtml += `<tr><td class="shp-attr-cell-idx">${idx + 1}</td>`;
+    bodyHtml += `<tr><td style="padding: 7px 10px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.71rem; color: var(--text-muted); background: var(--bg-subtle); border-right: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">${idx + 1}</td>`;
     fields.forEach(f => {
       const val = rec[f.name];
       const displayVal = (val !== null && val !== undefined && String(val).trim() !== '') ? escapeHtml(String(val)) : '-';
-      bodyHtml += `<td>${displayVal}</td>`;
+      bodyHtml += `<td style="padding: 7px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; white-space: nowrap; border-bottom: 1px solid var(--border-light); color: var(--text-main);">${displayVal}</td>`;
     });
     bodyHtml += '</tr>';
   });
   tbody.innerHTML = bodyHtml;
+
+  if (counter) counter.innerText = `Total ${records.length} record`;
 }
 
 function filterShpAttrTable(query) {
   const tbody = document.getElementById('shpAttrTbody');
+  const counter = document.getElementById('shpAttrFilterCount');
   if (!tbody) return;
   const q = (query || '').toLowerCase().trim();
   const rows = tbody.querySelectorAll('tr');
+  let visibleCount = 0;
   rows.forEach(r => {
     if (!q) {
       r.style.display = '';
+      visibleCount++;
       return;
     }
     const text = r.textContent.toLowerCase();
-    r.style.display = text.indexOf(q) !== -1 ? '' : 'none';
+    const matches = text.indexOf(q) !== -1;
+    r.style.display = matches ? '' : 'none';
+    if (matches) visibleCount++;
   });
+  if (counter) {
+    counter.innerText = q ? `Menampilkan ${visibleCount} dari ${rows.length} record` : `Total ${rows.length} record`;
+  }
 }
 
 function copyShpAttrCsv() {
@@ -408,10 +419,7 @@ async function handleImportZipFile(event) {
     if (metaEl) metaEl.innerText = `${dbfData.records.length} Baris Data : ${dbfData.fields.length} Kolom Atribut`;
 
     const statFile = document.getElementById('shpAttrStatFile');
-    if (statFile) {
-      statFile.innerText = file.name;
-      statFile.title = file.name;
-    }
+    if (statFile) statFile.innerText = file.name;
 
     const statRecords = document.getElementById('shpAttrStatRecords');
     if (statRecords) statRecords.innerText = `${dbfData.records.length} Baris`;
@@ -491,29 +499,29 @@ async function handleImportZipFile(event) {
       fid: valNib || file.name,
       nib: valNib || '-',
       nib_lengkap: valNib || '-',
-      tipe_hak: valTipeHak || 'Hak Milik',
+      tipe_hak: valTipeHak || '-',
       nomor_hak: valNomorHak || '-',
       nomor_hak_raw: valNomorHak || '-',
       nosu: valNosu || '-',
-      tahun: valTahun || '2026',
+      tahun: valTahun || '-',
       luas_m2: valLuasBpn ? (parseFloat(valLuasBpn) || Math.round(totalArea)) : Math.round(totalArea),
       desa: valDesa || '-',
       kecamatan: valKec || '-',
       kabkot: valKab || '-',
       provinsi: valProv || '-',
-      kantah: valKantah || 'Kantor Pertanahan',
-      kluster_ptsl: valKluster || 'Kluster K1 (Hak Terbit)',
-      akurasibidang: 'Terestrial / Import ESRI SHP',
+      kantah: valKantah || (valKab && valKab !== '-' ? `Kantor Pertanahan ${valKab.replace(/^(Kabupaten|Kota)\s*/i, '').trim()}` : '-'),
+      kluster_ptsl: valKluster || '-',
+      akurasibidang: 'Import ESRI Shapefile',
       alatukur: 'ESRI Shapefile DBF Atribut',
       status_validasi: 'Import Atribut Valid',
-      rtrw: valRtrw || 'Kawasan Budidaya / Permukiman',
-      rdtr: valRdtr || 'Zonasi Perda RDTR Berlaku',
-      lsd: valLsd || 'Non-LSD (Bebas Alih Fungsi)',
-      lbs: valLbs || 'Bukan Lahan Baku Sawah',
-      hutan: valHutan || 'APL (Non Hutan Boleh Disertifikatkan)',
-      znt: valZnt || 'Zona Nilai Pasar Wajar',
-      znt_range: valZntRange || 'Belum Dipetakan ZNT Nasional',
-      alamat: [valDesa, valKec, valKab].filter(v => v && v !== '-').join(', ') || 'Lokasi Impor Shapefile'
+      rtrw: valRtrw || 'Memuat status RTRW...',
+      rdtr: valRdtr || 'Memuat status RDTR...',
+      lsd: valLsd || 'Memverifikasi status LSD...',
+      lbs: valLbs || 'Memverifikasi status LBS...',
+      hutan: valHutan || 'Memeriksa status Kawasan Hutan...',
+      znt: valZnt || 'Memuat Zona Nilai Tanah...',
+      znt_range: valZntRange || '-',
+      alamat: [valDesa, valKec, valKab].filter(v => v && v !== '-').join(', ') || '-'
     };
 
     const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
@@ -534,6 +542,21 @@ async function handleImportZipFile(event) {
 
     if (typeof renderCadastralProFields === 'function') {
       renderCadastralProFields();
+    }
+
+    if (typeof fetchSpatialStatusData === 'function' && (!valRtrw || !valLsd || !valZnt)) {
+      fetchSpatialStatusData(centerLat, centerLng).then(status => {
+        if (activePinData && Math.abs(activePinData.lat - centerLat) < 0.001) {
+          if (!valRtrw) activePinData.rtrw = status.rtrw || '-';
+          if (!valRdtr) activePinData.rdtr = status.rdtr || '-';
+          if (!valLsd) activePinData.lsd = status.lsd || '-';
+          if (!valLbs) activePinData.lbs = status.lbs || '-';
+          if (!valHutan) activePinData.hutan = status.hutan || '-';
+          if (!valZnt) activePinData.znt = status.znt || '-';
+          if (!valZntRange) activePinData.znt_range = status.znt_range || '-';
+          if (typeof renderCadastralProFields === 'function') renderCadastralProFields();
+        }
+      });
     }
 
     if (activePolygonLayer) {

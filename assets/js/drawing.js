@@ -96,7 +96,7 @@ function createPolygonFromBatchCoords() {
       const elLuasBpn = document.getElementById('pinLuasBpnText');
       if (elLuasBpn) {
         elLuasBpn.className = 'stat-value offline';
-        elLuasBpn.innerText = 'Server Offline';
+        elLuasBpn.innerText = 'Belum Terhubung Server';
       }
       const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
       if (typeof renderCadastralProFields === 'function') {
@@ -105,11 +105,11 @@ function createPolygonFromBatchCoords() {
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
       if (elStatusValidasi) {
         elStatusValidasi.className = 'status-offline-tag';
-        elStatusValidasi.innerText = 'Server Offline';
+        elStatusValidasi.innerText = 'Belum Terhubung Server';
       }
       const elHudArea = document.getElementById('hudBpnArea');
       if (elHudArea) {
-        elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
+        elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
       }
       const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
       if (elPinServer && typeof getCadastreServerMode === 'function') {
@@ -149,7 +149,7 @@ function createPolygonFromBatchCoords() {
         return;
       }
       const serverName = (typeof getCadastreServerMode === 'function' && getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
-      const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0) ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : 'Server Offline';
+      const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0) ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : 'Belum Terhubung Server';
       const summary = `DATA RESMI BIDANG TANAH KADASTRAL
 
 Nomor Identifikasi Bidang (NIB): ${activePinData.nib || '-'}
@@ -260,57 +260,9 @@ Server Sumber Data: ${serverName}`;
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
-    function ensureBidangHatchPattern(targetMap) {
-      const m = targetMap || (typeof map !== 'undefined' ? map : null);
-      if (!m || !m.getPanes) return;
-      const panes = m.getPanes();
-      const container = panes.overlayPane;
-      if (!container) return;
-      let svg = container.querySelector('svg');
-      if (!svg && m._renderer && m._renderer._container) {
-        svg = m._renderer._container;
-      }
-      if (!svg) svg = container.querySelector('svg');
-      if (!svg) return;
-
-      let defs = svg.querySelector('defs');
-      if (!defs) {
-        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        svg.insertBefore(defs, svg.firstChild);
-      }
-      if (!defs.querySelector('#bidangHatchPattern')) {
-        const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
-        pattern.setAttribute('id', 'bidangHatchPattern');
-        pattern.setAttribute('width', '16');
-        pattern.setAttribute('height', '16');
-        pattern.setAttribute('patternTransform', 'rotate(45 0 0)');
-        pattern.setAttribute('patternUnits', 'userSpaceOnUse');
-
-        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bgRect.setAttribute('width', '16');
-        bgRect.setAttribute('height', '16');
-        bgRect.setAttribute('fill', '#0284c7');
-        bgRect.setAttribute('fill-opacity', '0.12');
-
-        const hatchLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        hatchLine.setAttribute('x1', '0');
-        hatchLine.setAttribute('y1', '0');
-        hatchLine.setAttribute('x2', '0');
-        hatchLine.setAttribute('y2', '16');
-        hatchLine.setAttribute('stroke', '#ffffff');
-        hatchLine.setAttribute('stroke-width', '2');
-        hatchLine.setAttribute('stroke-opacity', '0.7');
-
-        pattern.appendChild(bgRect);
-        pattern.appendChild(hatchLine);
-        defs.appendChild(pattern);
-      }
-    }
-    window.ensureBidangHatchPattern = ensureBidangHatchPattern;
-
-    function cleanAndDeduplicateVertices(coords, minMeters = 0.05, maxDeg = 0.5) {
+    function cleanAndDeduplicateVertices(coords, minMeters = 1.5, maxDeg = 14.0) {
       if (!coords || coords.length < 3) return coords;
-      let pts = coords.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
+      let pts = coords.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
         pts.pop();
       }
@@ -367,7 +319,7 @@ Server Sumber Data: ${serverName}`;
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.15, 1.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.8, 15.0);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
@@ -386,15 +338,9 @@ Server Sumber Data: ${serverName}`;
         return;
       }
 
-      let pts = rawBboxCoords.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
-      if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.0000005 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.0000005) {
-        pts.pop();
-      }
-      activeVertices = pts.filter((p, i) => {
-        if (i === 0) return true;
-        const prev = pts[i - 1];
-        return Math.abs(p.lat - prev.lat) > 0.00000001 || Math.abs(p.lng - prev.lng) > 0.00000001;
-      });
+      let pts = rawBboxCoords;
+      activeVertices = pts.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.25, 4.0);
 
       const toolbar = document.getElementById('mapPrecisionToolbar');
       if (toolbar) toolbar.style.display = 'flex';
@@ -453,357 +399,6 @@ Server Sumber Data: ${serverName}`;
       renderCanvasPolygon(true);
     }
 
-    function checkAndInsertBoundaryVertex(latlng, maxPixelDist = 20) {
-      if (isFreeDeleteVertexMode || isDrawingPolygon || isMergeMode) return false;
-      if (!map || !activeVertices || activeVertices.length < 3) return false;
-
-      const clickPt = map.latLngToLayerPoint(latlng);
-      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-
-      let bestDist = Infinity;
-      let bestPartIdx = -1;
-      let bestInsertIdx = -1;
-      let bestProjLatLng = null;
-
-      parts.forEach((partList, pIdx) => {
-        const n = partList.length;
-        for (let i = 0; i < n; i++) {
-          const v1 = partList[i];
-          const v2 = partList[(i + 1) % n];
-          const ptA = map.latLngToLayerPoint(L.latLng(v1.lat, v1.lng));
-          const ptB = map.latLngToLayerPoint(L.latLng(v2.lat, v2.lng));
-
-          const dx = ptB.x - ptA.x;
-          const dy = ptB.y - ptA.y;
-          const segLenSq = dx * dx + dy * dy;
-          if (segLenSq === 0) continue;
-
-          let t = ((clickPt.x - ptA.x) * dx + (clickPt.y - ptA.y) * dy) / segLenSq;
-          t = Math.max(0, Math.min(1, t));
-
-          const projPt = L.point(ptA.x + t * dx, ptA.y + t * dy);
-          const dist = clickPt.distanceTo(projPt);
-
-          if (dist < bestDist) {
-            const candLatLng = map.layerPointToLatLng(projPt);
-            const distA = L.latLng(v1.lat, v1.lng).distanceTo(candLatLng);
-            const distB = L.latLng(v2.lat, v2.lng).distanceTo(candLatLng);
-            if (distA >= 0.35 && distB >= 0.35) {
-              bestDist = dist;
-              bestPartIdx = pIdx;
-              bestInsertIdx = i + 1;
-              bestProjLatLng = candLatLng;
-            }
-          }
-        }
-      });
-
-      if (bestDist <= maxPixelDist && bestProjLatLng && bestPartIdx >= 0) {
-        isGeometryManuallyEdited = true;
-        const targetPart = parts[bestPartIdx];
-        targetPart.splice(bestInsertIdx, 0, {
-          lat: Number(bestProjLatLng.lat.toFixed(7)),
-          lng: Number(bestProjLatLng.lng.toFixed(7))
-        });
-        if (parts.length === 1) activeVertices = targetPart;
-        renderCanvasPolygon(true);
-        showToast(`Patok baru berhasil disisipkan pada belokan batas (Total: ${activeVertices.length} patok).`, 'success');
-        return true;
-      }
-      return false;
-    }
-    window.checkAndInsertBoundaryVertex = checkAndInsertBoundaryVertex;
-
-    function handleActivePolygonClick(e) {
-      if (checkAndInsertBoundaryVertex(e.latlng, 22)) {
-        L.DomEvent.stopPropagation(e);
-      }
-    }
-
-    function latLngToMeters(coords, refLat, refLng) {
-      const cosLat = Math.cos(refLat * Math.PI / 180);
-      return coords.map(p => {
-        const lat = (p.lat !== undefined) ? Number(p.lat) : Number(p[1]);
-        const lng = (p.lng !== undefined) ? Number(p.lng) : Number(p[0]);
-        return [
-          (lng - refLng) * 111320 * cosLat,
-          (lat - refLat) * 111320
-        ];
-      });
-    }
-
-    function shoelacePolyArea(pts) {
-      const n = pts.length;
-      if (n < 3) return 0;
-      let area = 0;
-      for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        area += pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
-      }
-      return Math.abs(area) * 0.5;
-    }
-
-    function signedPolyArea(pts) {
-      const n = pts.length;
-      if (n < 3) return 0;
-      let area = 0;
-      for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        area += pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
-      }
-      return area * 0.5;
-    }
-
-    function ensurePolyCCW(pts) {
-      if (signedPolyArea(pts) < 0) {
-        return pts.slice().reverse();
-      }
-      return pts.slice();
-    }
-
-    function triangulatePolyCoords(pts) {
-      const cleanPts = ensurePolyCCW(pts);
-      const n = cleanPts.length;
-      if (n < 3) return [];
-      if (n === 3) return [cleanPts];
-      const indices = [];
-      for (let i = 0; i < n; i++) indices.push(i);
-      const triangles = [];
-
-      function isPtInTri(p, a, b, c) {
-        function cross(p1, p2, p3) {
-          return (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0]);
-        }
-        const cp1 = cross(a, b, p);
-        const cp2 = cross(b, c, p);
-        const cp3 = cross(c, a, p);
-        return (cp1 >= -1e-9 && cp2 >= -1e-9 && cp3 >= -1e-9) || (cp1 <= 1e-9 && cp2 <= 1e-9 && cp3 <= 1e-9);
-      }
-
-      const maxIter = indices.length * 4;
-      let iterCount = 0;
-      while (indices.length > 3 && iterCount < maxIter) {
-        iterCount++;
-        let earFound = false;
-        const k = indices.length;
-        for (let i = 0; i < k; i++) {
-          const prevIdx = indices[(i - 1 + k) % k];
-          const currIdx = indices[i];
-          const nextIdx = indices[(i + 1) % k];
-          const a = cleanPts[prevIdx];
-          const b = cleanPts[currIdx];
-          const c = cleanPts[nextIdx];
-          const crossAbBc = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
-          if (crossAbBc <= 1e-9) continue;
-          let containsOther = false;
-          for (let j = 0; j < k; j++) {
-            if (j === ((i - 1 + k) % k) || j === i || j === ((i + 1) % k)) continue;
-            if (isPtInTri(cleanPts[indices[j]], a, b, c)) {
-              containsOther = true;
-              break;
-            }
-          }
-          if (!containsOther) {
-            triangles.push([a, b, c]);
-            indices.splice(i, 1);
-            earFound = true;
-            break;
-          }
-        }
-        if (!earFound) break;
-      }
-      if (indices.length === 3) {
-        triangles.push([cleanPts[indices[0]], cleanPts[indices[1]], cleanPts[indices[2]]]);
-      }
-      return triangles;
-    }
-
-    function clipPolyByHalfPlane(poly, p1, p2) {
-      const out = [];
-      if (!poly || poly.length < 3) return out;
-      function isInside(cp) {
-        return (p2[0] - p1[0]) * (cp[1] - p1[1]) - (p2[1] - p1[1]) * (cp[0] - p1[0]) >= -1e-9;
-      }
-      function lineIntersect(s, e) {
-        const dxSeg = e[0] - s[0];
-        const dySeg = e[1] - s[1];
-        const dxLine = p2[0] - p1[0];
-        const dyLine = p2[1] - p1[1];
-        const denom = dxSeg * dyLine - dySeg * dxLine;
-        if (Math.abs(denom) < 1e-12) return s;
-        const num = (p1[0] - s[0]) * dyLine - (p1[1] - s[1]) * dxLine;
-        const t = Math.max(0, Math.min(1, num / denom));
-        return [s[0] + t * dxSeg, s[1] + t * dySeg];
-      }
-      let s = poly[poly.length - 1];
-      for (let i = 0; i < poly.length; i++) {
-        const e = poly[i];
-        if (isInside(e)) {
-          if (!isInside(s)) out.push(lineIntersect(s, e));
-          out.push(e);
-        } else if (isInside(s)) {
-          out.push(lineIntersect(s, e));
-        }
-        s = e;
-      }
-      return out;
-    }
-
-    function clipConvexPolygons(subject, clip) {
-      let s = ensurePolyCCW(subject);
-      const c = ensurePolyCCW(clip);
-      let output = s;
-      const n = c.length;
-      for (let i = 0; i < n; i++) {
-        output = clipPolyByHalfPlane(output, c[i], c[(i + 1) % n]);
-        if (!output || output.length < 3) return [];
-      }
-      return output;
-    }
-
-    function calculatePolygonIntersectionArea(polyCoordsA, polyCoordsB) {
-      if (!polyCoordsA || polyCoordsA.length < 3 || !polyCoordsB || polyCoordsB.length < 3) return 0;
-      const refLat = polyCoordsA[0].lat !== undefined ? polyCoordsA[0].lat : polyCoordsA[0][1];
-      const refLng = polyCoordsA[0].lng !== undefined ? polyCoordsA[0].lng : polyCoordsA[0][0];
-
-      const mPolyA = latLngToMeters(polyCoordsA, refLat, refLng);
-      const mPolyB = latLngToMeters(polyCoordsB, refLat, refLng);
-
-      const triA = triangulatePolyCoords(mPolyA);
-      const triB = triangulatePolyCoords(mPolyB);
-      if (!triA.length || !triB.length) return 0;
-
-      let totalInterArea = 0;
-      for (let i = 0; i < triA.length; i++) {
-        for (let j = 0; j < triB.length; j++) {
-          const clipped = clipConvexPolygons(triA[i], triB[j]);
-          if (clipped && clipped.length >= 3) {
-            totalInterArea += shoelacePolyArea(clipped);
-          }
-        }
-      }
-      return totalInterArea;
-    }
-
-    function getCadastreParcelsPool() {
-      if (Array.isArray(window.currentCadastreParcelsPool) && window.currentCadastreParcelsPool.length > 0) {
-        return window.currentCadastreParcelsPool;
-      }
-      if (activePinData && Array.isArray(activePinData.merged_parcels) && activePinData.merged_parcels.length > 0) {
-        return activePinData.merged_parcels;
-      }
-      if (Array.isArray(mergeParcelsList) && mergeParcelsList.length > 0) {
-        return mergeParcelsList;
-      }
-      return [];
-    }
-
-    function evaluateOverlappingCadastreParcels(activeCoords) {
-      if (!activeCoords || activeCoords.length < 3) return [];
-      const pool = getCadastreParcelsPool();
-      if (!pool || pool.length === 0) return [];
-
-      const qualifying = [];
-      const activeGeomArea = calculatePolygonArea(activeCoords);
-      if (activeGeomArea <= 1) return [];
-
-      for (let i = 0; i < pool.length; i++) {
-        const item = pool[i];
-        const itemCoords = item.coords || item.polygon_coords;
-        if (!itemCoords || itemCoords.length < 3) continue;
-
-        const itemArea = (item.geom_area_m2 && item.geom_area_m2 > 0)
-          ? item.geom_area_m2
-          : calculatePolygonArea(itemCoords);
-        if (itemArea <= 1) continue;
-
-        const interArea = calculatePolygonIntersectionArea(activeCoords, itemCoords);
-        const overlapRatio = interArea / itemArea;
-
-        if (overlapRatio > 0.50) {
-          qualifying.push({
-            index: i + 1,
-            fid: item.fid || item.nib || `Bidang ${i + 1}`,
-            nib: item.nib || item.fid || '-',
-            nomor_hak: item.nomor_hak || item.nomor_hak_raw || '-',
-            tipe_hak: item.tipe_hak || 'Hak Milik',
-            luas_terdaftar_m2: (item.luas_m2 && Number(item.luas_m2) > 0) ? Number(item.luas_m2) : Math.round(itemArea),
-            geom_area_m2: roundArea2(itemArea),
-            intersection_area_m2: roundArea2(interArea),
-            overlap_pct: (overlapRatio * 100).toFixed(1)
-          });
-        }
-      }
-      return qualifying;
-    }
-
-    function renderMergedParcelsList(qualifyingParcels, liveAreaM2) {
-      const box = document.getElementById('boxDaftarBidangGabungan');
-      if (!box) return;
-      if (!qualifyingParcels || qualifyingParcels.length <= 1) {
-        box.style.display = 'none';
-        return;
-      }
-      box.style.display = 'flex';
-      box.style.flexDirection = 'column';
-
-      const badge = document.getElementById('badgeJumlahBidangGabungan');
-      if (badge) badge.innerText = `${qualifyingParcels.length} Bidang`;
-
-      const contentEl = document.getElementById('daftarBidangGabunganContent');
-      if (contentEl) {
-        let rowsHtml = '';
-        let totalLuasTerdaftar = 0;
-        qualifyingParcels.forEach((p, idx) => {
-          totalLuasTerdaftar += p.luas_terdaftar_m2;
-          const noHak = (p.nomor_hak && p.nomor_hak !== '-') ? p.nomor_hak : 'Belum Terbit';
-          rowsHtml += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-xs);">
-              <div style="display: flex; flex-direction: column; overflow: hidden; max-width: 65%;">
-                <div style="font-weight: 700; color: var(--text-main); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  ${idx + 1}. No. Hak: ${noHak}
-                </div>
-                <div style="font-size: 0.66rem; color: var(--text-muted); font-family: var(--font-mono);">
-                  NIB: ${p.nib} : Overlap: ${p.overlap_pct}%
-                </div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-weight: 700; color: var(--emerald); font-size: 0.72rem; font-family: var(--font-mono);">
-                  ${formatAreaM2(p.luas_terdaftar_m2)}
-                </div>
-              </div>
-            </div>
-          `;
-        });
-        contentEl.innerHTML = rowsHtml;
-
-        const totalEl = document.getElementById('totalLuasTerdaftarGabungan');
-        if (totalEl) totalEl.innerText = formatAreaM2(totalLuasTerdaftar);
-
-        const elLuasBpn = document.getElementById('pinLuasBpnText');
-        if (elLuasBpn) {
-          elLuasBpn.className = 'stat-value emerald';
-          elLuasBpn.innerText = `${formatAreaM2(totalLuasTerdaftar)} (${qualifyingParcels.length} Bidang)`;
-        }
-
-        const elNomorHak = document.getElementById('pinNomorHakText');
-        if (elNomorHak) {
-          const listHak = qualifyingParcels.map(p => p.nomor_hak).filter(n => n && n !== '-');
-          elNomorHak.innerText = listHak.length > 0 ? listHak.join(', ') : 'Gabungan';
-        }
-
-        const diffPctEl = document.getElementById('diffPercentText');
-        const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (totalLuasTerdaftar > 0) {
-          const diff = liveAreaM2 - totalLuasTerdaftar;
-          const pct = Math.max(0, 100 - (Math.abs(diff) / totalLuasTerdaftar * 100));
-          const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
-          if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
-          if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(totalLuasTerdaftar);
-        }
-      }
-    }
-
     function renderCanvasPolygon(updateHandles = true) {
       if (!activeVertices || activeVertices.length < 3) return;
       syncActivePolygonPanel();
@@ -818,27 +413,21 @@ Server Sumber Data: ${serverName}`;
         liveAreaM2 = calculatePolygonArea(activeVertices);
       }
 
-      ensureBidangHatchPattern(map);
       if (!activePolygonLayer) {
         activePolygonLayer = L.polygon(latlngs, {
-          color: '#ffffff',
+          color: '#ea580c',
           weight: 3.5,
-          opacity: 1,
-          fillColor: 'url(#bidangHatchPattern)',
-          fillOpacity: 1,
-          className: 'active-cadastre-polygon',
+          fillColor: '#ea580c',
+          fillOpacity: 0.15,
           interactive: true
         }).addTo(map);
-        activePolygonLayer.on('click', handleActivePolygonClick);
       } else {
         activePolygonLayer.setLatLngs(latlngs);
         activePolygonLayer.setStyle({
-          color: '#ffffff',
+          color: '#ea580c',
           weight: 3.5,
-          opacity: 1,
-          fillColor: 'url(#bidangHatchPattern)',
-          fillOpacity: 1,
-          className: 'active-cadastre-polygon'
+          fillColor: '#ea580c',
+          fillOpacity: 0.15
         });
       }
       const liveAreaHa = liveAreaM2 / 10000;
@@ -858,53 +447,42 @@ Server Sumber Data: ${serverName}`;
       const hudLive = document.getElementById('hudLiveArea');
       if (hudLive) hudLive.innerText = formatAreaM2(liveAreaM2);
 
-      const registeredBpnArea = (activePinData && activePinData.luas_terdaftar_m2 !== undefined && activePinData.luas_terdaftar_m2 !== null && activePinData.luas_terdaftar_m2 > 0)
-        ? activePinData.luas_terdaftar_m2
-        : (activePinData?.luas_m2 || 0);
-
-      const elLuasBpn = document.getElementById('pinLuasBpnText');
-      if (elLuasBpn) {
-        if (registeredBpnArea > 0) {
-          elLuasBpn.className = 'stat-value emerald';
-          elLuasBpn.innerText = formatAreaM2(registeredBpnArea);
-        } else {
-          elLuasBpn.className = 'stat-value offline';
-          elLuasBpn.innerText = 'Server Offline';
-        }
-      }
-
-      if (registeredBpnArea > 0) {
-        const diff = liveAreaM2 - registeredBpnArea;
-        const pct = Math.max(0, 100 - (Math.abs(diff) / registeredBpnArea * 100));
-        const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
-        const diffPctEl = document.getElementById('diffPercentText');
-        const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
-        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(registeredBpnArea);
-      } else {
-        const diffPctEl = document.getElementById('diffPercentText');
-        const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
-        if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
-      }
-
       if (isGeometryManuallyEdited) {
+        if (activePinData) {
+          activePinData.luas_m2 = roundArea2(liveAreaM2);
+          activePinData.luas_ha = roundAreaHa6(liveAreaM2);
+        }
+        const elLuasBpn = document.getElementById('pinLuasBpnText');
+        if (elLuasBpn) {
+          elLuasBpn.className = 'stat-value emerald';
+          elLuasBpn.innerText = formatAreaM2(liveAreaM2);
+        }
         const elStatusValidasi = document.getElementById('pinStatusValidasiText');
         if (elStatusValidasi) {
           elStatusValidasi.className = 'spec-value emerald';
           elStatusValidasi.innerText = 'Kalkulasi Geometri Real';
         }
-      }
-
-      const qualifyingParcels = evaluateOverlappingCadastreParcels(activeVertices);
-      if (qualifyingParcels && qualifyingParcels.length > 1) {
-        renderMergedParcelsList(qualifyingParcels, liveAreaM2);
+        const elHudArea = document.getElementById('hudBpnArea');
+        if (elHudArea) elHudArea.innerText = formatAreaM2(liveAreaM2);
+        const diffPctEl = document.getElementById('diffPercentText');
+        const diffBpnEl = document.getElementById('diffTargetBpnText');
+        if (diffPctEl) diffPctEl.innerText = '0.00 m² (Kalkulasi Real)';
+        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(liveAreaM2);
       } else {
-        const box = document.getElementById('boxDaftarBidangGabungan');
-        if (box) box.style.display = 'none';
-        const elNomorHak = document.getElementById('pinNomorHakText');
-        if (elNomorHak && activePinData) {
-          elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
+        const targetBpnArea = activePinData?.luas_m2 || 0;
+        if (targetBpnArea > 0) {
+          const diff = liveAreaM2 - targetBpnArea;
+          const pct = Math.max(0, 100 - (Math.abs(diff) / targetBpnArea * 100));
+          const diffText = diff >= 0 ? `+${diff.toFixed(2)} m²` : `${diff.toFixed(2)} m²`;
+          const diffPctEl = document.getElementById('diffPercentText');
+          const diffBpnEl = document.getElementById('diffTargetBpnText');
+          if (diffPctEl) diffPctEl.innerText = `${diffText} (Presisi: ${pct.toFixed(2)}%)`;
+          if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(targetBpnArea);
+        } else {
+          const diffPctEl = document.getElementById('diffPercentText');
+          const diffBpnEl = document.getElementById('diffTargetBpnText');
+          if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
+          if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
         }
       }
 
@@ -950,23 +528,18 @@ Server Sumber Data: ${serverName}`;
           }).addTo(map);
 
           const popupContent = `
-            <div style="font-family:'Inter',sans-serif;font-size:11px;padding:4px;min-width:160px;">
-              <div style="font-weight:700;margin-bottom:3px;color:var(--text-main);display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-family:'Inter',sans-serif;font-size:11px;padding:3px;min-width:130px;">
+              <div style="font-weight:700;margin-bottom:3px;color:var(--text-main);display:flex;justify-content:space-between;">
                 <span>Patok ${nodeLabel}</span>
                 <span style="font-family:'JetBrains Mono',monospace;color:var(--text-muted);font-size:9.5px;">#${idx+1}</span>
               </div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-sub);margin-bottom:6px;background:var(--bg-subtle);padding:3px 6px;border-radius:4px;border:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
-                <span>${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</span>
-                <button type="button" style="border:none;background:none;cursor:pointer;color:var(--brand-primary);font-size:10px;font-weight:700;padding:0 2px;" onclick="window.editVertexCoordinate(${pIdx}, ${idx})" title="Edit Koordinat">Edit</button>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-sub);margin-bottom:5px;">
+                ${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-                  <button type="button" class="btn btn-outline" style="padding:3px 4px;font-size:9.5px;justify-content:center;font-weight:600;color:var(--brand-primary);border-color:var(--brand-primary);" onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'prev')">
-                    + Sisi Kiri
-                  </button>
-                  <button type="button" class="btn btn-outline" style="padding:3px 4px;font-size:9.5px;justify-content:center;font-weight:600;color:var(--brand-primary);border-color:var(--brand-primary);" onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'next')">
-                    + Sisi Kanan
-                  </button>
+                <div style="display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--text-sub);background:var(--bg-subtle);padding:4px 6px;border-radius:4px;border:1px solid var(--border-light);">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span>Tahan &amp; geser patok di peta</span>
                 </div>
                 <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:10px;justify-content:center;width:100%;font-weight:600;color:var(--crimson);border-color:#fecdd3;" onclick="window.deleteVertexMarker(${pIdx}, ${idx})">
                   Hapus Patok ${nodeLabel}
@@ -975,9 +548,6 @@ Server Sumber Data: ${serverName}`;
                 <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:9.5px;justify-content:center;width:100%;font-weight:600;color:#991b1b;border-color:#fca5a5;margin-top:2px;" onclick="window.deletePartEntirely(${pIdx})">
                   Hapus Sisa Garis / Bagian ${pfx}
                 </button>` : ''}
-                <div style="font-size:8.5px;color:var(--text-muted);text-align:center;margin-top:2px;">
-                  Klik garis batas untuk tambah patok di sudut belokan
-                </div>
               </div>
             </div>
           `;
@@ -987,17 +557,14 @@ Server Sumber Data: ${serverName}`;
             className: 'vertex-action-popup'
           });
           marker.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
             if (isFreeDeleteVertexMode) {
+              L.DomEvent.stopPropagation(e);
               window.deleteVertexMarker(pIdx, idx);
               return;
             }
-            this.openPopup();
           });
           marker.on('mouseover', function() {
-            if (!isFreeDeleteVertexMode && !this.isPopupOpen()) {
-              this.openPopup();
-            }
+            if (!isFreeDeleteVertexMode) this.openPopup();
           });
 
           marker.on('drag', function(e) {
@@ -1027,7 +594,7 @@ Server Sumber Data: ${serverName}`;
           const dist = p1.distanceTo(p2);
 
           const curZ = map.getZoom();
-          const minAddDist = curZ >= 22 ? 0.3 : (curZ >= 19 ? 0.7 : (curZ >= 17 ? 1.5 : 3.0));
+          const minAddDist = curZ >= 23 ? 0.6 : (curZ >= 20 ? 1.5 : 3.5);
           if (dist >= minAddDist) {
             const midLat = (v.lat + nextV.lat) / 2;
             const midLng = (v.lng + nextV.lng) / 2;
@@ -1370,12 +937,6 @@ Server Sumber Data: ${serverName}`;
         cancelMergeMode();
         return;
       }
-      const isProOrAdmin = (typeof isMemberProActive === 'function' && isMemberProActive()) || (typeof isMemberAdminActive === 'function' && isMemberAdminActive());
-      if (!isProOrAdmin) {
-        showToast('Fitur seleksi & penggabungan multi-bidang memerlukan akses PRO atau ADMIN. Silakan masuk akun.', 'warn');
-        if (typeof openMemberModal === 'function') openMemberModal();
-        return;
-      }
       if (!activeVertices || activeVertices.length < 3) {
         showToast('Pilih bidang tanah awal terlebih dahulu dengan mengklik peta.', 'warn');
         return;
@@ -1385,20 +946,15 @@ Server Sumber Data: ${serverName}`;
       mergePreviewLayers.forEach(l => map.removeLayer(l));
       mergePreviewLayers = [];
 
-      const firstParcelArea = (activePinData && activePinData.luas_terdaftar_m2 > 0)
-        ? roundArea2(activePinData.luas_terdaftar_m2)
-        : ((activePinData && activePinData.luas_m2 > 0) ? roundArea2(activePinData.luas_m2) : roundArea2(calculatePolygonArea(activeVertices)));
+      const firstParcelArea = (activePinData && activePinData.luas_m2 > 0)
+        ? roundArea2(activePinData.luas_m2)
+        : roundArea2(calculatePolygonArea(activeVertices));
 
       mergeParcelsList.push({
         coords: activeVertices.map(v => ({ lat: Number(v.lat.toFixed(7)), lng: Number(v.lng.toFixed(7)) })),
         fid: 'Bidang 1',
         _internalFid: activePinData?.fid || null,
-        nib: activePinData?.nib || activePinData?.fid || 'Bidang 1',
-        nomor_hak: activePinData?.nomor_hak || activePinData?.nomor_hak_raw || '-',
-        tipe_hak: activePinData?.tipe_hak || 'Hak Milik',
-        luas: firstParcelArea,
-        luas_m2: firstParcelArea,
-        luas_terdaftar_m2: firstParcelArea
+        luas: firstParcelArea
       });
 
       const banner = document.getElementById('mergeModeBanner');
@@ -1544,7 +1100,7 @@ Server Sumber Data: ${serverName}`;
           if (Array.isArray(p)) return { lat: Number(p[1]), lng: Number(p[0]) };
           return { lat: Number(p.lat), lng: Number(p.lng) };
         });
-        rawCoords = cleanAndDeduplicateVertices(rawCoords, 0.05, 0.5);
+        rawCoords = cleanAndDeduplicateVertices(rawCoords, 0.25, 4.0);
 
         const existingPolys = [activeVertices, ...mergeParcelsList.map(p => p.coords)];
         const snappedCoords = snapSharedBoundaryVertices(rawCoords, existingPolys, 2.5);
@@ -1558,12 +1114,7 @@ Server Sumber Data: ${serverName}`;
           coords: snappedCoords,
           fid: newParcelLabel,
           _internalFid: persilData.fid || null,
-          nib: persilData.nib || persilData.fid || newParcelLabel,
-          nomor_hak: persilData.nomor_hak || persilData.nomor_hak_raw || '-',
-          tipe_hak: persilData.tipe_hak || 'Hak Milik',
-          luas: newParcelLuas,
-          luas_m2: newParcelLuas,
-          luas_terdaftar_m2: newParcelLuas
+          luas: newParcelLuas
         });
 
         const latlngs = snappedCoords.map(p => [p.lat, p.lng]);
@@ -1777,7 +1328,7 @@ Server Sumber Data: ${serverName}`;
           }
         }
         if (loop.length >= 3) {
-          const cleanLoop = cleanAndDeduplicateVertices(loop, 0.05, 0.5);
+          const cleanLoop = cleanAndDeduplicateVertices(loop, 1.2, 14.0);
           const loopArea = calculatePolygonArea(cleanLoop);
           if (loopArea >= 12.0) {
             loops.push(cleanLoop);
@@ -1876,7 +1427,7 @@ Server Sumber Data: ${serverName}`;
           const mergedRing = result.merged_polygon[0];
           mergedPts = mergedRing.map(p => ({ lat: Number(p[1]), lng: Number(p[0]) }));
         }
-        mergedPts = cleanAndDeduplicateVertices(mergedPts, 0.05, 0.5);
+        mergedPts = cleanAndDeduplicateVertices(mergedPts, 1.2, 14.0);
         for (let iter = 0; iter < 2; iter++) {
           const curGeomArea = calculatePolygonArea(mergedPts);
           if (curGeomArea <= 0 || Math.abs(curGeomArea - targetTotalArea) < 0.0001) break;
@@ -1893,22 +1444,16 @@ Server Sumber Data: ${serverName}`;
         activeVertices = mergedPts;
       }
 
-      window.currentCadastreParcelsPool = mergeParcelsList.slice();
       if (activePinData) {
         activePinData.fid = 'Gabungan ' + mergeParcelsList.length + ' Bidang';
         activePinData.luas_m2 = targetTotalArea;
-        activePinData.luas_terdaftar_m2 = targetTotalArea;
         activePinData.luas_ha = roundAreaHa6(targetTotalArea);
-        activePinData.merged_parcels = mergeParcelsList.slice();
-        activePinData.nomor_hak = mergeParcelsList.map(p => p.nomor_hak).filter(n => n && n !== '-').join(', ') || 'Gabungan';
         const _elNib = document.getElementById('pinNibText');
         if (_elNib) _elNib.innerText = 'Gabungan ' + mergeParcelsList.length + ' Bidang';
         const _elLok = document.getElementById('pinLokasiUtamaText');
         if (_elLok) _elLok.innerText = (activePinData.desa !== '-' && activePinData.kecamatan !== '-') ? `${activePinData.desa}, ${activePinData.kecamatan}` : (activePinData.desa !== '-' ? activePinData.desa : 'Bidang Tanah');
         const _elLuas = document.getElementById('pinLuasBpnText');
         if (_elLuas) _elLuas.innerText = formatAreaM2(targetTotalArea);
-        const _elNomorHak = document.getElementById('pinNomorHakText');
-        if (_elNomorHak) _elNomorHak.innerText = activePinData.nomor_hak;
         const _elStatus = document.getElementById('pinStatusValidasiText');
         if (_elStatus) _elStatus.innerText = 'Penjumlahan Bidang Terpilih';
       }
@@ -2276,61 +1821,6 @@ Server Sumber Data: ${serverName}`;
       }
       removeVertexAt(vIdx);
       showToast('Titik patok berhasil dihapus.', 'success');
-    };
-
-    window.editVertexCoordinate = function(pIdx, vIdx) {
-      if (map) map.closePopup();
-      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      const targetPart = parts[pIdx] || activeVertices;
-      const curr = targetPart[vIdx];
-      if (!curr) return;
-      const input = prompt(`Ubah koordinat Patok #${vIdx + 1} (format: Lat, Lng):`, `${curr.lat.toFixed(7)}, ${curr.lng.toFixed(7)}`);
-      if (!input) return;
-      const spl = input.split(',').map(s => parseFloat(s.trim()));
-      if (spl.length === 2 && !isNaN(spl[0]) && !isNaN(spl[1])) {
-        if (Math.abs(spl[0]) <= 90 && Math.abs(spl[1]) <= 180) {
-          targetPart[vIdx] = { lat: spl[0], lng: spl[1] };
-          if (parts.length === 1) activeVertices = targetPart;
-          isGeometryManuallyEdited = true;
-          renderCanvasPolygon(true);
-          showToast(`Koordinat Patok #${vIdx + 1} berhasil diperbarui.`, 'success');
-        } else {
-          showToast('Nilai koordinat tidak valid (Latitude -90 s/d 90, Longitude -180 s/d 180).', 'warn');
-        }
-      } else {
-        showToast('Format koordinat salah. Gunakan format: Latitude, Longitude', 'warn');
-      }
-    };
-
-    window.addVertexNextTo = function(pIdx, vIdx, direction = 'next') {
-      if (map) map.closePopup();
-      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
-      const targetPart = parts[pIdx] || activeVertices;
-      const n = targetPart.length;
-      if (n < 2) return;
-
-      let insertIdx;
-      let midLat, midLng;
-      if (direction === 'prev') {
-        const prevIdx = (vIdx - 1 + n) % n;
-        midLat = (targetPart[prevIdx].lat + targetPart[vIdx].lat) / 2;
-        midLng = (targetPart[prevIdx].lng + targetPart[vIdx].lng) / 2;
-        insertIdx = vIdx;
-      } else {
-        const nextIdx = (vIdx + 1) % n;
-        midLat = (targetPart[vIdx].lat + targetPart[nextIdx].lat) / 2;
-        midLng = (targetPart[vIdx].lng + targetPart[nextIdx].lng) / 2;
-        insertIdx = vIdx + 1;
-      }
-
-      targetPart.splice(insertIdx, 0, {
-        lat: Number(midLat.toFixed(7)),
-        lng: Number(midLng.toFixed(7))
-      });
-      if (parts.length === 1) activeVertices = targetPart;
-      isGeometryManuallyEdited = true;
-      renderCanvasPolygon(true);
-      showToast(`Patok baru berhasil ditambahkan pada garis (Total: ${targetPart.length} patok). Tahan & geser patok ke sudut batas yang tepat.`, 'success');
     };
 
     window.deletePartEntirely = function(pIdx) {

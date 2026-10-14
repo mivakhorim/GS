@@ -430,12 +430,3 @@
     .vertex-action-popup .leaflet-popup-tip {
       background-color: var(--bg-surface);
     }
-    .active-cadastre-polygon {
-      stroke: #ffffff !important;
-      stroke-width: 3.5px !important;
-      stroke-linecap: round !important;
-      stroke-linejoin: round !important;
-      fill: url(#bidangHatchPattern) !important;
-      fill-opacity: 1 !important;
-      filter: drop-shadow(0 0 2.5px rgba(0, 0, 0, 0.9));
-    }
