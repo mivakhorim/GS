@@ -418,14 +418,16 @@
       z-index: 850;
     }
     .vertex-action-popup .leaflet-popup-content-wrapper {
-      padding: 2px;
+      padding: 0;
       border-radius: var(--radius-sm);
-      box-shadow: 0 4px 14px rgba(10, 46, 92, 0.18);
+      box-shadow: 0 4px 14px rgba(10, 46, 92, 0.16);
       border: 1px solid var(--border-light);
       background-color: var(--bg-surface);
+      overflow: hidden;
     }
     .vertex-action-popup .leaflet-popup-content {
-      margin: 4px 6px;
+      margin: 0;
+      line-height: 1.3;
     }
     .vertex-action-popup .leaflet-popup-tip {
       background-color: var(--bg-surface);
@@ -439,3 +441,271 @@
       fill-opacity: 1 !important;
       filter: drop-shadow(0 0 2.5px rgba(0, 0, 0, 0.9));
     }
+    .patok-popup-card {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 11px;
+      padding: 8px 10px;
+      width: 204px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--text-main);
+    }
+    .patok-popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 2px;
+    }
+    .patok-popup-title-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .patok-popup-badge {
+      background-color: var(--accent);
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+    .patok-popup-index {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+    .patok-popup-coords-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--text-sub);
+    }
+    .patok-popup-coords {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+    }
+    .btn-patok-edit {
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1px;
+      border-radius: 2px;
+      transition: color 0.15s ease;
+    }
+    .btn-patok-edit:hover {
+      color: #0369a1;
+    }
+    .patok-popup-nudge-box {
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .patok-nudge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .nudge-unit {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .patok-nudge-pad {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 100%;
+    }
+    .btn-nudge-dir {
+      border-radius: 4px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      padding: 0;
+      user-select: none;
+    }
+    .btn-nudge-dir:hover {
+      background-color: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    .btn-nudge-up,
+    .btn-nudge-down {
+      width: 100%;
+      height: 30px;
+    }
+    .patok-nudge-mid-row {
+      display: grid;
+      grid-template-columns: 1fr 48px 1fr;
+      gap: 3px;
+      width: 100%;
+      height: 34px;
+    }
+    .btn-nudge-left,
+    .btn-nudge-right {
+      height: 100%;
+      width: 100%;
+    }
+    .btn-nudge-center {
+      height: 100%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--text-sub);
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      user-select: none;
+    }
+    .btn-lock-toggle {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      padding: 0;
+      user-select: none;
+    }
+    .btn-lock-toggle:hover {
+      background-color: var(--bg-subtle);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .btn-lock-toggle.locked {
+      background-color: #fee2e2;
+      border-color: #f87171;
+      color: #dc2626;
+    }
+    .patok-popup-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .patok-actions-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+    }
+    .btn-patok-action {
+      height: 24px;
+      padding: 0 4px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--accent);
+      background-color: var(--bg-surface);
+      border: 1px solid var(--accent);
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .btn-patok-action:hover {
+      background-color: var(--accent);
+      color: #ffffff;
+    }
+    .btn-patok-delete {
+      height: 24px;
+      padding: 0 4px;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--crimson);
+      background-color: var(--bg-surface);
+      border: 1px solid #fecdd3;
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-patok-delete:hover {
+      background-color: #dc2626;
+      border-color: #dc2626;
+      color: #ffffff;
+    }
+    .patok-lock-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      border: 1px solid var(--border-light);
+      background-color: #f0fdf4;
+      color: #166534;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .patok-lock-chip:hover {
+      border-color: var(--text-sub);
+    }
+    .patok-lock-chip.locked {
+      background-color: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+      font-weight: 700;
+    }
+    .custom-vertex-node.vertex-locked {
+      background-color: #dc2626 !important;
+      border-color: #ffffff !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 0 2px #dc2626, 0 2px 6px rgba(220, 38, 38, 0.45) !important;
+    }
+    .cadastre-vector-parcel,
+    .cadastre-svg-parcel {
+      vector-effect: non-scaling-stroke;
+      shape-rendering: geometricPrecision;
+      cursor: pointer;
+      transition: stroke-width 0.15s ease, fill-opacity 0.15s ease;
+    }
+    .cadastre-vector-parcel:hover,
+    .cadastre-svg-parcel:hover {
+      stroke-width: 3px !important;
+      stroke: #0284c7 !important;
+      fill-opacity: 0.35 !important;
+    }
+
