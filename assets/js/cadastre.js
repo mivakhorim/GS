@@ -364,14 +364,13 @@ function getBpnGatewayBase() {
 
     async function fetchSpatialStatusData(lat, lng) {
       const statusRes = {
-<<<<<<< HEAD
-        rtrw: '-',
-        rdtr: '-',
-        lsd: 'Bukan Kawasan LSD',
+        rtrw: 'Kawasan Budidaya / Permukiman',
+        rdtr: 'Zonasi Perda RDTR Berlaku',
+        lsd: 'Non-LSD (Bebas Alih Fungsi)',
         lbs: 'Bukan Lahan Baku Sawah',
-        hutan: 'Bukan Kawasan Hutan (APL)',
-        znt: '-',
-        znt_range: '-'
+        hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
+        znt: 'Zona Nilai Pasar Wajar',
+        znt_range: 'Belum Dipetakan ZNT Nasional'
       };
 
       const endpoints = [];
@@ -405,18 +404,6 @@ function getBpnGatewayBase() {
           }
         } catch (e) {}
       }
-
-=======
-        rtrw: 'Kawasan Budidaya / Permukiman',
-        rdtr: 'Zonasi Perda RDTR Berlaku',
-        lsd: 'Non-LSD (Bebas Alih Fungsi)',
-        lbs: 'Bukan Lahan Baku Sawah',
-        hutan: 'APL (Non Hutan Boleh Disertifikatkan)',
-        znt: 'Zona Nilai Pasar Wajar',
-        znt_range: 'Belum Dipetakan ZNT Nasional'
-      };
-
->>>>>>> parent of 9c74cb0 (up)
       try {
         const delta = 0.0008;
         const minLat = (lat - delta).toFixed(6);

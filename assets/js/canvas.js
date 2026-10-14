@@ -171,7 +171,6 @@ function renderShpAttributesTable(records, fields) {
   if (!thead || !tbody) return;
 
   if (!fields || fields.length === 0 || !records || records.length === 0) {
-<<<<<<< HEAD
     thead.innerHTML = '<tr><th class="shp-attr-col-idx">#</th><th>Atribut</th></tr>';
     tbody.innerHTML = '<tr><td colspan="2" class="shp-attr-empty-cell"><div class="shp-attr-empty-content"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><span>Tidak ada data atribut di dalam berkas .dbf.</span></div></td></tr>';
     if (counter) counter.innerText = '0 record';
@@ -192,35 +191,17 @@ function renderShpAttributesTable(records, fields) {
         ${typeBadge}
       </div>
     </th>`;
-=======
-    thead.innerHTML = '<tr><th style="padding: 6px 8px; width: 40px; text-align: center;">#</th><th style="padding: 6px 8px; text-align: left;">Atribut</th></tr>';
-    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Tidak ada data atribut di dalam berkas .dbf.</td></tr>';
-    return;
-  }
-
-  let headHtml = '<tr><th style="padding: 6px 8px; width: 40px; text-align: center;">#</th>';
-  fields.forEach(f => {
-    headHtml += `<th style="padding: 6px 8px; text-align: left; white-space: nowrap;">${escapeHtml(f.name)} <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: normal;">(${escapeHtml(f.type)})</span></th>`;
->>>>>>> parent of 9c74cb0 (up)
   });
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
 
   let bodyHtml = '';
   records.forEach((rec, idx) => {
-<<<<<<< HEAD
     bodyHtml += `<tr><td class="shp-attr-cell-idx">${idx + 1}</td>`;
     fields.forEach(f => {
       const val = rec[f.name];
       const displayVal = (val !== null && val !== undefined && String(val).trim() !== '') ? escapeHtml(String(val)) : '-';
       bodyHtml += `<td>${displayVal}</td>`;
-=======
-    bodyHtml += `<tr><td style="padding: 5px 8px; text-align: center; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">${idx + 1}</td>`;
-    fields.forEach(f => {
-      const val = rec[f.name];
-      const displayVal = (val !== null && val !== undefined && String(val).trim() !== '') ? escapeHtml(String(val)) : '-';
-      bodyHtml += `<td style="padding: 5px 8px; font-family: 'JetBrains Mono', monospace; white-space: nowrap;">${displayVal}</td>`;
->>>>>>> parent of 9c74cb0 (up)
     });
     bodyHtml += '</tr>';
   });

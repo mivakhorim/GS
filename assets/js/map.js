@@ -147,13 +147,8 @@ async function geocodeAndFly(query, zoomLevel = 14) {
           openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'shp');
           return;
         }
-<<<<<<< HEAD
         if (isMerging) {
           openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'merge');
-=======
-        if (isParcelLocked && activeVertices && activeVertices.length >= 3) {
-          showToast('Bidang khusus aktif (hasil import / gabungan / gambar manual). Klik tombol Batal Pilihan terlebih dahulu jika ingin beralih ke bidang lain.', 'warn');
->>>>>>> parent of 9c74cb0 (up)
           return;
         }
         if (isMergedResult) {
@@ -576,7 +571,6 @@ async function geocodeAndFly(query, zoomLevel = 14) {
         }, 500);
       }
     }
-<<<<<<< HEAD
 
     let pendingSwitchCoord = null;
     let pendingSwitchContext = null;
@@ -686,5 +680,4 @@ async function geocodeAndFly(query, zoomLevel = 14) {
     window.handleConfirmSwitchStay = handleConfirmSwitchStay;
     window.proceedSwitchToNewParcel = proceedSwitchToNewParcel;
     window.cancelSwitchParcel = cancelSwitchParcel;
-=======
->>>>>>> parent of 9c74cb0 (up)
+
