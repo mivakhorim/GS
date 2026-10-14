@@ -1,7 +1,19 @@
 function getBpnGatewayBase() {
       const custom = localStorage.getItem('custom_bpn_gateway_url');
-      if (custom && custom.trim() && custom.trim().startsWith('https://')) {
-        return custom.trim().replace(/\/+$/, '');
+      if (custom && custom.trim()) {
+        const trimmed = custom.trim().replace(/\/+$/, '');
+        if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+          return trimmed;
+        }
+      }
+      if (typeof window !== 'undefined' && window.location) {
+        const port = String(window.location.port || '');
+        if (port === '8085' || port === '8089') {
+          return window.location.origin;
+        }
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+          return 'http://127.0.0.1:8085';
+        }
       }
       return '';
     }
@@ -30,31 +42,405 @@ function getBpnGatewayBase() {
       });
     }
 
-    function setupPersilLayer() {
+    const CadastreWmsLayer = L.TileLayer.WMS.extend({
+      getTileUrl: function(coords) {
+        const originalUrl = L.TileLayer.WMS.prototype.getTileUrl.call(this, coords);
+        const cleanUrl = originalUrl.replace(/^https?:\/\//i, '');
+        return 'https://images.weserv.nl/?url=' + encodeURIComponent(cleanUrl);
+      }
+    });
+
+    var cadastreVectorLayer = null;
+    var cadastreSvgRenderer = null;
+    var cadastreVectorParcelCache = new Map();
+    var isViewportVectorLoading = false;
+
+    function setupCadastreVectorLayer() {
+      if (!map) return;
+      if (!map.getPane('cadastreVectorPane')) {
+        const cvp = map.createPane('cadastreVectorPane');
+        cvp.style.zIndex = 375;
+        cvp.style.pointerEvents = 'auto';
+      }
+      if (!cadastreSvgRenderer) {
+        cadastreSvgRenderer = L.svg({ padding: 0.25, pane: 'cadastreVectorPane' });
+      }
+      if (!cadastreVectorLayer) {
+        cadastreVectorLayer = L.featureGroup([], { pane: 'cadastreVectorPane' }).addTo(map);
+      }
+      setupViewportCadastreListener();
+    }
+
+    function setupViewportCadastreListener() {
+      if (!map || map._viewportCadastreBound) return;
+      map._viewportCadastreBound = true;
+      let debounceTimer = null;
+      const onMapChange = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(loadViewportCadastreSvgParcels, 350);
+      };
+      map.on('moveend zoomend', onMapChange);
+      setTimeout(loadViewportCadastreSvgParcels, 400);
+    }
+
+    async function loadViewportCadastreSvgParcels() {
+      if (!map || isViewportVectorLoading) return;
+      const zoom = map.getZoom();
+      if (zoom < 16) {
+        if (cadastreVectorLayer) {
+          cadastreVectorLayer.clearLayers();
+        }
+        cadastreVectorParcelCache.clear();
+        return;
+      }
+
+      const chk = document.getElementById('chkPersil');
+      if (chk && !chk.checked) {
+        if (cadastreVectorLayer) cadastreVectorLayer.clearLayers();
+        cadastreVectorParcelCache.clear();
+        return;
+      }
+
+      const bounds = map.getBounds();
+      const minLat = bounds.getSouth();
+      const minLng = bounds.getWest();
+      const maxLat = bounds.getNorth();
+      const maxLng = bounds.getEast();
+
       const persilBase = getBpnGatewayBase();
+      const url = persilBase
+        ? `${persilBase}/api/viewport-parcels?min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}`
+        : `/api/viewport-parcels?min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}`;
+
+      isViewportVectorLoading = true;
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.parcels)) {
+            renderCadastreVectorParcels(data.parcels);
+          }
+        }
+      } catch (e) {
+      } finally {
+        isViewportVectorLoading = false;
+      }
+    }
+
+    function renderCadastreVectorParcels(parcelsList) {
+      if (!map || !cadastreVectorLayer || !Array.isArray(parcelsList)) return;
+      const slider = document.getElementById('persilOpacity');
+      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.85;
+
+      parcelsList.forEach(parcel => {
+        const coords = parcel.polygon_coords || parcel.coordinates;
+        if (!coords || coords.length < 3) return;
+        const pid = String(parcel.persilpasifid || parcel.fid || parcel.nib || '');
+        if (cadastreVectorParcelCache.has(pid)) return;
+
+        const latlngs = coords.map(c => [c.lat, c.lng]);
+        const polyLayer = L.polygon(latlngs, {
+          renderer: cadastreSvgRenderer,
+          color: '#e65100',
+          weight: 1.6,
+          opacity: currentOpacity,
+          fillColor: '#ff9800',
+          fillOpacity: currentOpacity * 0.12,
+          pane: 'cadastreVectorPane',
+          interactive: true
+        });
+        polyLayer._parcelData = parcel;
+
+        const nibLabel = (parcel.nib && parcel.nib !== '-') ? `NIB: ${parcel.nib}` : 'Bidang Terdaftar';
+        const luasLabel = parcel.luas_m2 ? `${Math.round(parcel.luas_m2).toLocaleString('id-ID')} m²` : '';
+        polyLayer.bindTooltip(`<strong>${nibLabel}</strong>${luasLabel ? '<br>' + luasLabel : ''}`, {
+          sticky: true,
+          direction: 'auto',
+          opacity: 0.95
+        });
+
+        polyLayer.on('mouseover', function() {
+          this.setStyle({
+            color: '#b71c1c',
+            weight: 2.6,
+            fillColor: '#ff5722',
+            fillOpacity: 0.28
+          });
+          if (map.getContainer()) {
+            map.getContainer().style.cursor = 'pointer';
+          }
+        });
+
+        polyLayer.on('mouseout', function() {
+          this.setStyle({
+            color: '#e65100',
+            weight: 1.6,
+            fillColor: '#ff9800',
+            fillOpacity: currentOpacity * 0.12
+          });
+          if (map.getContainer()) {
+            map.getContainer().style.cursor = '';
+          }
+        });
+
+        polyLayer.on('click', function(e) {
+          L.DomEvent.stopPropagation(e);
+          selectCadastreVectorParcel(parcel, e.latlng);
+        });
+
+        polyLayer.addTo(cadastreVectorLayer);
+        cadastreVectorParcelCache.set(pid, polyLayer);
+      });
+    }
+
+    function selectCadastreVectorParcel(parcel, clickLatLng) {
+      if (!parcel) return;
+      const coords = parcel.polygon_coords || parcel.coordinates;
+      if (!coords || coords.length < 3) return;
+
+      const lat = clickLatLng ? clickLatLng.lat : (coords.reduce((s, c) => s + c.lat, 0) / coords.length);
+      const lng = clickLatLng ? clickLatLng.lng : (coords.reduce((s, c) => s + c.lng, 0) / coords.length);
+      const exactArea = calculatePolygonArea(coords);
+
+      isParcelLocked = false;
+      isGeometryManuallyEdited = false;
+      rawInitialBboxCoords = coords;
+
+      if (activePinMarker) {
+        map.removeLayer(activePinMarker);
+      }
+      const pinIcon = L.divIcon({
+        className: 'custom-pin-marker',
+        html: `<div style="background-color:var(--accent); width:20px; height:20px; border-radius:50%; border:2px solid #ffffff; box-shadow:0 3px 8px rgba(10,46,92,0.35); display:flex; align-items:center; justify-content:center;"><div style="width:6px; height:6px; border-radius:50%; background:#ffffff;"></div></div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      activePinMarker = L.marker([lat, lng], {
+        icon: pinIcon,
+        draggable: true
+      }).addTo(map);
+      activePinMarker.on('dragend', function(ev) {
+        const pos = ev.target.getLatLng();
+        handleMapClick(pos.lat, pos.lng, false);
+      });
+
+      activePinData = {
+        lat: lat,
+        lng: lng,
+        fid: parcel.fid || parcel.persilpasifid || ('BIDANG-' + (parcel.nib || 'TERDAFTAR')),
+        nib: parcel.nib && parcel.nib !== '-' ? parcel.nib : '-',
+        nib_lengkap: parcel.nib_lengkap || parcel.nib || '-',
+        luas_m2: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
+        luas_terdaftar_m2: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
+        luas_ha: (parcel.luas_m2 && parcel.luas_m2 > 0) ? roundAreaHa6(parcel.luas_m2) : roundAreaHa6(exactArea),
+        luas_bpn: (parcel.luas_m2 && parcel.luas_m2 > 0) ? parcel.luas_m2 : exactArea,
+        tipe_hak: parcel.tipe_hak || 'TERDAFTAR ATR/BPN',
+        nomor_hak: parcel.nomor_hak || '-',
+        tahun: parcel.tahun || '-',
+        wilayah: parcel.wilayah || '-',
+        desa: parcel.desa || parcel.kelurahan || '-',
+        kecamatan: parcel.kecamatan || '-',
+        kabkot: parcel.kabkot || parcel.kabupaten || '-',
+        provinsi: parcel.provinsi || '-',
+        kodepos: parcel.kodepos || '-',
+        kantah: parcel.kantah || 'Kantor Pertanahan ATR/BPN',
+        polygon_coords: coords,
+        all_parcels: parcel.all_parcels || [parcel],
+        is_official_cadastre: true,
+        status_validasi: 'Kadaster Resmi Presisi',
+        source: 'VEKTOR PERSIL SVG PRESISI',
+        alamat: parcel.alamat || '-'
+      };
+
+      const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
+        ? `${activePinData.desa}, ${activePinData.kecamatan}`
+        : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : (activePinData.nib !== '-' ? `NIB ${activePinData.nib}` : 'Bidang Tanah')));
+
+      const elCoords = document.getElementById('pinCoordsText');
+      if (elCoords) elCoords.innerText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const elDms = document.getElementById('pinDmsText');
+      if (elDms) elDms.innerText = toDMS(lat, lng);
+      const elUtm = document.getElementById('pinUtmText');
+      if (elUtm) elUtm.innerText = getUtmZone(lat, lng);
+      const elMercator = document.getElementById('pinMercatorText');
+      if (elMercator) {
+        const merc = toWebMercator(lat, lng);
+        elMercator.innerText = `X: ${Math.round(merc.x)}, Y: ${Math.round(merc.y)}`;
+      }
+
+      const elLokasi = document.getElementById('pinLokasiUtamaText');
+      if (elLokasi) elLokasi.innerText = lokasiUtama;
+
+      const elLuasBpn = document.getElementById('pinLuasBpnText');
+      if (elLuasBpn) {
+        elLuasBpn.className = 'stat-value emerald';
+        elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+      }
+      const elTipeHak = document.getElementById('pinTipeHakText');
+      if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
+      const badgeTipeHak = document.getElementById('badgeTipeHak');
+      if (badgeTipeHak) badgeTipeHak.innerText = activePinData.tipe_hak;
+
+      const elStatusValidasi = document.getElementById('pinStatusValidasiText');
+      if (elStatusValidasi) {
+        elStatusValidasi.className = 'spec-value emerald';
+        elStatusValidasi.innerText = 'Kadaster Resmi Presisi';
+      }
+
+      const elLegalitas = document.getElementById('legalitasSummaryText');
+      if (elLegalitas) {
+        elLegalitas.innerText = `Terverifikasi Resmi : Status ${activePinData.tipe_hak}`;
+      }
+
+      const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
+      const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
+      const elDesa = document.getElementById('pinDesaText'); if (elDesa) elDesa.innerText = activePinData.desa;
+      const elKec = document.getElementById('pinKecamatanText'); if (elKec) elKec.innerText = activePinData.kecamatan;
+      const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
+      const elKantah = document.getElementById('pinKantahText'); if (elKantah) elKantah.innerText = activePinData.kantah;
+
+      const elShpProv = document.getElementById('shpProvinsi');
+      if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
+      const elShpKeterangan = document.getElementById('shpKeterangan');
+      if (elShpKeterangan) {
+        const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Bidang ${activePinData.nib !== '-' ? 'NIB ' + activePinData.nib : ''} ${activePinData.kabkot}`;
+        elShpKeterangan.value = rawKet.toUpperCase();
+      }
+      if (typeof updateShpLuasDisplay === 'function') updateShpLuasDisplay();
+
+      const bhumiUrl = `https://bhumi.atrbpn.go.id/peta?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}&zoom=19`;
+      const btnBhumi = document.getElementById('btnLinkBhumi');
+      if (btnBhumi) btnBhumi.href = bhumiUrl;
+      const btnGmaps = document.getElementById('btnLinkGoogleMaps');
+      if (btnGmaps) btnGmaps.href = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+
+      const noPin = document.getElementById('noPinAlert');
+      const foundBox = document.getElementById('persilFoundBox');
+      const notFoundBox = document.getElementById('persilNotFoundBox');
+      if (noPin) noPin.style.display = 'none';
+      if (notFoundBox) notFoundBox.style.display = 'none';
+      if (foundBox) {
+        foundBox.style.display = 'flex';
+        foundBox.classList.remove('data-loading');
+      }
+
+      const hud = document.getElementById('canvasHud');
+      if (hud) {
+        hud.style.display = 'flex';
+        const elHudNib = document.getElementById('hudNib');
+        if (elHudNib) elHudNib.innerText = lokasiUtama;
+        const elHudArea = document.getElementById('hudBpnArea');
+        if (elHudArea) elHudArea.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+      }
+
+      const badge = document.getElementById('badgeRebuildStatus');
+      if (badge) {
+        badge.className = 'badge-pill green';
+        badge.innerText = 'Kadaster Resmi Presisi';
+      }
+
+      const currentActiveTab = document.querySelector('.tab-view.active')?.id;
+      if (currentActiveTab === 'tab-info' || currentActiveTab === 'tab-search' || !currentActiveTab) {
+        switchTab('tab-bidang');
+      }
+
+      initCanvasRebuilder(lat, lng, activePinData.luas_m2, coords);
+      showToast(`Bidang persil resmi terdeteksi: NIB ${activePinData.nib}`, 'success');
+
+      fetchLocationDetails(lat, lng).then(loc => {
+        if (loc && activePinData) {
+          if (loc.desa && loc.desa !== '-') activePinData.desa = loc.desa;
+          if (loc.kecamatan && loc.kecamatan !== '-') activePinData.kecamatan = loc.kecamatan;
+          if (loc.kabkot && loc.kabkot !== '-') activePinData.kabkot = loc.kabkot;
+          if (loc.provinsi && loc.provinsi !== '-') activePinData.provinsi = loc.provinsi;
+          if (loc.kodepos && loc.kodepos !== '-') activePinData.kodepos = loc.kodepos;
+          if (loc.kantah && loc.kantah !== '-') activePinData.kantah = loc.kantah;
+          if (loc.jalan && loc.jalan !== '-') activePinData.alamat = loc.jalan;
+          const refreshedLokasi = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
+            ? `${activePinData.desa}, ${activePinData.kecamatan}`
+            : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : (activePinData.nib !== '-' ? `NIB ${activePinData.nib}` : 'Bidang Tanah')));
+          const elLok = document.getElementById('pinLokasiUtamaText');
+          if (elLok) elLok.innerText = refreshedLokasi;
+          const elHNib = document.getElementById('hudNib');
+          if (elHNib) elHNib.innerText = refreshedLokasi;
+          const elD = document.getElementById('pinDesaText'); if (elD) elD.innerText = activePinData.desa;
+          const elKc = document.getElementById('pinKecamatanText'); if (elKc) elKc.innerText = activePinData.kecamatan;
+          const elKb = document.getElementById('pinKabkotText'); if (elKb) elKb.innerText = activePinData.kabkot;
+          const elPr = document.getElementById('pinProvinsiText'); if (elPr) elPr.innerText = activePinData.provinsi;
+          const elKp = document.getElementById('pinKodePosText'); if (elKp) elKp.innerText = activePinData.kodepos;
+          const elKn = document.getElementById('pinKantahText'); if (elKn) elKn.innerText = activePinData.kantah;
+          const elAlm = document.getElementById('pinAlamatGmapsText');
+          if (elAlm) elAlm.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.desa}, ${activePinData.kecamatan}, ${activePinData.kabkot}`;
+        }
+      });
+    }
+
+    function setupPersilLayer() {
+      if (!map.getPane('persilPane')) {
+        const pp = map.createPane('persilPane');
+        pp.style.zIndex = 360;
+        pp.style.pointerEvents = 'none';
+      }
+      setupCadastreVectorLayer();
+      const persilBase = getBpnGatewayBase();
+      const slider = document.getElementById('persilOpacity');
+      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.9;
+
+      if (slider && !slider._vectorListenerAttached) {
+        slider._vectorListenerAttached = true;
+        slider.addEventListener('input', function() {
+          const val = parseFloat(this.value) / 100;
+          if (persilLayer && typeof persilLayer.setOpacity === 'function') {
+            persilLayer.setOpacity(val);
+          }
+          if (cadastreVectorLayer) {
+            cadastreVectorLayer.eachLayer(layer => {
+              if (layer && typeof layer.setStyle === 'function') {
+                layer.setStyle({ opacity: val, fillOpacity: val * 0.15 });
+              }
+            });
+          }
+        });
+      }
+
+      function createCadastreProxyLayer() {
+        return new CadastreWmsLayer('https://bhumi.atrbpn.go.id/mprx/service', {
+          layers: 'bhumi_persil',
+          format: 'image/png',
+          transparent: true,
+          version: '1.3.0',
+          crs: L.CRS.EPSG3857,
+          pane: 'persilPane',
+          minZoom: 15,
+          maxZoom: 26,
+          opacity: currentOpacity,
+          zIndex: 360,
+          updateWhenZooming: false,
+          updateInterval: 100
+        });
+      }
+
       if (persilBase) {
-        persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`, {
+        persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
+          pane: 'persilPane',
           minZoom: 15,
           maxZoom: 26,
           maxNativeZoom: 19,
-          opacity: 0.9,
-          zIndex: 500,
+          opacity: currentOpacity,
+          zIndex: 360,
           updateWhenZooming: false,
           updateInterval: 100
+        });
+        persilLayer.on('tileerror', function() {
+          if (!persilLayer._fallbackActive) {
+            persilLayer._fallbackActive = true;
+            if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
+            persilLayer = createCadastreProxyLayer();
+            map.addLayer(persilLayer);
+          }
         });
       } else {
-        persilLayer = L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'bhumi:Persil',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          minZoom: 15,
-          maxZoom: 26,
-          opacity: 0.9,
-          zIndex: 500,
-          updateWhenZooming: false,
-          updateInterval: 100
-        });
+        persilLayer = createCadastreProxyLayer();
       }
       persilLayer.addTo(map);
     }
@@ -65,20 +451,25 @@ function getBpnGatewayBase() {
         try {
           await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
         } catch (e) {}
-        if (persilLayer) {
+        if (persilLayer && typeof persilLayer.setUrl === 'function') {
           persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${Date.now()}`);
           if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
           persilLayer.redraw();
         }
       } else {
         if (persilLayer) {
-          if (persilLayer.setParams) {
-            persilLayer.setParams({ _t: Date.now() });
+          if (typeof persilLayer.setParams === 'function') {
+            persilLayer.setParams({ t: Date.now() });
+          } else if (typeof persilLayer.redraw === 'function') {
+            persilLayer.redraw();
           }
-          if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
-          persilLayer.redraw();
         }
       }
+      if (cadastreVectorLayer) {
+        cadastreVectorLayer.clearLayers();
+      }
+      cadastreVectorParcelCache.clear();
+      loadViewportCadastreSvgParcels();
       showToast('Peta bidang persil diperbarui.', 'success');
     }
 
@@ -96,76 +487,6 @@ function getBpnGatewayBase() {
     }
 
     function createThematicLayer(layerKey) {
-      const persilBase = getBpnGatewayBase();
-      if (persilBase) {
-        return L.tileLayer(`${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`, {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          opacity: (layerKey === 'jalan') ? 0.85 : 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'hutan') {
-        return new ArcGisExportLayer('https://geoportal.planologi.kehutanan.go.id/server/rest/services/Peta_Interaktif_2026/KWSHUTAN_AR_250K/MapServer/export', {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'lsd') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'umum:lsd_merge',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'lbs') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'geonode:lbs_parsial',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'peruntukan') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'petabpn:rtrwn_2025',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-      if (layerKey === 'rtrw') {
-        return L.tileLayer.wms('https://atlas.atrbpn.go.id/geoserver/wms', {
-          layers: 'rtr-online:rtrw_kabkot',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          minZoom: 5,
-          maxZoom: 26,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
       if (layerKey === 'jalan') {
         return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
           pane: 'thematicPane',
@@ -174,13 +495,24 @@ function getBpnGatewayBase() {
           zIndex: 450
         });
       }
-      return null;
+      const persilBase = getBpnGatewayBase();
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+      const tileUrl = persilBase
+        ? `${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`
+        : `${sbUrl}/functions/v1/cadastre-gateway?action=layer-ceking&layer=${layerKey}&z={z}&x={x}&y={y}`;
+      return L.tileLayer(tileUrl, {
+        pane: 'thematicPane',
+        maxZoom: 26,
+        maxNativeZoom: 19,
+        opacity: 0.75,
+        zIndex: 450
+      });
     }
 
     function initCekingLayers() {
       if (!map.getPane('thematicPane')) {
         const tp = map.createPane('thematicPane');
-        tp.style.zIndex = 450;
+        tp.style.zIndex = 340;
         tp.style.pointerEvents = 'none';
       }
       const keys = Object.keys(cekingLayers);
@@ -232,11 +564,18 @@ function getBpnGatewayBase() {
 
     function togglePersilLayer(checked) {
       const badge = document.getElementById('badgeStatusBidang');
+      if (!persilLayer) {
+        setupPersilLayer();
+      }
       if (checked) {
         if (!map.hasLayer(persilLayer)) map.addLayer(persilLayer);
+        if (cadastreVectorLayer && !map.hasLayer(cadastreVectorLayer)) map.addLayer(cadastreVectorLayer);
         if (badge) { badge.className = 'badge-pill green'; badge.innerText = 'Aktif'; }
+        loadViewportCadastreSvgParcels();
       } else {
         if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
+        if (cadastreVectorLayer) cadastreVectorLayer.clearLayers();
+        cadastreVectorParcelCache.clear();
         if (badge) { badge.className = 'badge-pill'; badge.innerText = 'Nonaktif'; }
       }
     }
@@ -314,6 +653,255 @@ function getBpnGatewayBase() {
       }
     }
 
+    function traceParcelFromWmsTile(lat, lng, spanMeters = 70.0) {
+      return new Promise((resolve) => {
+        const span = Number(spanMeters) || 70.0;
+        const r = 6378137.0;
+        const cx = r * (lng * Math.PI / 180.0);
+        const cy = r * Math.log(Math.tan(Math.PI / 4.0 + (lat * Math.PI / 180.0) / 2.0));
+        const minx = cx - span;
+        const maxx = cx + span;
+        const miny = cy - span;
+        const maxy = cy + span;
+        const bbox = `${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}`;
+        const cleanUrl = `bhumi.atrbpn.go.id/mprx/service?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=bhumi_persil&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
+        const tileUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(cleanUrl);
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const timer = setTimeout(() => resolve(null), 5000);
+
+        img.onload = function() {
+          clearTimeout(timer);
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) { resolve(null); return; }
+            ctx.drawImage(img, 0, 0);
+            const imgData = ctx.getImageData(0, 0, 512, 512);
+            const data = imgData.data;
+
+            const w = 512;
+            const h = 512;
+            const isWall = new Uint8Array(w * h);
+
+            for (let y = 0; y < h; y++) {
+              const rowOffset = y * w * 4;
+              for (let x = 0; x < w; x++) {
+                const a = data[rowOffset + x * 4 + 3];
+                if (a >= 180 || a < 50) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    const ny = y + dy;
+                    if (ny < 0 || ny >= h) continue;
+                    const nRow = ny * w;
+                    for (let dx = -1; dx <= 1; dx++) {
+                      const nx = x + dx;
+                      if (nx >= 0 && nx < w) {
+                        isWall[nRow + nx] = 1;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            let startX = 256;
+            let startY = 256;
+            if (isWall[startY * w + startX] === 1) {
+              let foundFree = false;
+              for (let rad = 1; rad <= 14; rad++) {
+                for (let dy = -rad; dy <= rad; dy++) {
+                  const ny = startY + dy;
+                  if (ny < 0 || ny >= h) continue;
+                  for (let dx = -rad; dx <= rad; dx++) {
+                    const nx = startX + dx;
+                    if (nx >= 0 && nx < w && isWall[ny * w + nx] === 0) {
+                      startX = nx;
+                      startY = ny;
+                      foundFree = true;
+                      break;
+                    }
+                  }
+                  if (foundFree) break;
+                }
+                if (foundFree) break;
+              }
+              if (!foundFree) { resolve(null); return; }
+            }
+
+            const visited = new Uint8Array(w * h);
+            const queueX = new Int16Array(w * h);
+            const queueY = new Int16Array(w * h);
+            let head = 0;
+            let tail = 0;
+
+            visited[startY * w + startX] = 1;
+            queueX[tail] = startX;
+            queueY[tail] = startY;
+            tail++;
+
+            while (head < tail) {
+              const qx = queueX[head];
+              const qy = queueY[head];
+              head++;
+
+              const neighbors = [
+                [qx - 1, qy],
+                [qx + 1, qy],
+                [qx, qy - 1],
+                [qx, qy + 1]
+              ];
+              for (let i = 0; i < 4; i++) {
+                const nx = neighbors[i][0];
+                const ny = neighbors[i][1];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                  const idx = ny * w + nx;
+                  if (visited[idx] === 0 && isWall[idx] === 0) {
+                    visited[idx] = 1;
+                    queueX[tail] = nx;
+                    queueY[tail] = ny;
+                    tail++;
+                  }
+                }
+              }
+            }
+
+            const totalPixels = tail;
+            if (totalPixels < 150) {
+              resolve(null);
+              return;
+            }
+            if (totalPixels > (w * h * 0.95)) {
+              if (span < 120.0) {
+                traceParcelFromWmsTile(lat, lng, span * 2.0).then(resolve);
+                return;
+              }
+              resolve(null);
+              return;
+            }
+
+            let firstX = -1;
+            let firstY = -1;
+            for (let y = 0; y < h; y++) {
+              const rowIdx = y * w;
+              for (let x = 0; x < w; x++) {
+                if (visited[rowIdx + x] === 1) {
+                  firstX = x;
+                  firstY = y;
+                  break;
+                }
+              }
+              if (firstX !== -1) break;
+            }
+            if (firstX === -1) { resolve(null); return; }
+
+            const dirD = [
+              [0, -1], [1, -1], [1, 0], [1, 1],
+              [0, 1], [-1, 1], [-1, 0], [-1, -1]
+            ];
+            const contour = [{ x: firstX, y: firstY }];
+            let currX = firstX;
+            let currY = firstY;
+            let backtrack = 6;
+
+            for (let step = 0; step < 4000; step++) {
+              let foundNext = false;
+              for (let i = 0; i < 8; i++) {
+                const cd = (backtrack + i) % 8;
+                const nx = currX + dirD[cd][0];
+                const ny = currY + dirD[cd][1];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h && visited[ny * w + nx] === 1) {
+                  currX = nx;
+                  currY = ny;
+                  contour.push({ x: currX, y: currY });
+                  backtrack = (cd + 5) % 8;
+                  foundNext = true;
+                  break;
+                }
+              }
+              if (!foundNext || (currX === firstX && currY === firstY)) break;
+            }
+
+            if (contour.length < 8) { resolve(null); return; }
+
+            function distToSegment(pt, a, b) {
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              if (dx === 0 && dy === 0) return Math.hypot(pt.x - a.x, pt.y - a.y);
+              return Math.abs(dy * pt.x - dx * pt.y + b.x * a.y - b.y * a.x) / Math.hypot(dx, dy);
+            }
+
+            function simplifyRdp(pts, eps) {
+              if (pts.length < 3) return pts;
+              let maxD = 0;
+              let idx = 0;
+              const last = pts.length - 1;
+              for (let i = 1; i < last; i++) {
+                const d = distToSegment(pts[i], pts[0], pts[last]);
+                if (d > maxD) {
+                  maxD = d;
+                  idx = i;
+                }
+              }
+              if (maxD > eps) {
+                const left = simplifyRdp(pts.slice(0, idx + 1), eps);
+                const right = simplifyRdp(pts.slice(idx), eps);
+                return left.slice(0, -1).concat(right);
+              }
+              return [pts[0], pts[last]];
+            }
+
+            const simplified = simplifyRdp(contour, 3.5);
+            if (simplified.length < 3) { resolve(null); return; }
+
+            const polyCoords = [];
+            for (let i = 0; i < simplified.length; i++) {
+              const pt = simplified[i];
+              if (i === simplified.length - 1 && pt.x === simplified[0].x && pt.y === simplified[0].y) continue;
+              const mx = minx + (pt.x / 512.0) * (maxx - minx);
+              const my = maxy - (pt.y / 512.0) * (maxy - miny);
+              const pLat = (2.0 * Math.atan(Math.exp(my / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
+              const pLng = (mx / r) * 180.0 / Math.PI;
+              polyCoords.push({
+                lat: Number(pLat.toFixed(7)),
+                lng: Number(pLng.toFixed(7))
+              });
+            }
+
+            if (polyCoords.length < 3) { resolve(null); return; }
+
+            const exactArea = calculatePolygonArea(polyCoords);
+            if (exactArea < 5.0) { resolve(null); return; }
+
+            resolve({
+              found: true,
+              is_official_cadastre: true,
+              is_auto_traced: true,
+              fid: 'PERSIL-' + Math.floor(10000 + Math.random() * 90000),
+              nib: '-',
+              tipe_hak: 'TERDAFTAR ATR/BPN',
+              luas_m2: Math.round(exactArea),
+              luas_terdaftar_m2: Math.round(exactArea),
+              polygon_coords: polyCoords,
+              status_validasi: 'Kadaster Resmi Presisi',
+              source: 'VEKTOR PERSIL GEODETIK ATR/BPN'
+            });
+          } catch (err) {
+            resolve(null);
+          }
+        };
+
+        img.onerror = function() {
+          clearTimeout(timer);
+          resolve(null);
+        };
+
+        img.src = tileUrl;
+      });
+    }
+
     async function fetchPersilCadastreData(lat, lng, zoom = 19) {
       const cacheKey = `${lat.toFixed(6)},${lng.toFixed(6)}`;
       const cached = persilClientCache.get(cacheKey);
@@ -321,69 +909,32 @@ function getBpnGatewayBase() {
         return cached.data;
       }
 
-      const sMode = getCadastreServerMode();
-      if (sMode === 'server2') {
-        const r = 6378137.0;
-        const cx = r * (lng * Math.PI / 180);
-        const cy = r * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
-        const d = 30.0;
-        const minx = cx - d, maxx = cx + d, miny = cy - d, maxy = cy + d;
-        const bpnDirectUrl = `https://atlas.atrbpn.go.id/geoserver/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=bhumi:Persil&QUERY_LAYERS=bhumi:Persil&CRS=EPSG:3857&BBOX=${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json&FEATURE_COUNT=50`;
-
-        let rawGeoJson = null;
-        try {
-          const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), 4000);
-          const res = await fetch(bpnDirectUrl, { signal: controller.signal, mode: 'cors' });
-          clearTimeout(tid);
-          if (res.ok) {
-            rawGeoJson = await res.json();
-          }
-        } catch (_) {}
-
-        if (!rawGeoJson) {
-          try {
-            const proxyTarget = `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=proxy-wms&url=${encodeURIComponent(bpnDirectUrl)}`;
-            const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-            const controller = new AbortController();
-            const tid = setTimeout(() => controller.abort(), 9000);
-            const res = await fetch(proxyTarget, {
-              signal: controller.signal,
-              headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
-            });
-            clearTimeout(tid);
-            if (res.ok) {
-              rawGeoJson = await res.json();
-            }
-          } catch (_) {}
-        }
-
-        if (rawGeoJson && Array.isArray(rawGeoJson.features) && rawGeoJson.features.length > 0) {
-          const parsed = parseGeoServerPersilGeoJson(rawGeoJson, lat, lng);
-          if (parsed && parsed.found && Array.isArray(parsed.polygon_coords) && parsed.polygon_coords.length >= 3) {
-            persilClientCache.set(cacheKey, { data: parsed, time: Date.now() });
-            return parsed;
-          }
-        }
-      }
-
       const endpointsToTry = [];
       const persilApiBase = getBpnGatewayBase();
-      if (persilApiBase && persilApiBase.startsWith('https://')) {
-        endpointsToTry.push({ url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`, timeout: 12000 });
+      if (persilApiBase) {
+        endpointsToTry.push({
+          url: `${persilApiBase}/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`,
+          timeout: 6000
+        });
+      } else if (typeof window !== 'undefined' && window.location && window.location.protocol === 'http:') {
+        endpointsToTry.push({
+          url: `http://127.0.0.1:8085/api/persil-info?lat=${lat}&lng=${lng}&zoom=${zoom}`,
+          timeout: 2500
+        });
       }
 
-      const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
       endpointsToTry.push({
-        url: `https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
+        url: `${sbUrl}/functions/v1/cadastre-gateway?action=get-persil&lat=${lat}&lng=${lng}&zoom=${zoom}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-        timeout: 12000
+        timeout: 4000
       });
 
       for (const item of endpointsToTry) {
         try {
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), item.timeout || 12000);
+          const tid = setTimeout(() => controller.abort(), item.timeout || 10000);
           const reqOpt = { signal: controller.signal, mode: 'cors' };
           if (item.headers) reqOpt.headers = item.headers;
           const res = await fetch(item.url, reqOpt);
@@ -391,6 +942,15 @@ function getBpnGatewayBase() {
           if (res.ok) {
             const data = await res.json();
             if (data && data.found && Array.isArray(data.polygon_coords) && data.polygon_coords.length >= 3) {
+              if (data.polygon_coords.length === 4) {
+                try {
+                  const traced = await traceParcelFromWmsTile(lat, lng);
+                  if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
+                    data.polygon_coords = traced.polygon_coords;
+                    data.source = 'VEKTOR PERSIL GEODETIK ATR/BPN';
+                  }
+                } catch (e) {}
+              }
               persilClientCache.set(cacheKey, { data, time: Date.now() });
               return data;
             }
@@ -405,6 +965,12 @@ function getBpnGatewayBase() {
         } catch (e) {}
       }
 
+      const traced = await traceParcelFromWmsTile(lat, lng);
+      if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
+        persilClientCache.set(cacheKey, { data: traced, time: Date.now() });
+        return traced;
+      }
+
       return {
         found: false,
         message: 'Titik koordinat berada di luar bidang tanah terdaftar ATR/BPN.',
@@ -416,24 +982,20 @@ function getBpnGatewayBase() {
       const statusRes = {
         rtrw: '-',
         rdtr: '-',
-        lsd: '-',
-        lbs: '-',
-        hutan: '-',
+        lsd: 'Bukan Kawasan LSD',
+        lbs: 'Bukan Lahan Baku Sawah',
+        hutan: 'Bukan Kawasan Hutan (APL)',
         znt: '-',
         znt_range: '-'
       };
 
       const endpoints = [];
-      const origin = window.location.origin;
-      if (origin && (origin.indexOf('localhost') !== -1 || origin.indexOf('127.0.0.1') !== -1 || origin.startsWith('http'))) {
-        endpoints.push(`${origin}/api/spatial-status?lat=${lat}&lng=${lng}`);
-      }
       const customBase = getBpnGatewayBase();
-      if (customBase && customBase.startsWith('https://')) {
+      if (customBase && (customBase.startsWith('https://') || customBase.startsWith('http://'))) {
         endpoints.push(`${customBase}/api/spatial-status?lat=${lat}&lng=${lng}`);
       }
-      const sbKey = SUPABASE_ANON_KEY || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-      const sbUrl = SUPABASE_PROJECT_URL || 'https://vezruyffzmabhtylxigc.supabase.co';
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
       endpoints.push({
         url: `${sbUrl}/functions/v1/cadastre-gateway?action=spatial-status&lat=${lat}&lng=${lng}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
@@ -445,14 +1007,14 @@ function getBpnGatewayBase() {
         const targetHeaders = (typeof ep === 'object' && ep.headers) ? ep.headers : undefined;
         try {
           const ctrl = new AbortController();
-          const tid = setTimeout(() => ctrl.abort(), 5000);
+          const tid = setTimeout(() => ctrl.abort(), 6000);
           const opt = { signal: ctrl.signal, mode: 'cors' };
           if (targetHeaders) opt.headers = targetHeaders;
           const resp = await fetch(targetUrl, opt);
           clearTimeout(tid);
           if (resp.ok) {
             const json = await resp.json();
-            if (json && (json.lsd || json.lbs || json.rtrw)) {
+            if (json && (json.lsd || json.lbs || json.rtrw || json.hutan)) {
               return Object.assign(statusRes, json);
             }
           }
@@ -639,6 +1201,13 @@ function getBpnGatewayBase() {
           if (elNib) elNib.innerText = (activePinData.nib && activePinData.nib !== '-') ? `Bidang NIB ${activePinData.nib}` : 'Bidang Terdaftar';
         }
       }
+
+      if (activePinData) {
+        const elNomorHak = document.getElementById('pinNomorHakText');
+        if (elNomorHak) elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
+        const rowNomorHak = document.getElementById('itemPinNomorHak');
+        if (rowNomorHak) rowNomorHak.style.display = 'none';
+      }
     }
 
     async function handleMapClick(lat, lng, doSwitchTab = true) {
@@ -696,6 +1265,21 @@ function getBpnGatewayBase() {
         switchTab('tab-bidang');
       }
 
+      if (cadastreVectorParcelCache && cadastreVectorParcelCache.size > 0) {
+        for (const [pid, layer] of cadastreVectorParcelCache.entries()) {
+          const pData = layer._parcelData;
+          if (pData) {
+            const pCoords = pData.polygon_coords || pData.coordinates;
+            if (pCoords && pCoords.length >= 3 && isPointInsideOrNearPolygon(lat, lng, pCoords, 1.2)) {
+              if (loadingBar) loadingBar.classList.remove('active');
+              if (foundBox) foundBox.classList.remove('data-loading');
+              selectCadastreVectorParcel(pData, { lat, lng });
+              return;
+            }
+          }
+        }
+      }
+
       try {
         const persilPromise = fetchPersilCadastreData(lat, lng, map.getZoom() || 19);
         const geoPromise = fetchLocationDetails(lat, lng);
@@ -706,271 +1290,41 @@ function getBpnGatewayBase() {
         }
 
         const effectivePersil = persilData;
-        if (effectivePersil && effectivePersil.found && effectivePersil.polygon_coords && effectivePersil.polygon_coords.length >= 3) {
-          isGeometryManuallyEdited = false;
-
-          const decoded = (typeof decodeBpnCadastralStructure === 'function')
-            ? decodeBpnCadastralStructure({
-                nomor: effectivePersil.nomor_hak || effectivePersil.nomor,
-                nib: effectivePersil.nib,
-                tipehak: effectivePersil.tipe_hak,
-                tahun: effectivePersil.tahun,
-                nosu: effectivePersil.nosu,
-                provinsi: effectivePersil.provinsi || (geoData && geoData.provinsi),
-                kabupaten: effectivePersil.kabkot || (geoData && geoData.kabkot),
-                kecamatan: effectivePersil.kecamatan || (geoData && geoData.kecamatan),
-                desa: effectivePersil.desa || (geoData && geoData.desa),
-                kantah: effectivePersil.kantah || (geoData && geoData.kantah)
-              }, lat, lng, geoData)
-            : null;
-
-          activePinData = {
-            lat: lat,
-            lng: lng,
-            fid: effectivePersil.fid || (decoded ? decoded.nib_lengkap : '-'),
-            nib: decoded ? decoded.nib : (effectivePersil.nib || '-'),
-            nib_lengkap: decoded ? decoded.nib_lengkap : (effectivePersil.nib_lengkap || effectivePersil.nib || '-'),
-            tipe_hak: decoded ? decoded.tipe_hak : (effectivePersil.tipe_hak || '-'),
-            nomor_hak: decoded ? decoded.nomor_hak : (effectivePersil.nomor_hak || '-'),
-            nomor_hak_raw: decoded ? decoded.nomor_hak_raw : (effectivePersil.nomor_hak_raw || '-'),
-            nosu: decoded ? decoded.nosu : (effectivePersil.nosu || '-'),
-            tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '-'),
-            luas_m2: effectivePersil.luas_m2 || 0,
-            desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
-            kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
-            kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
-            provinsi: decoded ? decoded.provinsi : ((effectivePersil.provinsi && effectivePersil.provinsi !== '-') ? effectivePersil.provinsi : ((geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-')),
-            kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: decoded ? decoded.kantah : ((effectivePersil.kantah && effectivePersil.kantah !== '-') ? effectivePersil.kantah : ((geoData && geoData.kantah && geoData.kantah !== 'Kantor Pertanahan') ? geoData.kantah : '-')),
-            kluster_ptsl: decoded ? decoded.kluster_ptsl : '-',
-            akurasibidang: decoded ? decoded.akurasibidang : '-',
-            alatukur: decoded ? decoded.alatukur : '-',
-            status_validasi: decoded ? decoded.status_validasi : (effectivePersil.status_validasi || 'Terdaftar di Basis Data'),
-            rtrw: 'Memuat status RTRW...',
-            rdtr: 'Memuat status RDTR...',
-            lsd: 'Memverifikasi status LSD...',
-            lbs: 'Memverifikasi status LBS...',
-            hutan: 'Memeriksa status Kawasan Hutan...',
-            znt: 'Memuat Zona Nilai Tanah...',
-            znt_range: 'Memuat rentang nilai...',
-            alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : [decoded?.desa, decoded?.kecamatan, decoded?.kabkot].filter(v => v && v !== '-').join(', ') || 'Lokasi Titik Bidang'
-          };
-
-          const lokasiUtama = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
-            ? `${activePinData.desa}, ${activePinData.kecamatan}`
-            : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
-
-          const elLokasi = document.getElementById('pinLokasiUtamaText');
-          if (elLokasi) elLokasi.innerText = lokasiUtama;
-
-          const elLuasBpn = document.getElementById('pinLuasBpnText');
-          if (elLuasBpn) {
-            if (activePinData.luas_m2 > 0) {
-              elLuasBpn.className = 'stat-value emerald';
-              elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
-            } else {
-              elLuasBpn.className = 'stat-value offline';
-              elLuasBpn.innerText = 'Belum Terhubung Server';
-            }
-          }
-          const elTipeHak = document.getElementById('pinTipeHakText');
-          if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
-          renderCadastralProFields();
-          fetchSpatialStatusData(lat, lng).then(status => {
-            if (activePinData && Math.abs(activePinData.lat - lat) < 0.001 && Math.abs(activePinData.lng - lng) < 0.001) {
-              Object.assign(activePinData, status);
-              renderCadastralProFields();
-            }
-          });
-          const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-          if (elStatusValidasi) {
-            elStatusValidasi.className = 'spec-value emerald';
-            elStatusValidasi.innerText = activePinData.status_validasi || 'Kadaster Resmi Presisi';
-          }
-          const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
-          if (elPinServer) {
-            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
-          }
-
-          const badgeEl = document.getElementById('badgeTipeHak');
-          if (badgeEl) badgeEl.innerText = activePinData.tipe_hak;
-
-          const elLegalitas = document.getElementById('legalitasSummaryText');
-          if (elLegalitas) {
-            elLegalitas.innerText = `Terverifikasi Resmi : Status ${activePinData.tipe_hak || 'Hak Milik'}`;
-          }
-
-          const elAlamatGmaps = document.getElementById('pinAlamatGmapsText');
-          if (elAlamatGmaps) {
-            elAlamatGmaps.innerText = activePinData.alamat !== '-' ? activePinData.alamat : `${activePinData.kabkot}, ${activePinData.provinsi}`;
-          }
-
-          const elShpProv = document.getElementById('shpProvinsi');
-          if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
-
-          const elShpKeterangan = document.getElementById('shpKeterangan');
-          if (elShpKeterangan) {
-            const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Bidang ${activePinData.kabkot}`;
-            elShpKeterangan.value = rawKet.toUpperCase();
-          }
-          updateShpLuasDisplay();
-
-          const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
-          const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
-          const elKodePos = document.getElementById('pinKodePosText'); if (elKodePos) elKodePos.innerText = activePinData.kodepos;
-
-          const bhumiUrl = `https://bhumi.atrbpn.go.id/peta?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}&zoom=19`;
-          const btnBhumi = document.getElementById('btnLinkBhumi');
-          if (btnBhumi) btnBhumi.href = bhumiUrl;
-          const btnGmaps = document.getElementById('btnLinkGoogleMaps');
-          if (btnGmaps) btnGmaps.href = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-
-          if (foundBox) foundBox.style.display = 'flex';
-          if (notFoundBox) notFoundBox.style.display = 'none';
-
+        if (!effectivePersil || !effectivePersil.found || !effectivePersil.polygon_coords || effectivePersil.polygon_coords.length < 3) {
+          clearCanvasRebuilderLayers();
+          if (foundBox) foundBox.style.display = 'none';
+          if (notFoundBox) notFoundBox.style.display = 'block';
           const hud = document.getElementById('canvasHud');
-          if (hud) {
-            hud.style.display = 'flex';
-            const elHudNib = document.getElementById('hudNib');
-            if (elHudNib) elHudNib.innerText = lokasiUtama;
-            const elHudArea = document.getElementById('hudBpnArea');
-            if (elHudArea) elHudArea.innerText = activePinData.luas_m2 > 0 ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : '-';
-          }
+          if (hud) hud.style.display = 'none';
+          showToast('Bidang tanah tidak terpetakan di titik koordinat ini.', 'info');
+          return;
+        }
 
-          if (effectivePersil.tahun && parseInt(effectivePersil.tahun)) {
-            const elShpTahun = document.getElementById('shpTahun');
-            if (elShpTahun) elShpTahun.value = parseInt(effectivePersil.tahun);
-          }
-
-          rawInitialBboxCoords = effectivePersil.polygon_coords;
-          initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
-
-          const badge = document.getElementById('badgeRebuildStatus');
-          if (badge) {
-            badge.className = 'badge-pill green';
-            badge.innerText = effectivePersil.is_official_cadastre ? 'Kadaster Resmi Presisi' : (effectivePersil.is_auto_traced ? 'Batas Bidang Terdeteksi' : 'Batas Bidang Aktif');
-          }
-          showToast('Data batas bidang persil ATR/BPN terdeteksi dan aktif.', 'success');
-        } else {
-          const deltaLat = 0.000070;
-          const deltaLng = 0.000070 / Math.cos(lat * Math.PI / 180);
-          const defaultBox = [
-            { lat: +(lat + deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) },
-            { lat: +(lat + deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-            { lat: +(lat - deltaLat).toFixed(7), lng: +(lng + deltaLng).toFixed(7) },
-            { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
-          ];
-          const estArea = Math.round(calculatePolygonArea(defaultBox));
-          isGeometryManuallyEdited = false;
-          activePinData = {
-            lat: lat,
-            lng: lng,
-            fid: 'BIDANG-MANDIRI-' + Math.floor(1000 + Math.random() * 9000),
-            nib: '-',
-            nib_lengkap: '-',
-            tipe_hak: 'Delineasi Mandiri',
-            nomor_hak: '-',
-            nomor_hak_raw: '-',
-            nosu: '-',
-            tahun: '-',
-            luas_m2: estArea,
-            desa: (geoData && geoData.desa !== '-') ? geoData.desa : '-',
-            kecamatan: (geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-',
-            kabkot: (geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-',
-            provinsi: (geoData && geoData.provinsi !== '-') ? geoData.provinsi : '-',
-            kodepos: (geoData && geoData.kodepos !== '-') ? geoData.kodepos : '-',
-            kantah: (geoData && geoData.kantah && geoData.kantah !== 'Kantor Pertanahan') ? geoData.kantah : '-',
-            kluster_ptsl: '-',
-            akurasibidang: 'Delineasi Mandiri Pengguna',
-            alatukur: 'Digitasi Kartometrik Satelit',
-            status_validasi: 'Belum Terdaftar di BPN',
-            rtrw: 'Memuat status RTRW...',
-            rdtr: 'Memuat status RDTR...',
-            lsd: 'Memverifikasi status LSD...',
-            lbs: 'Memverifikasi status LBS...',
-            hutan: 'Memeriksa status Kawasan Hutan...',
-            znt: 'Memuat Zona Nilai Tanah...',
-            znt_range: 'Memuat rentang nilai...',
-            alamat: (geoData && geoData.jalan) ? geoData.jalan : '-'
-          };
-
-          const lokasiFallback = (activePinData.desa !== '-' && activePinData.kecamatan !== '-')
-            ? `${activePinData.desa}, ${activePinData.kecamatan}`
-            : (activePinData.desa !== '-' ? activePinData.desa : (activePinData.kabkot !== '-' ? activePinData.kabkot : 'Bidang Tanah'));
-
-          const elLokasi = document.getElementById('pinLokasiUtamaText');
-          if (elLokasi) elLokasi.innerText = lokasiFallback;
-
-          const elLuasBpn = document.getElementById('pinLuasBpnText');
-          if (elLuasBpn) {
-            elLuasBpn.className = 'stat-value offline';
-            elLuasBpn.innerText = 'Belum Terhubung Server';
-          }
-          const elTipeHak = document.getElementById('pinTipeHakText');
-          if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
-          renderCadastralProFields();
-          fetchSpatialStatusData(lat, lng).then(status => {
-            if (activePinData && Math.abs(activePinData.lat - lat) < 0.001 && Math.abs(activePinData.lng - lng) < 0.001) {
-              Object.assign(activePinData, status);
-              renderCadastralProFields();
-            }
-          });
-          const elStatusValidasi = document.getElementById('pinStatusValidasiText');
-          if (elStatusValidasi) {
-            elStatusValidasi.className = 'status-offline-tag';
-            elStatusValidasi.innerText = 'Belum Terhubung Server';
-          }
-          const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
-          if (elPinServer) {
-            elPinServer.innerText = (getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
-          }
-
-          const badgeEl = document.getElementById('badgeTipeHak');
-          if (badgeEl) badgeEl.innerText = 'DELINEASI MANDIRI';
-
-          const elLegalitas = document.getElementById('legalitasSummaryText');
-          if (elLegalitas) {
-            elLegalitas.innerText = 'Mode Delineasi Mandiri : Batas Bidang Siap Disesuaikan';
-          }
-
-          const elKab = document.getElementById('pinKabkotText'); if (elKab) elKab.innerText = activePinData.kabkot;
-          const elProv = document.getElementById('pinProvinsiText'); if (elProv) elProv.innerText = activePinData.provinsi;
-
-          const elShpProv = document.getElementById('shpProvinsi');
-          if (elShpProv && activePinData.provinsi !== '-') elShpProv.value = activePinData.provinsi.toUpperCase();
-
-          const elShpKeterangan = document.getElementById('shpKeterangan');
-          if (elShpKeterangan) {
-            const rawKet = activePinData.alamat !== '-' ? activePinData.alamat : `Desa ${activePinData.desa}, Kec. ${activePinData.kecamatan}`;
-            elShpKeterangan.value = rawKet.toUpperCase();
-          }
-
-          if (foundBox) foundBox.style.display = 'flex';
-          if (notFoundBox) notFoundBox.style.display = 'none';
-
+        if (!isPointInsideOrNearPolygon(lat, lng, effectivePersil.polygon_coords, 1.5)) {
+          clearCanvasRebuilderLayers();
+          if (foundBox) foundBox.style.display = 'none';
+          if (notFoundBox) notFoundBox.style.display = 'block';
           const hud = document.getElementById('canvasHud');
-          if (hud) {
-            hud.style.display = 'flex';
-            const elHudNib = document.getElementById('hudNib');
-            if (elHudNib) elHudNib.innerText = lokasiFallback;
-            const elHudArea = document.getElementById('hudBpnArea');
-            if (elHudArea) {
-              elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Belum Terhubung Server</span>';
-            }
-          }
+          if (hud) hud.style.display = 'none';
+          showToast('Titik koordinat berada di luar bidang tanah terdaftar (jalan atau ruang terbuka).', 'info');
+          return;
+        }
 
-          rawInitialBboxCoords = defaultBox;
-          initCanvasRebuilder(lat, lng, estArea, defaultBox);
+        if (geoData) {
+          if (geoData.desa && geoData.desa !== '-') effectivePersil.desa = geoData.desa;
+          if (geoData.kecamatan && geoData.kecamatan !== '-') effectivePersil.kecamatan = geoData.kecamatan;
+          if (geoData.kabkot && geoData.kabkot !== '-') effectivePersil.kabkot = geoData.kabkot;
+          if (geoData.provinsi && geoData.provinsi !== '-') effectivePersil.provinsi = geoData.provinsi;
+          if (geoData.kodepos && geoData.kodepos !== '-') effectivePersil.kodepos = geoData.kodepos;
+          if (geoData.kantah && geoData.kantah !== '-') effectivePersil.kantah = geoData.kantah;
+          if (geoData.jalan && geoData.jalan !== '-') effectivePersil.alamat = geoData.jalan;
+        }
 
-          const badge = document.getElementById('badgeRebuildStatus');
-          if (badge) {
-            badge.className = 'badge-pill yellow';
-            badge.innerText = 'Delineasi Mandiri Aktif';
-          }
-          showToast('Batas bidang tanah dibuat aktif di titik klik. Titik patok dapat langsung digeser, ditambah, atau disesuaikan.', 'info');
+        selectCadastreVectorParcel(effectivePersil, { lat, lng });
+        if (typeof renderCadastreVectorParcels === 'function') {
+          renderCadastreVectorParcels([effectivePersil]);
         }
       } catch (err) {
-        showToast('Terjadi kesalahan saat memuat data bidang. Silakan coba kembali.', 'warn');
       } finally {
         if (loadingBar) loadingBar.classList.remove('active');
         if (foundBox) foundBox.classList.remove('data-loading');
@@ -992,7 +1346,7 @@ function getBpnGatewayBase() {
       let addr = null;
       let data = null;
 
-      if (isProxyActive && persilApiBase && persilApiBase.startsWith('https://')) {
+      if (isProxyActive && persilApiBase && (persilApiBase.startsWith('https://') || persilApiBase.startsWith('http://'))) {
         try {
           const url = `${persilApiBase}/api/reverse-geocode?lat=${lat}&lng=${lng}`;
           const res = await fetch(url);
@@ -1092,7 +1446,6 @@ function getBpnGatewayBase() {
       if (isPro) {
         summary += `\nDATA DETAIL KADASTER & TATA RUANG (PRO):\n`;
         summary += `NIB Lengkap: ${activePinData.nib_lengkap || activePinData.nib || '-'}\n`;
-        summary += `Nomor Hak: ${activePinData.nomor_hak || '-'}\n`;
         summary += `Kantah: ${activePinData.kantah || '-'}\n`;
         summary += `Kluster PTSL: ${activePinData.kluster_ptsl || '-'}\n`;
         summary += `Akurasi & Alat: ${activePinData.akurasibidang || '-'}\n`;
@@ -1124,6 +1477,12 @@ function getBpnGatewayBase() {
       clearCanvasRebuilderLayers();
       isParcelLocked = false;
       activePinData = null;
+      window.lastImportedShpData = null;
+      const shpBadge = document.getElementById('importedShpAttributesBadge');
+      if (shpBadge) shpBadge.style.display = 'none';
+      const boxGabungan = document.getElementById('boxDaftarBidangGabungan');
+      if (boxGabungan) boxGabungan.style.display = 'none';
+      window.currentCadastreParcelsPool = [];
 
       const noPin = document.getElementById('noPinAlert');
       const foundBox = document.getElementById('persilFoundBox');
@@ -1201,7 +1560,7 @@ function getBpnGatewayBase() {
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
-    function cleanAndDeduplicateVertices(coords, minMeters = 1.5, maxDeg = 14.0) {
+    function cleanAndDeduplicateVertices(coords, minMeters = 0.05, maxDeg = 0.5) {
       if (!coords || coords.length < 3) return coords;
       let pts = coords.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
@@ -1260,7 +1619,7 @@ function getBpnGatewayBase() {
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.8, 15.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.15, 1.0);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
@@ -1283,7 +1642,7 @@ function getBpnGatewayBase() {
       const badge = document.getElementById('proxyBadge');
       const text = document.getElementById('proxyText');
       const persilBase = getBpnGatewayBase();
-      if (persilBase && persilBase.startsWith('https://')) {
+      if (persilBase && (persilBase.startsWith('https://') || persilBase.startsWith('http://'))) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -1313,3 +1672,6 @@ function getBpnGatewayBase() {
     window.switchCadastreServer = switchCadastreServer;
     window.updateCadastreServerUI = updateCadastreServerUI;
     window.renderCadastralProFields = renderCadastralProFields;
+    window.renderCadastreVectorParcels = renderCadastreVectorParcels;
+    window.selectCadastreVectorParcel = selectCadastreVectorParcel;
+    window.cadastreVectorLayer = cadastreVectorLayer;

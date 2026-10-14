@@ -172,22 +172,22 @@ function renderShpAttributesTable(records, fields) {
   if (!thead || !tbody) return;
 
   if (!fields || fields.length === 0 || !records || records.length === 0) {
-    thead.innerHTML = '<tr><th style="padding: 8px 10px; width: 44px; text-align: center; background: var(--bg-subtle); border-bottom: 2px solid var(--border-light);">#</th><th style="padding: 8px 12px; text-align: left; background: var(--bg-subtle); border-bottom: 2px solid var(--border-light);">Atribut</th></tr>';
-    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: 2rem;">Tidak ada data atribut di dalam berkas .dbf.</td></tr>';
+    thead.innerHTML = '<tr><th class="shp-attr-col-idx">#</th><th>Atribut</th></tr>';
+    tbody.innerHTML = '<tr><td colspan="2" class="shp-attr-empty-cell"><div class="shp-attr-empty-content"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><span>Tidak ada data atribut di dalam berkas .dbf.</span></div></td></tr>';
     if (counter) counter.innerText = '0 record';
     return;
   }
 
-  let headHtml = '<tr><th style="padding: 8px 10px; width: 44px; text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); background: var(--bg-subtle); border-bottom: 2px solid var(--border-light); position: sticky; top: 0; z-index: 2;">#</th>';
+  let headHtml = '<tr><th class="shp-attr-col-idx">#</th>';
   fields.forEach(f => {
-    let typeBadge = '<span style="font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; background: var(--bg-subtle); color: #475569; font-weight: 700; border: 1px solid var(--border-light);">Teks</span>';
+    let typeBadge = '<span class="shp-attr-type-pill text">Teks</span>';
     if (f.type === 'N' || f.type === 'F') {
-      typeBadge = '<span style="font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; background: #eff6ff; color: #1d4ed8; font-weight: 700; border: 1px solid #bfdbfe;">Angka</span>';
+      typeBadge = '<span class="shp-attr-type-pill num">Angka</span>';
     } else if (f.type === 'D') {
-      typeBadge = '<span style="font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; background: #f0fdf4; color: #15803d; font-weight: 700; border: 1px solid #bbf7d0;">Tanggal</span>';
+      typeBadge = '<span class="shp-attr-type-pill date">Tanggal</span>';
     }
-    headHtml += `<th style="padding: 8px 12px; text-align: left; white-space: nowrap; font-size: 0.73rem; font-weight: 700; color: var(--text-main); background: var(--bg-subtle); border-bottom: 2px solid var(--border-light); position: sticky; top: 0; z-index: 2;">
-      <div style="display: flex; align-items: center; gap: 6px;">
+    headHtml += `<th>
+      <div class="shp-attr-col-header-inner">
         <span>${escapeHtml(f.name)}</span>
         ${typeBadge}
       </div>
@@ -198,11 +198,11 @@ function renderShpAttributesTable(records, fields) {
 
   let bodyHtml = '';
   records.forEach((rec, idx) => {
-    bodyHtml += `<tr><td style="padding: 7px 10px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.71rem; color: var(--text-muted); background: var(--bg-subtle); border-right: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">${idx + 1}</td>`;
+    bodyHtml += `<tr><td class="shp-attr-cell-idx">${idx + 1}</td>`;
     fields.forEach(f => {
       const val = rec[f.name];
       const displayVal = (val !== null && val !== undefined && String(val).trim() !== '') ? escapeHtml(String(val)) : '-';
-      bodyHtml += `<td style="padding: 7px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; white-space: nowrap; border-bottom: 1px solid var(--border-light); color: var(--text-main);">${displayVal}</td>`;
+      bodyHtml += `<td>${displayVal}</td>`;
     });
     bodyHtml += '</tr>';
   });
@@ -419,7 +419,10 @@ async function handleImportZipFile(event) {
     if (metaEl) metaEl.innerText = `${dbfData.records.length} Baris Data : ${dbfData.fields.length} Kolom Atribut`;
 
     const statFile = document.getElementById('shpAttrStatFile');
-    if (statFile) statFile.innerText = file.name;
+    if (statFile) {
+      statFile.innerText = file.name;
+      statFile.title = file.name;
+    }
 
     const statRecords = document.getElementById('shpAttrStatRecords');
     if (statRecords) statRecords.innerText = `${dbfData.records.length} Baris`;

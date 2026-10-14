@@ -189,6 +189,17 @@ function togglePrintDimensions(show) {
       }
     }
 
+    function syncPrintMapScale() {
+      if (!printMapInstance) return;
+      const centerLat = printMapInstance.getCenter().lat;
+      const curZoom = printMapInstance.getZoom();
+      const currentMetersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
+      const rawRatio = currentMetersPerPx / 0.0002645833333333333;
+      const stdScale = (typeof getStandardScale === 'function') ? getStandardScale(rawRatio) : Math.round(rawRatio / 50) * 50;
+      const metersPerPx = stdScale * 0.0002645833333333333;
+      updatePrintScaleBar(metersPerPx, stdScale);
+    }
+
     function updatePrintScaleBar(metersPerPx, stdScale) {
       const scaleStr = `SKALA 1 : ${stdScale.toLocaleString('id-ID')}`;
       const scaleEl = document.getElementById('kopScaleNumber');
@@ -246,9 +257,13 @@ function togglePrintDimensions(show) {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #ffffff; border: 2.5px solid #ea580c;"></div>
+              <svg class="print-legend-swatch" width="18" height="12" viewBox="0 0 18 12" style="border: 1.5px solid #ffffff; box-shadow: 0 0 2px rgba(0,0,0,0.85); background: #0284c7; border-radius: 2px; vertical-align: middle;">
+                <line x1="-2" y1="4" x2="6" y2="-4" stroke="#ffffff" stroke-width="1.8"/>
+                <line x1="2" y1="12" x2="14" y2="0" stroke="#ffffff" stroke-width="1.8"/>
+                <line x1="8" y1="14" x2="20" y2="2" stroke="#ffffff" stroke-width="1.8"/>
+              </svg>
             </div>
-            <span>Batas Bidang Terpilih</span>
+            <span>Batas Bidang Tanah</span>
           </div>
         `);
       }
@@ -257,9 +272,9 @@ function togglePrintDimensions(show) {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-point" style="background-color: #0a2e5c; border: 1.5px solid #ffffff;"></div>
+              <div class="print-legend-point" style="background-color: #0a2e5c; border: 1.2px solid #ffffff;"></div>
             </div>
-            <span>Titik Patok Batas (P1, P2... Pn)</span>
+            <span>Titik Patok Batas</span>
           </div>
         `);
       }
@@ -270,34 +285,14 @@ function togglePrintDimensions(show) {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #ffffff; border: 1.5px solid #0a2e5c; height: 8px;"></div>
+              <div class="print-legend-line" style="background-color: #0a2e5c; height: 1.8px;"></div>
             </div>
-            <span>Dimensi Jarak Sisi Batas (Meter)</span>
+            <span>Dimensi Panjang Batas</span>
           </div>
         `);
       }
 
-      if (customPois && customPois.length > 0) {
-        const renderedTypes = new Set();
-        customPois.forEach(poi => {
-          if (!renderedTypes.has(poi.type)) {
-            renderedTypes.add(poi.type);
-            const details = getPoiTypeDetails(poi.type);
-            items.push(`
-              <div class="print-legend-item">
-                <div class="print-legend-symbol">
-                  <div style="width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; background-color: ${details.color}; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);">
-                    <div style="transform: scale(0.65); display: flex; align-items: center; justify-content: center;">${details.svg}</div>
-                  </div>
-                </div>
-                <span>${details.label}</span>
-              </div>
-            `);
-          }
-        });
-      }
-
-      if (persilLayer && map.hasLayer(persilLayer)) {
+      if (typeof persilLayer !== 'undefined' && persilLayer && map && map.hasLayer(persilLayer)) {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
@@ -308,139 +303,153 @@ function togglePrintDimensions(show) {
         `);
       }
 
-      if (cekingLayers.hutan && map.hasLayer(cekingLayers.hutan)) {
-        items.push(`
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #14532d; border: 1px solid #052e16;"></div>
-            </div>
-            <span>Hutan Lindung (HL KLHK)</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #6b21a8; border: 1px solid #581c87;"></div>
-            </div>
-            <span>Hutan Konservasi &amp; Suaka (HK/KSA)</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #ca8a04; border: 1px solid #a16207;"></div>
-            </div>
-            <span>Hutan Produksi (HP / HPT / HPK)</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #94a3b8; border: 1px solid #64748b;"></div>
-            </div>
-            <span>Areal Penggunaan Lain (APL)</span>
-          </div>
-        `);
+      if (typeof customPois !== 'undefined' && customPois && customPois.length > 0) {
+        const renderedTypes = new Set();
+        customPois.forEach(poi => {
+          if (!renderedTypes.has(poi.type)) {
+            renderedTypes.add(poi.type);
+            const details = (typeof getPoiTypeDetails === 'function') ? getPoiTypeDetails(poi.type) : { label: poi.name || 'POI', color: '#0a2e5c' };
+            items.push(`
+              <div class="print-legend-item">
+                <div class="print-legend-symbol">
+                  <div style="width: 10px; height: 10px; border-radius: 50%; background-color: ${details.color}; border: 1px solid #ffffff;"></div>
+                </div>
+                <span>${details.label}</span>
+              </div>
+            `);
+          }
+        });
       }
 
-      if (cekingLayers.lsd && map.hasLayer(cekingLayers.lsd)) {
-        items.push(`
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #059669; border: 1px solid #047857;"></div>
+      if (typeof cekingLayers !== 'undefined' && cekingLayers) {
+        if (cekingLayers.lsd && map && map.hasLayer(cekingLayers.lsd)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #059669; border: 1px solid #047857;"></div>
+              </div>
+              <span>LSD Dipertahankan (Pangan)</span>
             </div>
-            <span>LSD Dipertahankan (Pangan Nasional)</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #65a30d; border: 1px solid #4d7c0f;"></div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #65a30d; border: 1px solid #4d7c0f;"></div>
+              </div>
+              <span>LSD Penyesuaian RTRW</span>
             </div>
-            <span>LSD Penyesuaian RTRW</span>
-          </div>
-        `);
+          `);
+        }
+
+        if (cekingLayers.lbs && map && map.hasLayer(cekingLayers.lbs)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
+              </div>
+              <span>Lahan Baku Sawah (LBS)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.hutan && map && map.hasLayer(cekingLayers.hutan)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #14532d; border: 1px solid #052e16;"></div>
+              </div>
+              <span>Kawasan Hutan Lindung (HL)</span>
+            </div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #ca8a04; border: 1px solid #a16207;"></div>
+              </div>
+              <span>Hutan Produksi (HP/HPT)</span>
+            </div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #94a3b8; border: 1px solid #64748b;"></div>
+              </div>
+              <span>Areal Penggunaan Lain (APL)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.peruntukan && map && map.hasLayer(cekingLayers.peruntukan)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #d97706; border: 1px solid #b45309;"></div>
+              </div>
+              <span>Zona Pola Ruang Permukiman</span>
+            </div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #b91c1c; border: 1px solid #991b1b;"></div>
+              </div>
+              <span>Zona Perdagangan &amp; Jasa</span>
+            </div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #334155; border: 1px solid #1e293b;"></div>
+              </div>
+              <span>Zona Industri &amp; Pergudangan</span>
+            </div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #15803d; border: 1px solid #166534;"></div>
+              </div>
+              <span>Zona Pertanian Tanaman Pangan</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.rtrw && map && map.hasLayer(cekingLayers.rtrw)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #78350f; border: 1px solid #451a03;"></div>
+              </div>
+              <span>RTRW Perkebunan / Non-Pangan</span>
+            </div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
+              </div>
+              <span>RTRW Perikanan / Tubuh Air</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.jalan && map && map.hasLayer(cekingLayers.jalan)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-line" style="background-color: #ea580c; height: 2.5px;"></div>
+              </div>
+              <span>Jalan Arteri / Nasional</span>
+            </div>
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-line" style="background-color: #eab308; height: 2px;"></div>
+              </div>
+              <span>Jalan Kolektor &amp; Lokal</span>
+            </div>
+          `);
+        }
       }
 
-      if (cekingLayers.lbs && map.hasLayer(cekingLayers.lbs)) {
+      if (typeof kelurahanHighlightLayer !== 'undefined' && kelurahanHighlightLayer && map && map.hasLayer(kelurahanHighlightLayer)) {
         items.push(`
           <div class="print-legend-item">
             <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
+              <div class="print-legend-swatch" style="background-color: rgba(37, 99, 235, 0.15); border: 1.5px dashed #2563eb;"></div>
             </div>
-            <span>Lahan Baku Sawah (LBS Nasional)</span>
-          </div>
-        `);
-      }
-
-      if (cekingLayers.peruntukan && map.hasLayer(cekingLayers.peruntukan)) {
-        items.push(`
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #d97706; border: 1px solid #b45309;"></div>
-            </div>
-            <span>Zona Permukiman &amp; Perumahan</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #b91c1c; border: 1px solid #991b1b;"></div>
-            </div>
-            <span>Zona Perdagangan &amp; Jasa</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #334155; border: 1px solid #1e293b;"></div>
-            </div>
-            <span>Zona Industri &amp; Pergudangan</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #15803d; border: 1px solid #166534;"></div>
-            </div>
-            <span>Zona Pertanian Tanaman Pangan</span>
-          </div>
-        `);
-      }
-
-      if (cekingLayers.rtrw && map.hasLayer(cekingLayers.rtrw)) {
-        items.push(`
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #78350f; border: 1px solid #451a03;"></div>
-            </div>
-            <span>RTRW: Perkebunan &amp; Non-Pangan</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
-            </div>
-            <span>RTRW: Perikanan &amp; Tubuh Air</span>
-          </div>
-        `);
-      }
-
-      if (cekingLayers.jalan && map.hasLayer(cekingLayers.jalan)) {
-        items.push(`
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-line" style="background-color: #ea580c; height: 3px;"></div>
-            </div>
-            <span>Jalan Arteri Primer / Nasional</span>
-          </div>
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-line" style="background-color: #eab308; height: 2px;"></div>
-            </div>
-            <span>Jalan Kolektor &amp; Lokal</span>
-          </div>
-        `);
-      }
-
-      if (kelurahanHighlightLayer && map.hasLayer(kelurahanHighlightLayer)) {
-        items.push(`
-          <div class="print-legend-item">
-            <div class="print-legend-symbol">
-              <div class="print-legend-swatch" style="background-color: rgba(37, 99, 235, 0.15); border: 2px dashed #2563eb;"></div>
-            </div>
-            <span>Area Kelurahan Terpilih</span>
+            <span>Batas Administrasi Desa</span>
           </div>
         `);
       }
 
       if (items.length === 0) {
-        container.innerHTML = '<div style="color: #64748b; font-size: 7.5px;">Belum ada lapisan yang aktif</div>';
+        container.innerHTML = '<div style="color: #64748b; font-size: 7.2px; line-height: 1.5; font-style: italic; padding: 4px 0;">Tidak ada lapisan tematik aktif</div>';
       } else {
         container.innerHTML = items.join('');
       }
@@ -549,21 +558,25 @@ function togglePrintDimensions(show) {
         });
       }
       if (bounds && bounds.isValid()) {
-        printMapInstance.fitBounds(bounds, { padding: [40, 40], animate: false });
+        printMapInstance.fitBounds(bounds, { padding: [45, 45], animate: false });
         setTimeout(() => {
-          const centerLat = printMapInstance.getCenter().lat;
+          const centerLat = bounds.getCenter().lat;
           const curZoom = printMapInstance.getZoom();
           const currentMetersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
           const rawRatio = currentMetersPerPx / 0.0002645833333333333;
-          const stdScale = getStandardScale(rawRatio);
+          const stdScale = (typeof getStandardScale === 'function') ? getStandardScale(rawRatio) : Math.round(rawRatio / 50) * 50;
           const exactZoom = getExactZoomForScale(stdScale, centerLat);
           printMapInstance.setView(bounds.getCenter(), exactZoom, { animate: false });
           const metersPerPx = stdScale * 0.0002645833333333333;
           updatePrintScaleBar(metersPerPx, stdScale);
           updatePrintMapGraticule();
+          updatePrintLegend();
+          initOrUpdatePrintInset(bounds);
         }, 150);
       } else if (map) {
-        printMapInstance.setView(map.getCenter(), map.getZoom());
+        printMapInstance.setView(map.getCenter(), map.getZoom(), { animate: false });
+        syncPrintMapScale();
+        updatePrintLegend();
       }
     }
 
@@ -586,15 +599,28 @@ function togglePrintDimensions(show) {
           boxZoom: true
         });
 
+        if (!printMapInstance.getPane('thematicPane')) {
+          printMapInstance.createPane('thematicPane');
+          printMapInstance.getPane('thematicPane').style.zIndex = 340;
+        }
+        if (!printMapInstance.getPane('persilPane')) {
+          printMapInstance.createPane('persilPane');
+          printMapInstance.getPane('persilPane').style.zIndex = 360;
+        }
+
         printMapInstance.on('moveend zoomend', () => {
           updatePrintMapGraticule();
-          const curZoom = printMapInstance.getZoom();
-          const centerLat = printMapInstance.getCenter().lat;
-          const metersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
-          const rawRatio = metersPerPx / 0.0002645833333333333;
-          const stdScale = getStandardScale(rawRatio);
-          updatePrintScaleBar(metersPerPx, stdScale);
+          syncPrintMapScale();
         });
+      } else {
+        if (!printMapInstance.getPane('thematicPane')) {
+          printMapInstance.createPane('thematicPane');
+          printMapInstance.getPane('thematicPane').style.zIndex = 340;
+        }
+        if (!printMapInstance.getPane('persilPane')) {
+          printMapInstance.createPane('persilPane');
+          printMapInstance.getPane('persilPane').style.zIndex = 360;
+        }
       }
 
       printMapInstance.eachLayer(l => printMapInstance.removeLayer(l));
@@ -625,41 +651,64 @@ function togglePrintDimensions(show) {
         }).addTo(printMapInstance);
       }
 
-      const persilBase = getBpnGatewayBase();
-      if (persilBase && persilLayer && map.hasLayer(persilLayer)) {
-        L.tileLayer(`${persilBase}/api/tile/{z}/{x}/{y}.webp`, {
+      if (typeof cekingLayers !== 'undefined' && cekingLayers) {
+        const activeCekingKeys = Object.keys(cekingLayers).filter(k => cekingLayers[k] && map && map.hasLayer(cekingLayers[k]));
+        activeCekingKeys.forEach(k => {
+          if (typeof createThematicLayer === 'function') {
+            const l = createThematicLayer(k);
+            if (l) {
+              l.addTo(printMapInstance);
+            }
+          }
+        });
+      }
+
+      if (typeof persilLayer !== 'undefined' && persilLayer && map && map.hasLayer(persilLayer)) {
+        const persilBase = (typeof getBpnGatewayBase === 'function') ? getBpnGatewayBase() : '';
+        const pOpacity = (typeof persilLayer.options?.opacity !== 'undefined') ? persilLayer.options.opacity : 0.9;
+        const tileUrl = persilBase
+          ? `${persilBase}/persil/{z}/{x}/{y}.webp`
+          : `/persil/{z}/{x}/{y}.webp`;
+        L.tileLayer(tileUrl, {
+          pane: 'persilPane',
           maxZoom: 26,
           maxNativeZoom: 19,
-          opacity: 0.9,
-          zIndex: 350,
+          opacity: pOpacity,
+          zIndex: 360,
           crossOrigin: 'anonymous'
         }).addTo(printMapInstance);
       }
 
-      if (persilBase) {
-        const activeCekingKeys = Object.keys(cekingLayers).filter(k => cekingLayers[k] && map.hasLayer(cekingLayers[k]));
-        activeCekingKeys.forEach(k => {
-          L.tileLayer(`${persilBase}/api/layer-ceking/${k}/{z}/{x}/{y}.webp`, {
-            maxZoom: 26,
-            maxNativeZoom: 19,
-            opacity: 0.75,
-            zIndex: 300,
-            crossOrigin: 'anonymous'
+      if (typeof kelurahanHighlightLayer !== 'undefined' && kelurahanHighlightLayer && map && map.hasLayer(kelurahanHighlightLayer)) {
+        if (typeof kelurahanHighlightLayer.toGeoJSON === 'function') {
+          L.geoJSON(kelurahanHighlightLayer.toGeoJSON(), {
+            style: {
+              color: '#2563eb',
+              weight: 2,
+              dashArray: '4, 4',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.12
+            }
           }).addTo(printMapInstance);
-        });
+        }
       }
 
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       let bounds = null;
 
       if (parts[0] && parts[0].length >= 3) {
+        if (typeof window.ensureBidangHatchPattern === 'function') {
+          window.ensureBidangHatchPattern(printMapInstance);
+        }
         parts.forEach((pList, pIdx) => {
           const latlngs = pList.map(v => [v.lat, v.lng]);
           const poly = L.polygon(latlngs, {
-            color: '#ea580c',
+            color: '#ffffff',
             weight: 3.5,
-            fillColor: '#ea580c',
-            fillOpacity: 0.15,
+            opacity: 1,
+            fillColor: 'url(#bidangHatchPattern)',
+            fillOpacity: 1,
+            className: 'active-cadastre-polygon',
             zIndexOffset: 500
           }).addTo(printMapInstance);
 
@@ -726,13 +775,13 @@ function togglePrintDimensions(show) {
       printMapInstance.invalidateSize();
 
       if (bounds && bounds.isValid()) {
-        printMapInstance.fitBounds(bounds, { padding: [40, 40], animate: false });
+        printMapInstance.fitBounds(bounds, { padding: [45, 45], animate: false });
         setTimeout(() => {
-          const centerLat = printMapInstance.getCenter().lat;
+          const centerLat = bounds.getCenter().lat;
           const curZoom = printMapInstance.getZoom();
           const currentMetersPerPx = 156543.03392 * Math.cos(centerLat * Math.PI / 180) / Math.pow(2, curZoom);
           const rawRatio = currentMetersPerPx / 0.0002645833333333333;
-          const stdScale = getStandardScale(rawRatio);
+          const stdScale = (typeof getStandardScale === 'function') ? getStandardScale(rawRatio) : Math.round(rawRatio / 50) * 50;
           const exactZoom = getExactZoomForScale(stdScale, centerLat);
           printMapInstance.setView(bounds.getCenter(), exactZoom, { animate: false });
           const metersPerPx = stdScale * 0.0002645833333333333;
@@ -745,7 +794,9 @@ function togglePrintDimensions(show) {
           initOrUpdatePrintInset(bounds || pb);
         }, 200);
       } else {
-        printMapInstance.setView(map.getCenter(), map.getZoom());
+        printMapInstance.setView(map.getCenter(), map.getZoom(), { animate: false });
+        syncPrintMapScale();
+        updatePrintLegend();
       }
     }
 
@@ -809,22 +860,27 @@ function togglePrintDimensions(show) {
       const isA3 = sheet.classList.contains('a3');
       const sheetW = isA3 ? 1587 : 1123;
       const sheetH = isA3 ? 1123 : 794;
-      const containerW = scroll.clientWidth || window.innerWidth;
-      if (containerW < sheetW + 24) {
-        const scale = Math.max(0.18, Math.min((containerW - 16) / sheetW, 0.98));
-        sheet.style.transform = `scale(${scale})`;
-        sheet.style.transformOrigin = 'top center';
-        if (wrapper) {
-          wrapper.style.height = `${Math.ceil(sheetH * scale + 24)}px`;
-          wrapper.style.overflow = 'hidden';
-        }
-      } else {
-        sheet.style.transform = 'none';
-        sheet.style.transformOrigin = 'unset';
-        if (wrapper) {
-          wrapper.style.height = 'auto';
-          wrapper.style.overflow = 'visible';
-        }
+
+      const padX = window.innerWidth <= 768 ? 16 : 40;
+      const padY = window.innerWidth <= 768 ? 16 : 40;
+      const availW = Math.max(200, (scroll.clientWidth || window.innerWidth) - padX);
+      const availH = Math.max(200, (scroll.clientHeight || window.innerHeight) - padY);
+
+      const scaleW = availW / sheetW;
+      const scaleH = availH / sheetH;
+      let scale = Math.min(scaleW, scaleH);
+      if (scale > 1.0) scale = 1.0;
+      scale = Math.max(0.18, scale);
+
+      sheet.style.transform = `scale(${scale})`;
+      sheet.style.transformOrigin = 'top center';
+      if (wrapper) {
+        wrapper.style.width = `${Math.ceil(sheetW * scale)}px`;
+        wrapper.style.height = `${Math.ceil(sheetH * scale)}px`;
+        wrapper.style.overflow = 'hidden';
+        wrapper.style.display = 'flex';
+        wrapper.style.justifyContent = 'center';
+        wrapper.style.margin = 'auto';
       }
     }
 
@@ -832,6 +888,9 @@ function togglePrintDimensions(show) {
       const modal = document.getElementById('modalPrintMap');
       if (modal && modal.style.display !== 'none') {
         adjustMobilePrintScale();
+        if (printMapInstance) {
+          printMapInstance.invalidateSize();
+        }
       }
     });
 
@@ -950,8 +1009,26 @@ function togglePrintDimensions(show) {
     function handlePrintMapTrigger() {
       ensureActiveVerticesFromDraw();
       if (!activeVertices || activeVertices.length < 3) {
-        showToast('Pilih atau buat bidang tanah pada peta terlebih dahulu.', 'warn');
-        return;
+        if (typeof map !== 'undefined' && map) {
+          const center = map.getCenter();
+          showToast('Menyiapkan bidang pada posisi peta untuk dicetak...', 'info');
+          if (typeof handleMapClick === 'function') {
+            handleMapClick(center.lat, center.lng, false).then(() => {
+              if (isMobileDevice()) {
+                processDirectMobilePdfPrint();
+              } else {
+                openMapPrintModal();
+              }
+            }).catch(() => {
+              if (isMobileDevice()) {
+                processDirectMobilePdfPrint();
+              } else {
+                openMapPrintModal();
+              }
+            });
+            return;
+          }
+        }
       }
       if (isMobileDevice()) {
         processDirectMobilePdfPrint();

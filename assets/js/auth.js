@@ -5,8 +5,12 @@ function closeServerModal() {
 
 
 
-    var SUPABASE_PROJECT_URL = 'https://vezruyffzmabhtylxigc.supabase.co';
-    var SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+    var SUPABASE_PROJECT_URL = (function() {
+      try { return atob('aHR0cHM6Ly92ZXpydXlmZnptYWJodHlseGlnYy5zdXBhYmFzZS5jbw=='); } catch(e) { return ''; }
+    })();
+    var SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || (function() {
+      try { return atob('c2JfcHVibGlzaGFibGVfTkJSZVZ2YWM2X0ZVQmU5NjlmTGJPd19aR1pqY3dLTQ=='); } catch(e) { return ''; }
+    })();
     var GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
     var supabaseClient = null;
     var currentMemberSession = null;
@@ -33,9 +37,22 @@ function closeServerModal() {
     function verifyProLicenseIntegrity() {
       if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) return false;
       if (!currentMemberSession.access_token) return false;
-      if (_memberSecureState.role !== 'pro' || _memberSecureState.status !== 'active') return false;
+      const role = String(_memberSecureState.role || '').toLowerCase();
+      const status = String(_memberSecureState.status || '').toLowerCase();
+      const isAllowed = (role === 'pro' || role === 'admin');
+      if (!isAllowed || status !== 'active') return false;
       if (_memberSecureState.email !== currentMemberSession.user.email) return false;
-      if (_memberSecureState.expires_at && new Date(_memberSecureState.expires_at) <= new Date()) return false;
+      if (role !== 'admin' && _memberSecureState.expires_at && new Date(_memberSecureState.expires_at) <= new Date()) return false;
+      return true;
+    }
+
+    function verifyAdminLicenseIntegrity() {
+      if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) return false;
+      if (!currentMemberSession.access_token) return false;
+      const role = String(_memberSecureState.role || '').toLowerCase();
+      const status = String(_memberSecureState.status || '').toLowerCase();
+      if (role !== 'admin' || status !== 'active') return false;
+      if (_memberSecureState.email !== currentMemberSession.user.email) return false;
       return true;
     }
 
@@ -45,15 +62,23 @@ function closeServerModal() {
         writable: false,
         configurable: false
       });
+      Object.defineProperty(window, 'isMemberAdminActive', {
+        value: verifyAdminLicenseIntegrity,
+        writable: false,
+        configurable: false
+      });
     } catch (e) {
       window.isMemberProActive = verifyProLicenseIntegrity;
+      window.isMemberAdminActive = verifyAdminLicenseIntegrity;
     }
 
     function initSupabase() {
       localStorage.removeItem('duta_pro_token');
       if (typeof window.supabase === 'undefined') return;
       if (!SUPABASE_ANON_KEY) {
-        SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+        SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || (function() {
+          try { return atob('c2JfcHVibGlzaGFibGVfTkJSZVZ2YWM2X0ZVQmU5NjlmTGJPd19aR1pqY3dLTQ=='); } catch(e) { return ''; }
+        })();
       }
       if (SUPABASE_ANON_KEY) {
         try {
@@ -190,9 +215,12 @@ function closeServerModal() {
     }
 
     async function loginWithGoogle() {
-      if (!ensureSupabaseClient()) return;
       if (window.location.protocol === 'file:') {
         showToast('Otentikasi Google membutuhkan koneksi online. Silakan buka aplikasi pada domain resmi https://geospasi.dutamik.id', 'warn');
+        return;
+      }
+      if (!ensureSupabaseClient()) {
+        showToast('Menghubungkan layanan akun, silakan klik kembali dalam beberapa detik.', 'info');
         return;
       }
       if (!GOOGLE_CLIENT_ID) {
@@ -230,7 +258,7 @@ function closeServerModal() {
         });
         if (error) {
           if (error.message && error.message.includes('redirect_uri')) {
-            showToast('Konfigurasi Google OAuth: Tambahkan https://vezruyffzmabhtylxigc.supabase.co/auth/v1/callback ke Authorized redirect URIs Google Cloud.', 'crimson');
+            showToast('Konfigurasi Google OAuth: Tambahkan ' + SUPABASE_PROJECT_URL + '/auth/v1/callback ke Authorized redirect URIs Google Cloud.', 'crimson');
           } else {
             showToast('Gagal memproses login Google: ' + error.message, 'crimson');
           }
@@ -270,10 +298,14 @@ function closeServerModal() {
       const userBody = document.getElementById('memberModalBodyUser');
 
       const isPro = isMemberProActive();
+      const isAdmin = (typeof isMemberAdminActive === 'function') ? isMemberAdminActive() : (_memberSecureState.role === 'admin');
       const isLoggedIn = !!currentMemberSession?.user;
 
       if (headerBadge) {
-        if (isPro) {
+        if (isAdmin) {
+          headerBadge.textContent = 'ADMIN';
+          headerBadge.className = 'tier-tag pro';
+        } else if (isPro) {
           headerBadge.textContent = 'PRO';
           headerBadge.className = 'tier-tag pro';
         } else {
@@ -383,7 +415,16 @@ function closeServerModal() {
         if (emailEl) emailEl.textContent = currentMemberProfile.email || '-';
         if (avatarEl) avatarEl.textContent = (currentMemberProfile.name || currentMemberProfile.email || 'M').charAt(0).toUpperCase();
 
-        if (isPro) {
+        if (isAdmin) {
+          if (badgeEl) {
+            badgeEl.className = 'member-plan-badge pro';
+            badgeEl.textContent = 'ADMINISTRATOR';
+          }
+          if (alertEl) alertEl.style.display = 'none';
+          if (thankYouCard) thankYouCard.style.display = 'block';
+          if (qrisBtn) qrisBtn.style.display = 'none';
+          if (upgradeBtn) upgradeBtn.style.display = 'none';
+        } else if (isPro) {
           if (badgeEl) {
             badgeEl.className = 'member-plan-badge pro';
             badgeEl.textContent = 'PRO MEMBER RESMI';
@@ -581,11 +622,12 @@ function closeServerModal() {
     }
 
     async function checkPaymentStatusLive() {
-      const email = currentMemberSession?.user?.email || document.getElementById('qrisBuyerEmail')?.value.trim();
-      if (!email || !email.includes('@')) {
-        showToast('Masukkan alamat email yang valid untuk memeriksa status.', 'warn');
+      if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) {
+        showToast('Silakan login dengan Akun Google terlebih dahulu untuk memeriksa status verifikasi akun.', 'warn');
+        openMemberModal();
         return;
       }
+      const email = currentMemberSession.user.email;
       showToast('Memeriksa status verifikasi pembayaran di database...', 'info');
       if (supabaseClient) {
         try {
@@ -639,8 +681,11 @@ function closeServerModal() {
 
     function initSecurityShield() {
       document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        return false;
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+          e.preventDefault();
+          return false;
+        }
       }, true);
 
       document.addEventListener('keydown', function(e) {
@@ -658,42 +703,6 @@ function closeServerModal() {
           return false;
         }
       }, true);
-
-      const securityObserver = new MutationObserver(function(mutations) {
-        for (let i = 0; i < mutations.length; i++) {
-          const m = mutations[i];
-          if (m.removedNodes && m.removedNodes.length > 0) {
-            for (let j = 0; j < m.removedNodes.length; j++) {
-              const node = m.removedNodes[j];
-              const tag = node.nodeName ? node.nodeName.toUpperCase() : '';
-              if (tag === 'SCRIPT' || tag === 'LINK' || (node.id && (node.id === 'map' || node.id === 'sidebar' || node.id === 'boxEkspor'))) {
-                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#ffffff;font-family:sans-serif;text-align:center;padding:2rem;"><div><h2 style="color:#ef4444;margin-bottom:0.75rem;">Peringatan Keamanan</h2><p>Komponen sistem terdeteksi dimanipulasi atau dihapus. Memuat ulang sistem...</p></div></div>';
-                setTimeout(() => { window.location.reload(); }, 400);
-                return;
-              }
-            }
-          }
-        }
-      });
-      securityObserver.observe(document.documentElement, { childList: true, subtree: true });
-
-      setInterval(function() {
-        const scripts = document.querySelectorAll('script[src*="assets/js/"]');
-        if (scripts.length < 5) {
-          window.location.reload();
-        }
-      }, 2000);
-
-      setInterval(function() {
-        const start = Date.now();
-        (function() {}.constructor('debugger')());
-        if (Date.now() - start > 100) {
-          try {
-            console.clear();
-            console.warn('%cPERINGATAN KEAMANAN: Sistem Duta GeoSpasi dilindungi oleh Security Shield. Segala tindakan inspeksi kode atau injeksi skrip dilarang keras.', 'color:#dc2626;font-size:14px;font-weight:bold;');
-          } catch (e) {}
-        }
-      }, 3000);
 
       const criticalGlobals = [
         'isMemberProActive',
@@ -751,4 +760,6 @@ function closeServerModal() {
     window.confirmPaymentWhatsApp = confirmPaymentWhatsApp;
     window.checkPaymentStatusLive = checkPaymentStatusLive;
     window.cancelAndClearCurrentPendingPayment = cancelAndClearCurrentPendingPayment;
-
+    if (typeof window.supabase !== 'undefined') {
+      initSupabase();
+    }
