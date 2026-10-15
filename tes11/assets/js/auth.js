@@ -135,6 +135,12 @@ function closeServerModal() {
               updateMemberUI();
             }
           });
+          supabaseClient.auth.getSession().then(async ({ data }) => {
+            if (data && data.session && data.session.user) {
+              currentMemberSession = data.session;
+              await fetchMemberProfile(data.session.user);
+            }
+          });
         } catch (err) {}
       }
       updateMemberUI();
@@ -208,14 +214,19 @@ function closeServerModal() {
           return;
         }
         showToast('Berhasil masuk dengan Akun Google.', 'success');
-        if (data && data.user) {
-          await fetchMemberProfile(data.user);
-          sendGoogleScriptWebhook('log_member', {
-            email: data.user.email,
-            name: data.user.user_metadata?.full_name || data.user.email.split('@')[0] || 'Member',
-            role: _memberSecureState.role || 'free',
-            status: _memberSecureState.status || 'active'
-          });
+        if (data) {
+          if (data.session) {
+            currentMemberSession = data.session;
+          }
+          if (data.user) {
+            await fetchMemberProfile(data.user);
+            sendGoogleScriptWebhook('log_member', {
+              email: data.user.email,
+              name: data.user.user_metadata?.full_name || data.user.email.split('@')[0] || 'Member',
+              role: _memberSecureState.role || 'free',
+              status: _memberSecureState.status || 'active'
+            });
+          }
         }
         closeMemberModal();
       } catch (err) {
@@ -250,6 +261,22 @@ function closeServerModal() {
         resolvedRole = 'pro';
         resolvedStatus = 'active';
       }
+
+      try {
+        const { data: rpcProfile, error: rpcErr } = await supabaseClient.rpc('get_my_member_profile');
+        if (!rpcErr && rpcProfile && rpcProfile.found === true) {
+          const rpcRole = String(rpcProfile.role || '').toLowerCase().trim();
+          if (rpcRole === 'admin' || rpcRole === 'administrator' || rpcRole === 'superadmin') {
+            resolvedRole = 'admin';
+          } else if (rpcRole === 'pro' && resolvedRole !== 'admin') {
+            resolvedRole = 'pro';
+          } else if (resolvedRole === 'free') {
+            resolvedRole = rpcRole || 'free';
+          }
+          resolvedStatus = String(rpcProfile.status || resolvedStatus).toLowerCase().trim();
+          resolvedExpiresAt = rpcProfile.expires_at || null;
+        }
+      } catch (_) {}
 
       try {
         let dbData = null;
