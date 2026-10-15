@@ -57,13 +57,22 @@ function getBpnGatewayBase() {
               return res.blob();
             })
             .then(blob => {
-              tile.src = URL.createObjectURL(blob);
-              tile.onload = () => { URL.revokeObjectURL(tile.src); };
-              done(null, tile);
+              const objUrl = URL.createObjectURL(blob);
+              tile.onload = () => {
+                setTimeout(() => {
+                  try { URL.revokeObjectURL(objUrl); } catch (_) {}
+                }, 15000);
+                done(null, tile);
+              };
+              tile.onerror = () => {
+                try { URL.revokeObjectURL(objUrl); } catch (_) {}
+                done(null, tile);
+              };
+              tile.src = objUrl;
             })
             .catch(err => {
               clearTimeout(tid);
-              done(err, tile);
+              done(null, tile);
             });
           return tile;
         }
@@ -130,9 +139,8 @@ function getBpnGatewayBase() {
       const maxLng = bounds.getEast();
 
       const persilBase = getBpnGatewayBase();
-      const url = persilBase
-        ? `${persilBase}/api/viewport-parcels?min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}`
-        : `/api/viewport-parcels?min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}`;
+      if (!persilBase) return;
+      const url = `${persilBase}/api/viewport-parcels?min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}`;
 
       isViewportVectorLoading = true;
       try {
@@ -407,11 +415,61 @@ function getBpnGatewayBase() {
     }
 
     function setupPersilLayer() {
+      if (!map) return;
+      const persilBase = getBpnGatewayBase();
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+
+      if (!map.getPane('cadastrePane')) {
+        const cp = map.createPane('cadastrePane');
+        cp.style.zIndex = 370;
+        cp.style.pointerEvents = 'none';
+      }
+
+      if (persilLayer && map.hasLayer(persilLayer)) {
+        map.removeLayer(persilLayer);
+      }
+
+      const slider = document.getElementById('persilOpacity');
+      const initialOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
+
+      if (persilBase) {
+        persilLayer = L.tileLayer(`${persilBase}/api/tile/{z}/{x}/{y}.png`, {
+          pane: 'cadastrePane',
+          minZoom: 14,
+          maxZoom: 26,
+          maxNativeZoom: 19,
+          opacity: initialOpacity,
+          zIndex: 370
+        });
+      } else {
+        persilLayer = createAuthTileLayer(`${sbUrl}/functions/v1/cadastre-gateway?action=tile&z={z}&x={x}&y={y}`, {
+          pane: 'cadastrePane',
+          minZoom: 14,
+          maxZoom: 26,
+          maxNativeZoom: 19,
+          opacity: initialOpacity,
+          zIndex: 370,
+          headers: {
+            'apikey': sbKey,
+            'Authorization': 'Bearer ' + sbKey
+          }
+        });
+      }
+
+      const chk = document.getElementById('chkPersil');
+      if (!chk || chk.checked) {
+        persilLayer.addTo(map);
+      }
+
       setupCadastreVectorLayer();
       loadViewportCadastreSvgParcels();
     }
 
     async function refreshPersilTiles() {
+      if (persilLayer && typeof persilLayer.redraw === 'function') {
+        persilLayer.redraw();
+      }
       if (cadastreVectorLayer) {
         cadastreVectorLayer.clearLayers();
       }
@@ -421,9 +479,9 @@ function getBpnGatewayBase() {
         try {
           await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' });
         } catch (e) {}
+        await loadViewportCadastreSvgParcels();
       }
-      await loadViewportCadastreSvgParcels();
-      showToast('Peta bidang persil vektor diperbarui.', 'success');
+      showToast('Peta bidang persil diperbarui.', 'success');
     }
 
     var cekingLayers = {
@@ -527,17 +585,13 @@ function getBpnGatewayBase() {
     }
 
     function togglePersilLayer(checked) {
-      const badge = document.getElementById('badgeStatusBidang');
-      if (checked) {
-        if (!map.hasLayer(persilLayer)) map.addLayer(persilLayer);
-        if (badge) { badge.className = 'badge-pill green'; badge.innerText = 'Aktif'; }
-      } else {
-        if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
-        if (badge) { badge.className = 'badge-pill'; badge.innerText = 'Nonaktif'; }
+      if (persilLayer) {
+        if (checked) {
+          if (!map.hasLayer(persilLayer)) map.addLayer(persilLayer);
+        } else {
+          if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
+        }
       }
-    }
-
-    function togglePersilLayer(checked) {
       if (cadastreVectorLayer) {
         if (checked) {
           if (!map.hasLayer(cadastreVectorLayer)) cadastreVectorLayer.addTo(map);
@@ -551,10 +605,18 @@ function getBpnGatewayBase() {
         badge.className = checked ? 'badge-pill green' : 'badge-pill';
         badge.innerText = checked ? 'Aktif' : 'Nonaktif';
       }
+      const badgeStatus = document.getElementById('badgeStatusBidang');
+      if (badgeStatus) {
+        badgeStatus.className = checked ? 'badge-pill green' : 'badge-pill';
+        badgeStatus.innerText = checked ? 'Aktif' : 'Nonaktif';
+      }
     }
 
     function changePersilOpacity(val) {
       const opacity = val / 100;
+      if (persilLayer && typeof persilLayer.setOpacity === 'function') {
+        persilLayer.setOpacity(opacity);
+      }
       if (cadastreVectorLayer) {
         cadastreVectorLayer.eachLayer(layer => {
           if (typeof layer.setStyle === 'function') {
