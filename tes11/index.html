@@ -696,6 +696,23 @@
                   <option value="raster_arcgis">Poin 2: ArcGIS Export Web Map (PNG / JPEG / PDF)</option>
                 </optgroup>
               </select>
+              <div id="adminCadastreStreamActions" style="margin-top: 0.45rem; display: flex; flex-direction: column; gap: 0.35rem;">
+                <div style="display: flex; gap: 0.35rem;">
+                  <button type="button" class="btn btn-outline" onclick="reloadCurrentCadastreStream()" style="flex: 1; font-size: 0.7rem; padding: 5px 6px; justify-content: center; gap: 0.3rem;" title="Muat dan render data kadaster pada posisi peta saat ini">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span>Tampilkan di Peta</span>
+                  </button>
+                  <button type="button" class="btn btn-primary" onclick="generateCurrentStreamImage()" style="flex: 1; font-size: 0.7rem; padding: 5px 6px; justify-content: center; gap: 0.3rem; background-color: var(--accent); color: #ffffff;" title="Hasilkan gambar peta sesuai format aktif">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Hasilkan Gambar</span>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-outline" onclick="generatePreciseWmsVectorPolygon()" style="width: 100%; font-size: 0.7rem; padding: 5px 6px; justify-content: center; gap: 0.3rem; border-color: #0284c7; color: #0284c7; font-weight: 600;" title="Ekstrak poligon sudut asli dari garis Raster 1 WMS (is_bbox: false)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 22 22 22"/><circle cx="12" cy="2" r="2" fill="#0284c7"/><circle cx="2" cy="22" r="2" fill="#0284c7"/><circle cx="22" cy="22" r="2" fill="#0284c7"/></svg>
+                  <span>Ekstrak Poligon Presisi WMS (is_bbox: false)</span>
+                </button>
+                <div id="streamQuickButtons" style="display: flex; gap: 0.3rem; flex-wrap: wrap;"></div>
+              </div>
             </div>
           </div>
 
@@ -2307,7 +2324,7 @@
   </div>
   </div>
 
-  <script src="assets/sec/duta-shield.js?v=0.97"></script>
+  <script src="assets/sec/duta-shield.js?v=0.99"></script>
   <div id="toastContainer" class="toast-container"></div>
 </body>
 </html>

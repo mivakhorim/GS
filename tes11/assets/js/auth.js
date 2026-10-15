@@ -12,7 +12,7 @@ function closeServerModal() {
       try { return atob('c2JfcHVibGlzaGFibGVfTkJSZVZ2YWM2X0ZVQmU5NjlmTGJPd19aR1pqY3dLTQ=='); } catch(e) { return ''; }
     })();
     var GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
-    var GOOGLE_SCRIPT_URL = localStorage.getItem('google_script_url') || 'https://script.google.com/macros/s/AKfycbyPbz-E47qirIW73hJAgRKZUgcVpIv4Csk_duLZY3GTiV2w6E0H2Khoq0NwufyfU42R6Q/exec';
+    var GOOGLE_SCRIPT_URL = localStorage.getItem('google_script_url') || 'https://script.google.com/macros/s/AKfycbzaHyKbjd-s7RI4eXC2j3tJ82LF95OgC1pRAvYuQZi-Qym60KejQRo2lzVW8IXdkAdy/exec';
     var supabaseClient = null;
     var currentMemberSession = null;
     var _memberSecureState = { role: 'free', status: 'none', email: '', name: '', expires_at: null };
@@ -27,7 +27,7 @@ function closeServerModal() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: action,
-            source: 'duta_geospasi_app',
+            source: 'auth_client',
             timestamp: new Date().toISOString(),
             ...payload
           })

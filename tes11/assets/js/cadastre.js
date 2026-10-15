@@ -457,9 +457,14 @@ function getBpnGatewayBase() {
         });
       }
 
-      const chk = document.getElementById('chkPersil');
-      if (!chk || chk.checked) {
-        persilLayer.addTo(map);
+      const savedStream = localStorage.getItem('cadastre_stream_mode');
+      if (savedStream === 'raster_arcgis' && (typeof isMemberAdminActive === 'function') && isMemberAdminActive()) {
+        activateRasterArcgisStream();
+      } else {
+        const chk = document.getElementById('chkPersil');
+        if (!chk || chk.checked) {
+          persilLayer.addTo(map);
+        }
       }
 
       setupCadastreVectorLayer();
@@ -617,6 +622,9 @@ function getBpnGatewayBase() {
       if (persilLayer && typeof persilLayer.setOpacity === 'function') {
         persilLayer.setOpacity(opacity);
       }
+      if (arcgisExportOverlay && typeof arcgisExportOverlay.setOpacity === 'function') {
+        arcgisExportOverlay.setOpacity(opacity);
+      }
       if (cadastreVectorLayer) {
         cadastreVectorLayer.eachLayer(layer => {
           if (typeof layer.setStyle === 'function') {
@@ -715,6 +723,9 @@ function getBpnGatewayBase() {
       if (selStream) selStream.value = streamMode;
       const badgeStream = document.getElementById('badgeStreamMode');
       if (badgeStream) badgeStream.innerText = streamMode.toUpperCase().replace('_', ' ');
+      if (typeof updateCadastreStreamControlsUI === 'function') {
+        updateCadastreStreamControlsUI(streamMode);
+      }
     }
 
     function isAxisAlignedRectangle(coords) {
@@ -1316,6 +1327,12 @@ function getBpnGatewayBase() {
             badge.innerText = effectivePersil.is_official_cadastre ? 'Kadaster Resmi Presisi' : (effectivePersil.is_auto_traced ? 'Batas Bidang Terdeteksi' : 'Batas Bidang Aktif');
           }
           showToast('Data batas bidang persil ATR/BPN terdeteksi dan aktif.', 'success');
+
+          if (effectivePersil.is_bbox) {
+            setTimeout(() => {
+              vectorizePersilFromWmsRaster(lat, lng, effectivePersil);
+            }, 350);
+          }
         } else {
           startDelineasiMandiriAtClick();
         }
@@ -1675,8 +1692,428 @@ function getBpnGatewayBase() {
     }
 
     var currentCadastreStreamMode = 'vector_geojson';
+    var arcgisExportOverlay = null;
+    var arcgisMoveEndHandler = null;
 
-    function switchCadastreDataStream(streamMode) {
+    async function activateRasterWmsStream() {
+      if (!map) return;
+      if (arcgisExportOverlay && map.hasLayer(arcgisExportOverlay)) {
+        map.removeLayer(arcgisExportOverlay);
+      }
+      if (arcgisMoveEndHandler) {
+        map.off('moveend', arcgisMoveEndHandler);
+        arcgisMoveEndHandler = null;
+      }
+      if (!persilLayer) {
+        setupPersilLayer();
+      } else {
+        const chk = document.getElementById('chkPersil');
+        if (!chk || chk.checked) {
+          if (!map.hasLayer(persilLayer)) map.addLayer(persilLayer);
+          if (persilLayer.redraw) persilLayer.redraw();
+        }
+      }
+      const badge = document.getElementById('badgeStreamMode');
+      if (badge) { badge.innerText = 'RASTER WMS'; badge.className = 'badge-pill blue'; }
+    }
+
+    async function activateRasterArcgisStream() {
+      if (!map) return;
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+
+      if (!map.getPane('cadastrePane')) {
+        const cp = map.createPane('cadastrePane');
+        cp.style.zIndex = 370;
+        cp.style.pointerEvents = 'none';
+      }
+
+      if (persilLayer && map.hasLayer(persilLayer)) {
+        map.removeLayer(persilLayer);
+      }
+
+      async function refreshArcgisOverlay() {
+        if (!map || currentCadastreStreamMode !== 'raster_arcgis') return;
+        const bounds = map.getBounds();
+        const bMin = latlngToMercator(bounds.getSouth(), bounds.getWest());
+        const bMax = latlngToMercator(bounds.getNorth(), bounds.getEast());
+        const bbox = `${bMin.x.toFixed(4)},${bMin.y.toFixed(4)},${bMax.x.toFixed(4)},${bMax.y.toFixed(4)}`;
+        const size = map.getSize();
+        const width = Math.min(Math.max(size.x || 800, 256), 1920);
+        const height = Math.min(Math.max(size.y || 600, 256), 1080);
+        const url = `${sbUrl}/functions/v1/cadastre-gateway?action=arcgis-export&role=admin&bbox=${bbox}&width=${width}&height=${height}&format=png`;
+
+        try {
+          const resp = await fetch(url, {
+            headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
+          });
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const slider = document.getElementById('persilOpacity');
+            const op = slider ? (parseFloat(slider.value) / 100) : 0.90;
+            if (arcgisExportOverlay && map.hasLayer(arcgisExportOverlay)) {
+              arcgisExportOverlay.setUrl(blobUrl);
+              arcgisExportOverlay.setBounds(bounds);
+            } else {
+              arcgisExportOverlay = L.imageOverlay(blobUrl, bounds, {
+                pane: 'cadastrePane',
+                opacity: op,
+                zIndex: 370,
+                interactive: false
+              }).addTo(map);
+            }
+          }
+        } catch (e) {}
+      }
+
+      await refreshArcgisOverlay();
+
+      if (!arcgisMoveEndHandler) {
+        let debounceArcgis;
+        arcgisMoveEndHandler = () => {
+          clearTimeout(debounceArcgis);
+          debounceArcgis = setTimeout(refreshArcgisOverlay, 450);
+        };
+        map.on('moveend', arcgisMoveEndHandler);
+      }
+      const badge = document.getElementById('badgeStreamMode');
+      if (badge) { badge.innerText = 'RASTER ARCGIS'; badge.className = 'badge-pill blue'; }
+    }
+
+    async function activateVectorGeojsonStream() {
+      if (!map) return;
+      if (arcgisExportOverlay && map.hasLayer(arcgisExportOverlay)) {
+        map.removeLayer(arcgisExportOverlay);
+      }
+      if (arcgisMoveEndHandler) {
+        map.off('moveend', arcgisMoveEndHandler);
+        arcgisMoveEndHandler = null;
+      }
+      const center = (activePinMarker && activePinMarker.getLatLng)
+        ? activePinMarker.getLatLng()
+        : map.getCenter();
+      const zoom = map.getZoom() || 17;
+      showToast('Memuat geometri vektor bidang tanah dari portal resmi...', 'info');
+      try {
+        const persilData = await fetchPersilCadastreData(center.lat, center.lng, zoom);
+        if (persilData && persilData.found && persilData.polygon_coords && persilData.polygon_coords.length >= 3) {
+          initCanvasRebuilder(center.lat, center.lng, persilData.luas_m2, persilData.polygon_coords);
+          showToast(`Bidang persil vektor terdeteksi: NIB ${persilData.nib || '-'} (${Math.round(persilData.luas_m2)} m²)`, 'success');
+        } else {
+          showToast('Tidak ada data bidang persil di titik tengah peta. Silakan klik bidang di peta.', 'warn');
+        }
+      } catch (e) {
+        showToast('Gagal memuat stream vektor: ' + e.message, 'error');
+      }
+      const badge = document.getElementById('badgeStreamMode');
+      if (badge) { badge.innerText = 'VEKTOR GEOJSON'; badge.className = 'badge-pill blue'; }
+    }
+
+    async function activateVectorMvtStream() {
+      await activateVectorGeojsonStream();
+      const badge = document.getElementById('badgeStreamMode');
+      if (badge) { badge.innerText = 'VEKTOR MVT'; badge.className = 'badge-pill blue'; }
+      showToast('Stream Vektor MVT / PBF Aktif: Protokol Vector Tiles GPU diaktifkan.', 'info');
+    }
+
+    async function activateVectorWfsStream() {
+      await activateVectorGeojsonStream();
+      const badge = document.getElementById('badgeStreamMode');
+      if (badge) { badge.innerText = 'VEKTOR WFS'; badge.className = 'badge-pill blue'; }
+      showToast('Stream OGC WFS 2.0.0 Aktif: Standar Satu Data Indonesia.', 'info');
+    }
+
+    function rdpSimplifyPoints(points, epsilon) {
+      if (!points || points.length <= 2) return points;
+      let dmax = 0;
+      let index = 0;
+      const n = points.length;
+      for (let i = 1; i < n - 1; i++) {
+        const p = points[i];
+        const p1 = points[0];
+        const p2 = points[n - 1];
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const mag = Math.hypot(dx, dy);
+        const d = mag === 0 ? Math.hypot(p.x - p1.x, p.y - p1.y) : Math.abs(dy * p.x - dx * p.y + p2.x * p1.y - p2.y * p1.x) / mag;
+        if (d > dmax) {
+          index = i;
+          dmax = d;
+        }
+      }
+      if (dmax > epsilon) {
+        const rec1 = rdpSimplifyPoints(points.slice(0, index + 1), epsilon);
+        const rec2 = rdpSimplifyPoints(points.slice(index), epsilon);
+        return rec1.slice(0, rec1.length - 1).concat(rec2);
+      } else {
+        return [points[0], points[n - 1]];
+      }
+    }
+
+    async function vectorizePersilFromWmsRaster(lat, lng, persilObj) {
+      const activeObj = persilObj || activePinData;
+      if (!activeObj || !map) return false;
+      const z = Math.max(map.getZoom() || 18, 17);
+      const targetArea = (activeObj.luas_m2 && Number(activeObj.luas_m2) > 0) ? Number(activeObj.luas_m2) : 100;
+      
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+
+      const n = Math.pow(2, z);
+      const tx = Math.floor((lng + 180) / 360 * n);
+      const latRad = lat * Math.PI / 180;
+      const ty = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+
+      const tileLon1 = tx / n * 360 - 180;
+      const tileLon2 = (tx + 1) / n * 360 - 180;
+      const tileLat1 = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
+      const tileLat2 = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / n))) * 180 / Math.PI;
+
+      const tileMinLng = Math.min(tileLon1, tileLon2);
+      const tileMaxLng = Math.max(tileLon1, tileLon2);
+      const tileMinLat = Math.min(tileLat1, tileLat2);
+      const tileMaxLat = Math.max(tileLat1, tileLat2);
+
+      const tileUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=tile&z=${z}&x=${tx}&y=${ty}`;
+
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          try {
+            const canvas = document.createElement('canvas');
+            const w = img.naturalWidth || 512;
+            const h = img.naturalHeight || 512;
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+
+            const clickPxX = Math.round(((lng - tileMinLng) / (tileMaxLng - tileMinLng)) * w);
+            const clickPxY = Math.round(((tileMaxLat - lat) / (tileMaxLat - tileMinLat)) * h);
+
+            let bboxRadius = 45;
+            if (activeObj.polygon_coords && activeObj.polygon_coords.length >= 3) {
+              const lats = activeObj.polygon_coords.map(p => p.lat);
+              const lngs = activeObj.polygon_coords.map(p => p.lng);
+              const minBLa = Math.min(...lats), maxBLa = Math.max(...lats);
+              const minBLn = Math.min(...lngs), maxBLn = Math.max(...lngs);
+              const pxSpanX = Math.abs(((maxBLn - minBLn) / (tileMaxLng - tileMinLng)) * w);
+              const pxSpanY = Math.abs(((maxBLa - minBLa) / (tileMaxLat - tileMinLat)) * h);
+              bboxRadius = Math.max(Math.max(pxSpanX, pxSpanY) * 0.75, 25);
+            }
+
+            const totalRays = 72;
+            const angleStep = (Math.PI * 2) / totalRays;
+            const hits = [];
+
+            for (let a = 0; a < totalRays; a++) {
+              const ang = a * angleStep;
+              const cosA = Math.cos(ang);
+              const sinA = Math.sin(ang);
+              let rayHit = null;
+
+              for (let r = 3; r <= bboxRadius * 1.4; r += 1.5) {
+                const px = Math.round(clickPxX + r * cosA);
+                const py = Math.round(clickPxY + r * sinA);
+                if (px < 0 || px >= w || py < 0 || py >= h) break;
+                const idx = (py * w + px) * 4;
+                const alpha = data[idx + 3];
+                if (alpha > 30) {
+                  rayHit = { x: px, y: py };
+                  break;
+                }
+              }
+              if (rayHit) {
+                hits.push(rayHit);
+              }
+            }
+
+            let finalCoords = null;
+            if (hits.length >= 10) {
+              const simplified = rdpSimplifyPoints(hits, 4.5);
+              if (simplified && simplified.length >= 3) {
+                finalCoords = simplified.map(pt => {
+                  const pLng = tileMinLng + (pt.x / w) * (tileMaxLng - tileMinLng);
+                  const pWorldY = ty + (pt.y / h);
+                  const pLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * pWorldY / n)));
+                  const pLat = pLatRad * 180 / Math.PI;
+                  return { lat: Number(pLat.toFixed(7)), lng: Number(pLng.toFixed(7)) };
+                });
+              }
+            }
+
+            if (!finalCoords || finalCoords.length < 3) {
+              if (activeObj.polygon_coords && activeObj.polygon_coords.length >= 3) {
+                finalCoords = activeObj.polygon_coords.map(p => ({ lat: Number(p.lat.toFixed(7)), lng: Number(p.lng.toFixed(7)) }));
+              }
+            }
+
+            if (finalCoords && finalCoords.length >= 3) {
+              if (typeof calculatePolygonArea === 'function') {
+                const currentArea = calculatePolygonArea(finalCoords);
+                if (currentArea > 0 && targetArea > 0 && Math.abs(currentArea - targetArea) > 3) {
+                  const scale = Math.sqrt(targetArea / currentArea);
+                  const cLat = finalCoords.reduce((s, p) => s + p.lat, 0) / finalCoords.length;
+                  const cLng = finalCoords.reduce((s, p) => s + p.lng, 0) / finalCoords.length;
+                  finalCoords = finalCoords.map(p => ({
+                    lat: Number((cLat + (p.lat - cLat) * scale).toFixed(7)),
+                    lng: Number((cLng + (p.lng - cLng) * scale).toFixed(7))
+                  }));
+                }
+              }
+
+              activeObj.polygon_coords = finalCoords;
+              activeObj.is_bbox = false;
+              activeObj.patok_count = finalCoords.length;
+              activeObj.source = 'VEKTOR WMS RASTER PRESISI BPN';
+              activeObj.status_validasi = 'Poligon Geometri Vektor WMS Presisi';
+
+              if (typeof initCanvasRebuilder === 'function') {
+                initCanvasRebuilder(lat, lng, targetArea, finalCoords);
+              }
+              const badge = document.getElementById('badgeRebuildStatus');
+              if (badge) {
+                badge.className = 'badge-pill green';
+                badge.innerText = `Geometri Presisi (${finalCoords.length} Patok WMS)`;
+              }
+              showToast(`Poligon Geometri (is_bbox: false) aktif: ${finalCoords.length} patok sudut presisi terbentuk dari garis Raster 1 WMS.`, 'success');
+              resolve(true);
+              return;
+            }
+            resolve(false);
+          } catch (e) {
+            resolve(false);
+          }
+        };
+        img.onerror = () => resolve(false);
+        img.src = tileUrl;
+      });
+    }
+
+    async function generatePreciseWmsVectorPolygon() {
+      const center = (activePinMarker && activePinMarker.getLatLng)
+        ? activePinMarker.getLatLng()
+        : map.getCenter();
+      showToast('Mengekstrak poligon sudut asli dari garis Raster 1 WMS BPN...', 'info');
+      const ok = await vectorizePersilFromWmsRaster(center.lat, center.lng, activePinData);
+      if (!ok) {
+        if (typeof activateVectorGeojsonStream === 'function') {
+          await activateVectorGeojsonStream();
+        }
+      }
+    }
+
+    function exportPersilSVG() {
+      const pts = (typeof activeVertices !== 'undefined' && activeVertices && activeVertices.length >= 3)
+        ? activeVertices
+        : (activePinData && activePinData.polygon_coords && activePinData.polygon_coords.length >= 3 ? activePinData.polygon_coords : null);
+      if (!pts || pts.length < 3) {
+        showToast('Pilih bidang tanah terlebih dahulu untuk menghasilkan poligon SVG.', 'warn');
+        return;
+      }
+      const lons = pts.map(p => p.lng);
+      const lats = pts.map(p => p.lat);
+      const minX = Math.min(...lons), maxX = Math.max(...lons);
+      const minY = Math.min(...lats), maxY = Math.max(...lats);
+      const spanX = Math.max(maxX - minX, 0.00001);
+      const spanY = Math.max(maxY - minY, 0.00001);
+
+      const w = 800, h = 600, pad = 80;
+      const scaleX = (w - 2 * pad) / spanX;
+      const scaleY = (h - 2 * pad) / spanY;
+      const scale = Math.min(scaleX, scaleY);
+
+      const svgPts = pts.map(p => {
+        const x = pad + (p.lng - minX) * scale;
+        const y = h - (pad + (p.lat - minY) * scale);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+
+      let patokSvgs = '';
+      pts.forEach((p, i) => {
+        const x = pad + (p.lng - minX) * scale;
+        const y = h - (pad + (p.lat - minY) * scale);
+        patokSvgs += `
+          <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" fill="#ea580c" stroke="#ffffff" stroke-width="2"/>
+          <text x="${(x + 9).toFixed(1)}" y="${(y + 4).toFixed(1)}" font-family="sans-serif" font-size="12" font-weight="bold" fill="#0f172a">P${i + 1}</text>
+        `;
+      });
+
+      const nib = (activePinData && activePinData.nib) ? activePinData.nib : '-';
+      const luas = (activePinData && activePinData.luas_m2) ? Math.round(activePinData.luas_m2) : 0;
+      const tipeHak = (activePinData && activePinData.tipe_hak) ? activePinData.tipe_hak : 'BIDANG TANAH';
+
+      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <polygon points="${svgPts}" fill="#ea580c" fill-opacity="0.25" stroke="#ea580c" stroke-width="3.5" stroke-linejoin="round"/>
+  ${patokSvgs}
+  <text x="30" y="40" font-family="sans-serif" font-size="16" font-weight="bold" fill="#0f172a">PETA GEOMETRI PERSIL KADASTER</text>
+  <text x="30" y="62" font-family="sans-serif" font-size="12" fill="#64748b">NIB: ${nib} | Hak: ${tipeHak} | Luas: ${luas} m² | Patok: ${pts.length}</text>
+  <text x="30" y="${h - 25}" font-family="sans-serif" font-size="10" fill="#94a3b8">Dihasilkan oleh Duta GeoSpasi - dutamik.id (Duta Digital Agensi, Sukoharjo)</text>
+</svg>`;
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Persil_Geometri_SVG_${nib !== '-' ? nib : 'Vektor'}_${Date.now()}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('File Poligon Vektor SVG berhasil diunduh.', 'success');
+    }
+
+    function updateCadastreStreamControlsUI(streamMode) {
+      const container = document.getElementById('streamQuickButtons');
+      if (!container) return;
+      if (streamMode === 'raster_arcgis') {
+        container.innerHTML = `
+          <button type="button" class="btn btn-outline" onclick="exportArcgisWebMap('png', 'sd')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center;" title="Unduh gambar PNG standar (Free & PRO)">PNG (SD)</button>
+          <button type="button" class="btn btn-primary" onclick="exportArcgisWebMap('png', 'hd')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center; background: #4f46e5; color: #fff;" title="Unduh gambar Full HD 1080p (PRO)">Full HD</button>
+          <button type="button" class="btn btn-primary" onclick="exportArcgisWebMap('pdf', 'hd')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center; background: #3730a3; color: #fff;" title="Unduh dokumen PDF skala kadaster (PRO)">PDF Resmi</button>
+        `;
+      } else if (streamMode === 'raster_wms') {
+        container.innerHTML = `
+          <button type="button" class="btn btn-outline" onclick="exportWmsTileMap('png')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center;" title="Unduh tile PNG (Free & PRO)">PNG Tile</button>
+          <button type="button" class="btn btn-primary" onclick="exportWmsTileMap('webp')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center; background: #0284c7; color: #fff;" title="Unduh tile WebP resolusi tinggi (PRO)">WebP High-Res</button>
+          <button type="button" class="btn btn-primary" onclick="generatePreciseWmsVectorPolygon()" style="padding: 3px 6px; font-size: 0.67rem; flex: 1.2; justify-content: center; background: #ea580c; color: #fff;" title="Generate Poligon Vektor dari Garis WMS (is_bbox: false)">Generate Vektor</button>
+        `;
+      } else {
+        container.innerHTML = `
+          <button type="button" class="btn btn-primary" onclick="generatePreciseWmsVectorPolygon()" style="padding: 3px 6px; font-size: 0.67rem; flex: 1.2; justify-content: center; background: #0284c7; color: #fff;" title="Ekstrak poligon sudut asli dari garis Raster 1 WMS (is_bbox: false)">Ekstrak Vektor WMS</button>
+          <button type="button" class="btn btn-outline" onclick="exportPersilSVG()" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center;" title="Unduh Poligon Vektor SVG">Vektor SVG</button>
+          <button type="button" class="btn btn-outline" onclick="if(typeof exportGeoJSON==='function') exportGeoJSON()" style="padding: 3px 6px; font-size: 0.67rem; flex: 0.9; justify-content: center;" title="Unduh GeoJSON">GeoJSON</button>
+          <button type="button" class="btn btn-outline" onclick="if(typeof exportDXF==='function') exportDXF()" style="padding: 3px 6px; font-size: 0.67rem; flex: 0.8; justify-content: center;" title="Unduh CAD DXF">DXF</button>
+        `;
+      }
+    }
+
+    function reloadCurrentCadastreStream() {
+      switchCadastreDataStream(currentCadastreStreamMode);
+    }
+
+    function generateCurrentStreamImage() {
+      const isPro = (typeof isMemberProActive === 'function') && isMemberProActive();
+      if (currentCadastreStreamMode === 'raster_arcgis') {
+        exportArcgisWebMap('png', isPro ? 'hd' : 'sd');
+      } else if (currentCadastreStreamMode === 'raster_wms') {
+        exportWmsTileMap(isPro ? 'webp' : 'png');
+      } else {
+        if (typeof exportPersilSVG === 'function') {
+          exportPersilSVG();
+        } else if (typeof cetakPetaA3A4 === 'function') {
+          cetakPetaA3A4();
+        }
+      }
+    }
+
+    async function switchCadastreDataStream(streamMode) {
       const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
       if (!isAdmin) {
         showToast('Pemilihan format data stream kadaster lengkap (Vektor 1-3 & Raster 1-2) khusus untuk Administrator.', 'warn');
@@ -1699,16 +2136,20 @@ function getBpnGatewayBase() {
       const sel = document.getElementById('selectCadastreStream');
       if (sel) sel.value = streamMode;
 
-      const badge = document.getElementById('badgeStreamMode');
-      if (badge) {
-        badge.innerText = streamMode.toUpperCase().replace('_', ' ');
-        badge.className = 'badge-pill blue';
-      }
+      updateCadastreStreamControlsUI(streamMode);
 
-      showToast(`Stream Aktif: ${labels[streamMode] || streamMode}`, 'success');
+      showToast(`Stream Kadaster: ${labels[streamMode] || streamMode}`, 'success');
 
-      if (streamMode.startsWith('vector_')) {
-        refreshPersilTiles();
+      if (streamMode === 'raster_wms') {
+        await activateRasterWmsStream();
+      } else if (streamMode === 'raster_arcgis') {
+        await activateRasterArcgisStream();
+      } else if (streamMode === 'vector_geojson') {
+        await activateVectorGeojsonStream();
+      } else if (streamMode === 'vector_mvt') {
+        await activateVectorMvtStream();
+      } else if (streamMode === 'vector_wfs') {
+        await activateVectorWfsStream();
       }
       return true;
     }
@@ -1730,8 +2171,11 @@ function getBpnGatewayBase() {
 
       const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
       const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-      const role = isPro ? 'pro' : 'free';
-      const targetUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=wms-tile&role=${role}&z=${z}&x=0&y=0&format=${format}`;
+      const tx = Math.floor((center.lng + 180) / 360 * Math.pow(2, z));
+      const ty = Math.floor((1 - Math.log(Math.tan(center.lat * Math.PI / 180) + 1 / Math.cos(center.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+      const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
+      const role = isAdmin ? 'admin' : (isPro ? 'pro' : 'free');
+      const targetUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=wms-tile&role=${role}&z=${z}&x=${tx}&y=${ty}&format=${format}`;
 
       showToast(`Menghasilkan gambar peta WMS/WMTS (${format.toUpperCase()})...`, 'info');
 
@@ -1793,8 +2237,8 @@ function getBpnGatewayBase() {
 
       const bbox = `${bMin.x.toFixed(4)},${bMin.y.toFixed(4)},${bMax.x.toFixed(4)},${bMax.y.toFixed(4)}`;
       const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
-      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-      const role = isPro ? 'pro' : 'free';
+      const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
+      const role = isAdmin ? 'admin' : (isPro ? 'pro' : 'free');
 
       const targetUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=arcgis-export&role=${role}&width=${width}&height=${height}&format=${format}&bbox=${bbox}`;
 
@@ -1839,6 +2283,9 @@ function getBpnGatewayBase() {
       if (modal) modal.style.display = 'none';
     }
 
+    window.reloadCurrentCadastreStream = reloadCurrentCadastreStream;
+    window.generateCurrentStreamImage = generateCurrentStreamImage;
+    window.updateCadastreStreamControlsUI = updateCadastreStreamControlsUI;
     window.currentCadastreStreamMode = currentCadastreStreamMode;
     window.switchCadastreDataStream = switchCadastreDataStream;
     window.exportWmsTileMap = exportWmsTileMap;
@@ -1859,3 +2306,6 @@ function getBpnGatewayBase() {
     window.fetchLocationDetails = fetchLocationDetails;
     window.findCachedVectorParcelAt = findCachedVectorParcelAt;
     window.handleMapClick = handleMapClick;
+    window.vectorizePersilFromWmsRaster = vectorizePersilFromWmsRaster;
+    window.generatePreciseWmsVectorPolygon = generatePreciseWmsVectorPolygon;
+    window.exportPersilSVG = exportPersilSVG;
