@@ -248,7 +248,7 @@ function closeServerModal() {
       const appRole = String(user.app_metadata?.role || user.app_metadata?.user_role || '').toLowerCase().trim();
       const userRole = String(user.user_metadata?.role || user.user_metadata?.user_role || '').toLowerCase().trim();
       const isClaimsAdmin = user.app_metadata?.claims_admin === true || user.app_metadata?.is_admin === true || user.user_metadata?.is_admin === true;
-      const isKnownMasterAdmin = ['admin@dutamik.id', 'duta.digital.agensi@gmail.com'].includes(cleanEmail);
+      const isKnownMasterAdmin = ['admin@dutamik.id', 'duta.digital.agensi@gmail.com', 'm.ivakhorim@gmail.com'].includes(cleanEmail);
 
       let resolvedRole = 'free';
       let resolvedStatus = 'active';
