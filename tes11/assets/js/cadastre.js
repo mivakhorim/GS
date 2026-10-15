@@ -726,6 +726,9 @@ function getBpnGatewayBase() {
       if (typeof updateCadastreStreamControlsUI === 'function') {
         updateCadastreStreamControlsUI(streamMode);
       }
+      if (typeof updateAdminPolygonCoordsUI === 'function') {
+        updateAdminPolygonCoordsUI();
+      }
     }
 
     function isAxisAlignedRectangle(coords) {
@@ -1098,6 +1101,10 @@ function getBpnGatewayBase() {
         const rowNomorHak = document.getElementById('itemPinNomorHak');
         if (rowNomorHak) rowNomorHak.style.display = 'none';
       }
+
+      if (typeof updateAdminPolygonCoordsUI === 'function') {
+        updateAdminPolygonCoordsUI();
+      }
     }
 
     async function handleMapClick(lat, lng, doSwitchTab = true) {
@@ -1229,6 +1236,9 @@ function getBpnGatewayBase() {
             hutan: 'Memeriksa status Kawasan Hutan...',
             znt: 'Memuat Zona Nilai Tanah...',
             znt_range: 'Memuat rentang nilai...',
+            polygon_coords: effectivePersil.polygon_coords,
+            is_bbox: effectivePersil.is_bbox,
+            source: effectivePersil.is_bbox ? 'KADASTER BBOX' : 'VEKTOR BPN ASLI',
             alamat: (geoData && geoData.jalan && geoData.jalan !== '-') ? geoData.jalan : [decoded?.desa, decoded?.kecamatan, decoded?.kabkot].filter(v => v && v !== '-').join(', ') || 'Lokasi Titik Bidang'
           };
 
@@ -1320,6 +1330,9 @@ function getBpnGatewayBase() {
 
           rawInitialBboxCoords = effectivePersil.polygon_coords;
           initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
+          if (typeof updateAdminPolygonCoordsUI === 'function') {
+            updateAdminPolygonCoordsUI(effectivePersil.polygon_coords);
+          }
 
           const badge = document.getElementById('badgeRebuildStatus');
           if (badge) {
@@ -1975,6 +1988,9 @@ function getBpnGatewayBase() {
               if (typeof initCanvasRebuilder === 'function') {
                 initCanvasRebuilder(lat, lng, targetArea, finalCoords);
               }
+              if (typeof updateAdminPolygonCoordsUI === 'function') {
+                updateAdminPolygonCoordsUI(finalCoords);
+              }
               const badge = document.getElementById('badgeRebuildStatus');
               if (badge) {
                 badge.className = 'badge-pill green';
@@ -2283,6 +2299,110 @@ function getBpnGatewayBase() {
       if (modal) modal.style.display = 'none';
     }
 
+    function updateAdminPolygonCoordsUI(customCoords = null) {
+      const box = document.getElementById('adminPolygonCoordsBox');
+      if (!box) return;
+      const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
+      if (!isAdmin) {
+        box.style.display = 'none';
+        return;
+      }
+      let coords = customCoords;
+      if (!coords || !Array.isArray(coords) || coords.length === 0) {
+        if (activePinData && Array.isArray(activePinData.polygon_coords) && activePinData.polygon_coords.length >= 3) {
+          coords = activePinData.polygon_coords;
+        } else if (typeof activeVertices !== 'undefined' && Array.isArray(activeVertices) && activeVertices.length >= 3) {
+          coords = activeVertices;
+        } else if (typeof rawInitialBboxCoords !== 'undefined' && Array.isArray(rawInitialBboxCoords) && rawInitialBboxCoords.length >= 3) {
+          coords = rawInitialBboxCoords;
+        }
+      }
+      if (!coords || !Array.isArray(coords) || coords.length < 3) {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'block';
+      const textarea = document.getElementById('adminPolygonCoordsText');
+      const countBadge = document.getElementById('badgePolygonCoordsCount');
+      const sourceBadge = document.getElementById('badgePolygonCoordsSource');
+      const formatted = coords.map(p => {
+        const lat = (p.lat !== undefined ? p.lat : p[1]);
+        const lng = (p.lng !== undefined ? p.lng : p[0]);
+        return `${Number(lat).toFixed(7)}, ${Number(lng).toFixed(7)}`;
+      }).join('\n');
+      if (textarea) textarea.value = formatted;
+      if (countBadge) countBadge.innerText = `${coords.length} Patok`;
+      if (sourceBadge) {
+        if (activePinData && activePinData.source && activePinData.source.includes('WMS')) {
+          sourceBadge.innerText = 'WMS PRESISI';
+        } else if (activePinData && activePinData.is_bbox === false) {
+          sourceBadge.innerText = 'ASLI BPN';
+        } else {
+          sourceBadge.innerText = 'KADASTRAL';
+        }
+      }
+    }
+
+    function copyAdminPolygonCoords() {
+      const textarea = document.getElementById('adminPolygonCoordsText');
+      const text = textarea?.value?.trim();
+      if (!text) {
+        showToast('Tidak ada koordinat polygon_coords untuk disalin.', 'warn');
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Daftar koordinat polygon_coords berhasil disalin ke clipboard!', 'success');
+        }).catch(() => {
+          textarea.select();
+          document.execCommand('copy');
+          showToast('Daftar koordinat polygon_coords berhasil disalin ke clipboard!', 'success');
+        });
+      } else {
+        textarea.select();
+        document.execCommand('copy');
+        showToast('Daftar koordinat polygon_coords berhasil disalin ke clipboard!', 'success');
+      }
+    }
+
+    function sendPolygonCoordsToBatchInput() {
+      const textarea = document.getElementById('adminPolygonCoordsText');
+      const text = textarea?.value?.trim();
+      if (!text) {
+        showToast('Tidak ada koordinat polygon_coords untuk dimasukkan.', 'warn');
+        return;
+      }
+      const batchInput = document.getElementById('batchCoordsInput');
+      if (batchInput) {
+        batchInput.value = text;
+      }
+      if (typeof switchTab === 'function') {
+        switchTab('tab-digitasi');
+      }
+      if (batchInput) {
+        batchInput.focus();
+        batchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showToast('Koordinat polygon_coords dimasukkan ke Lembar Buat Bidang. Klik "Plot & Buat Bidang" untuk menggambar.', 'success');
+    }
+
+    function swapAdminPolygonCoordsOrder() {
+      const textarea = document.getElementById('adminPolygonCoordsText');
+      const text = textarea?.value?.trim();
+      if (!text) {
+        showToast('Tidak ada koordinat polygon_coords untuk ditukar.', 'warn');
+        return;
+      }
+      const swapped = (typeof swapBatchCoordinatesText === 'function')
+        ? swapBatchCoordinatesText(text)
+        : text.split(/\r?\n/).map(line => {
+            const parts = line.trim().split(/[,\s\t;]+/).filter(Boolean);
+            return parts.length >= 2 ? `${parts[1]}, ${parts[0]}` : line;
+          }).join('\n');
+      textarea.value = swapped;
+      showToast('Urutan koordinat polygon_coords berhasil ditukar (Lat ⇄ Lng).', 'success');
+    }
+
     window.reloadCurrentCadastreStream = reloadCurrentCadastreStream;
     window.generateCurrentStreamImage = generateCurrentStreamImage;
     window.updateCadastreStreamControlsUI = updateCadastreStreamControlsUI;
@@ -2309,3 +2429,7 @@ function getBpnGatewayBase() {
     window.vectorizePersilFromWmsRaster = vectorizePersilFromWmsRaster;
     window.generatePreciseWmsVectorPolygon = generatePreciseWmsVectorPolygon;
     window.exportPersilSVG = exportPersilSVG;
+    window.updateAdminPolygonCoordsUI = updateAdminPolygonCoordsUI;
+    window.copyAdminPolygonCoords = copyAdminPolygonCoords;
+    window.sendPolygonCoordsToBatchInput = sendPolygonCoordsToBatchInput;
+    window.swapAdminPolygonCoordsOrder = swapAdminPolygonCoordsOrder;

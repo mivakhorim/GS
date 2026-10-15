@@ -392,6 +392,37 @@
               </div>
             </div>
 
+            <div class="content-box" id="adminPolygonCoordsBox" style="display: none; border-left: 3px solid #0284c7;">
+              <div class="box-header" style="margin-bottom: 0.4rem;">
+                <div class="box-title" style="color: #0284c7;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 22 22 22"/><circle cx="12" cy="2" r="2" fill="#0284c7"/><circle cx="2" cy="22" r="2" fill="#0284c7"/><circle cx="22" cy="22" r="2" fill="#0284c7"/></svg>
+                  <span>Koordinat polygon_coords (Admin)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span id="badgePolygonCoordsSource" class="badge-pill blue" style="font-size: 0.65rem;">ASLI BPN</span>
+                  <span id="badgePolygonCoordsCount" class="badge-pill blue" style="font-size: 0.65rem;">0 Patok</span>
+                </div>
+              </div>
+              <div style="font-size: 0.69rem; color: var(--text-sub); margin-bottom: 0.4rem; line-height: 1.35;">
+                Daftar koordinat batas patok asli dari respon BPN / WMS (format Latitude, Longitude WGS 84):
+              </div>
+              <textarea id="adminPolygonCoordsText" readonly class="form-control" rows="4" style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; line-height: 1.4; resize: vertical; margin-bottom: 0.45rem; background: var(--bg-alt);"></textarea>
+              <div style="display: flex; gap: 0.4rem;">
+                <button type="button" class="btn btn-outline" onclick="copyAdminPolygonCoords()" style="flex: 1; font-size: 0.7rem; justify-content: center; height: 32px;" title="Salin seluruh koordinat patok ke clipboard">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Salin</span>
+                </button>
+                <button type="button" class="btn btn-outline" onclick="swapAdminPolygonCoordsOrder()" style="flex: 1.1; font-size: 0.7rem; justify-content: center; height: 32px;" title="Tukar urutan format Lat, Lng ⇄ Lng, Lat">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg>
+                  <span>Tukar Lat ⇄ Lng</span>
+                </button>
+                <button type="button" class="btn btn-primary" onclick="sendPolygonCoordsToBatchInput()" style="flex: 1.2; font-size: 0.7rem; justify-content: center; height: 32px; background-color: var(--accent); color: #ffffff;" title="Masukkan koordinat ke Lembar Buat Bidang (Tab Digitasi)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  <span>Ke Lembar Bidang</span>
+                </button>
+              </div>
+            </div>
+
             <div class="content-box" id="boxEkspor">
               <div class="box-header" style="margin-bottom: 0.4rem;">
                 <div class="box-title">
@@ -1042,8 +1073,12 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                 <span>Plot &amp; Buat Bidang</span>
               </button>
-              <button type="button" class="btn btn-outline" onclick="document.getElementById('batchCoordsInput').value=''" style="flex: 1;">
-                Bersihkan
+              <button type="button" class="btn btn-outline" onclick="swapBatchCoordsOrder()" style="flex: 1.1; font-size: 0.7rem; justify-content: center; gap: 0.3rem;" title="Tukar urutan Latitude dan Longitude (Lat, Lng ⇄ Lng, Lat)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg>
+                <span>Tukar Lat ⇄ Lng</span>
+              </button>
+              <button type="button" class="btn btn-outline" onclick="document.getElementById('batchCoordsInput').value=''" style="flex: 0.8; font-size: 0.7rem; justify-content: center;">
+                <span>Bersihkan</span>
               </button>
             </div>
           </div>
@@ -2324,7 +2359,7 @@
   </div>
   </div>
 
-  <script src="assets/sec/duta-shield.js?v=0.99"></script>
+  <script src="assets/sec/duta-shield.js?v=0.101"></script>
   <div id="toastContainer" class="toast-container"></div>
 </body>
 </html>

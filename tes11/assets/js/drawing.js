@@ -1,9 +1,51 @@
-function createPolygonFromBatchCoords() {
-      const raw = document.getElementById('batchCoordsInput')?.value.trim();
-      if (!raw) {
-        showToast('Masukkan daftar koordinat terlebih dahulu.', 'warn');
-        return;
+function swapBatchCoordinatesText(raw) {
+  if (!raw || !raw.trim()) return '';
+  const lines = raw.split(/\r?\n/);
+  const swappedLines = lines.map(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) {
+      return line;
+    }
+    const parts = trimmed.split(/[,\s\t;]+/).filter(Boolean);
+    if (parts.length === 2) {
+      return `${parts[1]}, ${parts[0]}`;
+    } else if (parts.length === 3) {
+      if (isNaN(parseFloat(parts[0]))) {
+        return `${parts[0]}, ${parts[2]}, ${parts[1]}`;
+      } else {
+        return `${parts[1]}, ${parts[0]}, ${parts[2]}`;
       }
+    } else if (parts.length > 3) {
+      if (isNaN(parseFloat(parts[0]))) {
+        const extra = parts.slice(3).join(', ');
+        return `${parts[0]}, ${parts[2]}, ${parts[1]}, ${extra}`;
+      } else {
+        const extra = parts.slice(2).join(', ');
+        return `${parts[1]}, ${parts[0]}, ${extra}`;
+      }
+    }
+    return line;
+  });
+  return swappedLines.join('\n');
+}
+
+function swapBatchCoordsOrder() {
+  const input = document.getElementById('batchCoordsInput');
+  if (!input || !input.value.trim()) {
+    showToast('Masukkan atau tempel daftar koordinat terlebih dahulu.', 'warn');
+    return;
+  }
+  const swapped = swapBatchCoordinatesText(input.value);
+  input.value = swapped;
+  showToast('Urutan koordinat berhasil ditukar (Lat ⇄ Lng).', 'success');
+}
+
+function createPolygonFromBatchCoords() {
+  const raw = document.getElementById('batchCoordsInput')?.value.trim();
+  if (!raw) {
+    showToast('Masukkan daftar koordinat terlebih dahulu.', 'warn');
+    return;
+  }
       const lines = raw.split(/\r?\n/);
       const pts = [];
       for (let idx = 0; idx < lines.length; idx++) {
@@ -213,6 +255,11 @@ Server Sumber Data: ${serverName}`;
       const elHutan = document.getElementById('pinHutanText'); if (elHutan) elHutan.innerText = '-';
       const elZnt = document.getElementById('pinZntText'); if (elZnt) elZnt.innerText = '-';
       const elZntRange = document.getElementById('pinZntRangeText'); if (elZntRange) elZntRange.innerText = '-';
+
+      const elAdminCoordsBox = document.getElementById('adminPolygonCoordsBox');
+      if (elAdminCoordsBox) elAdminCoordsBox.style.display = 'none';
+      const elAdminCoordsText = document.getElementById('adminPolygonCoordsText');
+      if (elAdminCoordsText) elAdminCoordsText.value = '';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';
@@ -1043,6 +1090,7 @@ Server Sumber Data: ${serverName}`;
       if (vertexMarkers && vertexMarkers.length > 0) vertexMarkers.forEach(m => { if (typeof m.setZIndexOffset === 'function') m.setZIndexOffset(2000); });
       if (vertexAddMarkers && vertexAddMarkers.length > 0) vertexAddMarkers.forEach(m => { if (typeof m.setZIndexOffset === 'function') m.setZIndexOffset(1500); });
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
+      if (typeof updateAdminPolygonCoordsUI === 'function') updateAdminPolygonCoordsUI(activeVertices);
     }
 
     function renderVertexHandles() {
@@ -3036,5 +3084,7 @@ Server Sumber Data: ${serverName}`;
     window.handleMergeParcelClick = handleMergeParcelClick;
     window.clientSideMergeParcels = clientSideMergeParcels;
     window.getCleanParcelTitle = getCleanParcelTitle;
+    window.swapBatchCoordinatesText = swapBatchCoordinatesText;
+    window.swapBatchCoordsOrder = swapBatchCoordsOrder;
 
 
