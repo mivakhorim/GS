@@ -1425,25 +1425,28 @@ function exportCoordinatesXls() {
           const cy = ty(u.y);
           const label = `${pfx}${idx + 1}`;
 
-          svg += `<rect x="${cx - 3.5}" y="${cy - 3.5}" width="7" height="7" fill="#ffffff" stroke="${color}" stroke-width="1" transform="rotate(45 ${cx} ${cy})"/>`;
+          svg += `<rect x="${cx - 3.5}" y="${cy - 3.5}" width="7" height="7" fill="#ffffff" stroke="${color}" stroke-width="1.2" transform="rotate(45 ${cx} ${cy})"/>`;
           svg += `<circle cx="${cx}" cy="${cy}" r="1.5" fill="${color}"/>`;
 
           const angle = Math.atan2(
             ty(uList[(idx + 1) % uList.length].y) - ty(uList[(idx + uList.length - 1) % uList.length].y),
             tx(uList[(idx + 1) % uList.length].x) - tx(uList[(idx + uList.length - 1) % uList.length].x)
           );
-          const labelDist = 14;
+          const labelDist = 12;
           const perpAngle = angle + Math.PI / 2;
           let lx = cx + Math.cos(perpAngle) * labelDist;
           let ly = cy + Math.sin(perpAngle) * labelDist;
 
-          if (lx < margin.left + 5) lx = cx + 10;
-          if (lx > margin.left + plotW - 5) lx = cx - 10;
-          if (ly < margin.top + 5) ly = cy + 12;
-          if (ly > margin.top + plotH - 5) ly = cy - 8;
+          if (lx < margin.left + 8) lx = cx + 12;
+          if (lx > margin.left + plotW - 8) lx = cx - 12;
+          if (ly < margin.top + 8) ly = cy + 12;
+          if (ly > margin.top + plotH - 8) ly = cy - 12;
 
-          svg += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="${color}" font-size="7" font-weight="700" text-anchor="middle">${label}</text>`;
-          svg += `<text x="${lx.toFixed(1)}" y="${(ly + 7).toFixed(1)}" fill="#475569" font-size="4.2" text-anchor="middle">(${u.x.toFixed(2)}, ${u.y.toFixed(2)})</text>`;
+          const pBadgeW = Math.max(label.length * 5 + 8, 16);
+          svg += `<g transform="translate(${lx.toFixed(1)},${ly.toFixed(1)})">`;
+          svg += `<rect x="-${(pBadgeW / 2).toFixed(1)}" y="-6" width="${pBadgeW.toFixed(1)}" height="12" rx="2" fill="#ffffff" stroke="${color}" stroke-width="0.8"/>`;
+          svg += `<text x="0" y="2.8" fill="${color}" font-size="6" font-weight="800" text-anchor="middle">${label}</text>`;
+          svg += `</g>`;
         });
 
         for (let i = 0; i < uList.length; i++) {
@@ -1456,14 +1459,18 @@ function exportCoordinatesXls() {
           let dispAngle = edgeAngle;
           if (dispAngle > 90) dispAngle -= 180;
           if (dispAngle < -90) dispAngle += 180;
-          const perpOff = 6;
+          const perpOff = 7;
           const perpRad = (edgeAngle + 90) * Math.PI / 180;
           const dmx = mx + Math.cos(perpRad) * perpOff;
           const dmy = my + Math.sin(perpRad) * perpOff;
 
+          const distStr = `${dist.toFixed(2)} m`;
+          const badgeW = Math.max(distStr.length * 4.2 + 8, 28);
+          const badgeH = 10;
+
           svg += `<g transform="translate(${dmx.toFixed(1)},${dmy.toFixed(1)}) rotate(${dispAngle.toFixed(1)})">`;
-          svg += `<rect x="-18" y="-5" width="36" height="9" rx="1.5" fill="#ffffff" fill-opacity="0.92" stroke="#cbd5e1" stroke-width="0.3"/>`;
-          svg += `<text x="0" y="2.5" fill="#b91c1c" font-size="5.5" font-weight="700" text-anchor="middle">${dist.toFixed(2)} m</text>`;
+          svg += `<rect x="-${(badgeW / 2).toFixed(1)}" y="-${(badgeH / 2).toFixed(1)}" width="${badgeW.toFixed(1)}" height="${badgeH}" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.5"/>`;
+          svg += `<text x="0" y="2.5" fill="#b91c1c" font-size="5.5" font-weight="700" text-anchor="middle">${distStr}</text>`;
           svg += `</g>`;
         }
       });
@@ -1471,8 +1478,8 @@ function exportCoordinatesXls() {
       const naX = margin.left + plotW + 30;
       const naY = margin.top + 10;
       svg += `<g transform="translate(${naX},${naY})">`;
-      svg += `<line x1="0" y1="40" x2="0" y2="0" stroke="#0f172a" stroke-width="1.5" marker-end="url(#arrowN)"/>`;
-      svg += `<text x="0" y="-6" fill="#0f172a" font-size="9" font-weight="800" text-anchor="middle">U</text>`;
+      svg += `<line x1="0" y1="36" x2="0" y2="0" stroke="#0f172a" stroke-width="1.5" marker-end="url(#arrowN)"/>`;
+      svg += `<text x="0" y="-5" fill="#0f172a" font-size="8.5" font-weight="800" text-anchor="middle">U</text>`;
       svg += `</g>`;
       svg += `<defs><marker id="arrowN" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,6 L3,0 L6,6 Z" fill="#0f172a"/></marker></defs>`;
 
@@ -1488,10 +1495,11 @@ function exportCoordinatesXls() {
       svg += `<text x="${sbX + sbPx / 2}" y="${sbY + 10}" fill="#0f172a" font-size="6" text-anchor="middle" font-weight="600">0          ${sbMeters} m</text>`;
       svg += `<text x="${sbX + sbPx / 2}" y="${sbY + 17}" fill="#64748b" font-size="4.5" text-anchor="middle">Proyeksi UTM WGS 84 Zona ${zoneStr}</text>`;
 
-      const tbX = svgW - margin.right + 30;
-      const tbY = margin.top + 70;
-      const tbW = margin.right - 40;
-      svg += `<rect x="${tbX}" y="${tbY}" width="${tbW}" height="230" fill="#f8fafc" stroke="#0f172a" stroke-width="0.8" rx="2"/>`;
+      const tbX = svgW - margin.right + 25;
+      const tbY = margin.top - 10;
+      const tbW = margin.right - 35;
+      const tbH = 265;
+      svg += `<rect x="${tbX}" y="${tbY}" width="${tbW}" height="${tbH}" fill="#f8fafc" stroke="#0f172a" stroke-width="0.8" rx="2"/>`;
 
       const rows = [
         ['GAMBAR PERSIL', ''],
@@ -1514,46 +1522,53 @@ function exportCoordinatesXls() {
       let ry = tbY + 6;
       rows.forEach((r, i) => {
         if (i === 0) {
-          svg += `<text x="${tbX + tbW / 2}" y="${ry + 8}" fill="#0f172a" font-size="8" font-weight="800" text-anchor="middle">${r[0]}</text>`;
-          ry += 13;
+          svg += `<text x="${tbX + tbW / 2}" y="${ry + 7}" fill="#0f172a" font-size="7.5" font-weight="800" text-anchor="middle">${r[0]}</text>`;
+          ry += 11;
         } else if (i === 1) {
-          svg += `<text x="${tbX + tbW / 2}" y="${ry + 5}" fill="#0369a1" font-size="6" font-weight="600" text-anchor="middle">${r[0]}</text>`;
+          svg += `<text x="${tbX + tbW / 2}" y="${ry + 5}" fill="#0369a1" font-size="6" font-weight="700" text-anchor="middle">${r[0]}</text>`;
           svg += `<line x1="${tbX + 4}" y1="${ry + 9}" x2="${tbX + tbW - 4}" y2="${ry + 9}" stroke="#cbd5e1" stroke-width="0.5"/>`;
-          ry += 14;
+          ry += 13;
         } else {
-          svg += `<text x="${tbX + 5}" y="${ry + 8}" fill="#475569" font-size="5" font-weight="600">${r[0]}</text>`;
-          svg += `<text x="${tbX + tbW - 5}" y="${ry + 8}" fill="#0f172a" font-size="5" font-weight="700" text-anchor="end">${r[1]}</text>`;
+          svg += `<text x="${tbX + 5}" y="${ry + 8}" fill="#475569" font-size="4.8" font-weight="600">${r[0]}</text>`;
+          svg += `<text x="${tbX + tbW - 5}" y="${ry + 8}" fill="#0f172a" font-size="4.8" font-weight="700" text-anchor="end">${r[1]}</text>`;
           if (i < rows.length - 1) {
-            svg += `<line x1="${tbX + 4}" y1="${ry + 12}" x2="${tbX + tbW - 4}" y2="${ry + 12}" stroke="#e2e8f0" stroke-width="0.25"/>`;
+            svg += `<line x1="${tbX + 4}" y1="${ry + 11}" x2="${tbX + tbW - 4}" y2="${ry + 11}" stroke="#e2e8f0" stroke-width="0.25"/>`;
           }
-          ry += 14;
+          ry += 12.5;
         }
       });
 
       svg += `<line x1="${tbX + 4}" y1="${ry + 2}" x2="${tbX + tbW - 4}" y2="${ry + 2}" stroke="#0f172a" stroke-width="0.5"/>`;
-      svg += `<text x="${tbX + tbW / 2}" y="${ry + 12}" fill="#0f172a" font-size="4.5" font-weight="700" text-anchor="middle">Duta Digital Agensi</text>`;
-      svg += `<text x="${tbX + tbW / 2}" y="${ry + 18}" fill="#64748b" font-size="3.8" text-anchor="middle">dutamik.id</text>`;
-      svg += `<text x="${tbX + tbW / 2}" y="${ry + 23}" fill="#64748b" font-size="3.5" text-anchor="middle">Duta Media Informasi berKarya</text>`;
-      svg += `<text x="${tbX + tbW / 2}" y="${ry + 28}" fill="#94a3b8" font-size="3.2" text-anchor="middle">Sukoharjo, Jawa Tengah</text>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 11}" fill="#0f172a" font-size="4.5" font-weight="700" text-anchor="middle">Duta Digital Agensi</text>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 16}" fill="#0369a1" font-size="3.8" font-weight="600" text-anchor="middle">dutamik.id</text>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 21}" fill="#64748b" font-size="3.5" text-anchor="middle">Duta Media Informasi berKarya</text>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 26}" fill="#94a3b8" font-size="3.2" text-anchor="middle">Sukoharjo, Jawa Tengah</text>`;
+
+      const legY = tbY + tbH + 12;
+      const legH = 75;
+      svg += `<rect x="${tbX}" y="${legY}" width="${tbW}" height="${legH}" fill="#f8fafc" stroke="#0f172a" stroke-width="0.8" rx="2"/>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${legY + 11}" fill="#0f172a" font-size="6" font-weight="800" text-anchor="middle">LEGENDA PETA</text>`;
+      svg += `<line x1="${tbX + 6}" y1="${legY + 15}" x2="${tbX + tbW - 6}" y2="${legY + 15}" stroke="#cbd5e1" stroke-width="0.5"/>`;
+
+      svg += `<line x1="${tbX + 10}" y1="${legY + 26}" x2="${tbX + 30}" y2="${legY + 26}" stroke="#0a2e5c" stroke-width="1.8"/>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 28}" fill="#334155" font-size="4.8">Batas Bidang Persil</text>`;
+
+      svg += `<rect x="${tbX + 16}" y="${legY + 36}" width="6" height="6" fill="#ffffff" stroke="#0a2e5c" stroke-width="1" transform="rotate(45 ${tbX + 19} ${legY + 39})"/>`;
+      svg += `<circle cx="${tbX + 19}" cy="${legY + 39}" r="1.5" fill="#0a2e5c"/>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 41}" fill="#334155" font-size="4.8">Patok Batas Tanah</text>`;
+
+      svg += `<rect x="${tbX + 10}" y="${legY + 49}" width="20" height="8" fill="#dbeafe" fill-opacity="0.5" stroke="#0a2e5c" stroke-width="0.4"/>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 55}" fill="#334155" font-size="4.8">Area Bidang Persil</text>`;
+
+      svg += `<rect x="${tbX + 10}" y="${legY + 62}" width="20" height="7" rx="1.5" fill="#ffffff" stroke="#94a3b8" stroke-width="0.5"/>`;
+      svg += `<text x="${tbX + 20}" y="${legY + 67}" fill="#b91c1c" font-size="4" font-weight="700" text-anchor="middle">12.34 m</text>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 68}" fill="#334155" font-size="4.8">Dimensi Panjang Batas Sisi</text>`;
 
       svg += `<text x="${svgW / 2}" y="22" fill="#0f172a" font-size="12" font-weight="800" text-anchor="middle" letter-spacing="1">GAMBAR PERSIL BIDANG TANAH</text>`;
       svg += `<text x="${svgW / 2}" y="34" fill="#0369a1" font-size="7" font-weight="600" text-anchor="middle">PETA BIDANG KADASTRAL - DUTAGEOSPASI</text>`;
       svg += `<text x="${svgW / 2}" y="44" fill="#64748b" font-size="5" text-anchor="middle">${desa !== '-' ? `Desa ${desa}, Kec. ${kec}, ${kab}, ${prov}` : 'Lokasi Bidang Tanah'}</text>`;
 
-      svg += `<text x="${svgW / 2}" y="${svgH - 8}" fill="#94a3b8" font-size="4" text-anchor="middle">Dihasilkan otomatis oleh DutaGeoSpasi (geospasi.dutamik.id) - Duta Digital Agensi (dutamik.id) - Sukoharjo, Jawa Tengah</text>`;
-
-      svg += `<g transform="translate(${margin.left + plotW + 30},${margin.top + plotH - 80})">`;
-      svg += `<text x="0" y="0" fill="#0f172a" font-size="6" font-weight="700">LEGENDA</text>`;
-      svg += `<line x1="0" y1="6" x2="50" y2="6" stroke="#cbd5e1" stroke-width="0.4"/>`;
-      svg += `<line x1="0" y1="16" x2="20" y2="16" stroke="#0a2e5c" stroke-width="1.8"/>`;
-      svg += `<text x="24" y="18" fill="#334155" font-size="5">Batas Bidang</text>`;
-      svg += `<rect x="5" y="24" width="5" height="5" fill="#ffffff" stroke="#0a2e5c" stroke-width="0.8" transform="rotate(45 7.5 26.5)"/>`;
-      svg += `<text x="24" y="30" fill="#334155" font-size="5">Patok Batas</text>`;
-      svg += `<rect x="0" y="36" width="20" height="8" fill="#dbeafe" fill-opacity="0.5" stroke="#0a2e5c" stroke-width="0.4"/>`;
-      svg += `<text x="24" y="42" fill="#334155" font-size="5">Area Bidang</text>`;
-      svg += `<text x="0" y="56" fill="#b91c1c" font-size="5" font-weight="600">12.34 m</text>`;
-      svg += `<text x="0" y="63" fill="#334155" font-size="4.5">Jarak Batas (m)</text>`;
-      svg += `</g>`;
+      svg += `<text x="${svgW / 2}" y="${svgH - 8}" fill="#94a3b8" font-size="4" text-anchor="middle">Dihasilkan otomatis oleh DutaGeoSpasi (geospasi.dutamik.id) : Duta Digital Agensi (dutamik.id) : Sukoharjo, Jawa Tengah</text>`;
 
       const coordTableY = margin.top + plotH + 55;
       const colW = 90;

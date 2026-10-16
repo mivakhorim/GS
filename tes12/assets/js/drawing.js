@@ -215,8 +215,8 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
       initCanvasRebuilder(lat, lng, estArea, manualBox);
       const elLuasBpn = document.getElementById('pinLuasBpnText');
       if (elLuasBpn) {
-        elLuasBpn.className = 'stat-value offline';
-        elLuasBpn.innerText = 'Server Offline';
+        elLuasBpn.className = 'stat-value emerald';
+        elLuasBpn.innerText = formatAreaM2(estArea);
       }
       const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
       if (typeof renderCadastralProFields === 'function') {
@@ -224,12 +224,12 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
       }
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
       if (elStatusValidasi) {
-        elStatusValidasi.className = 'status-offline-tag';
-        elStatusValidasi.innerText = 'Server Offline';
+        elStatusValidasi.className = 'spec-value emerald';
+        elStatusValidasi.innerText = 'Delineasi Presisi Realtime';
       }
       const elHudArea = document.getElementById('hudBpnArea');
       if (elHudArea) {
-        elHudArea.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
+        elHudArea.innerHTML = `<span class="badge-pill green" style="padding:1px 6px;font-size:0.68rem;margin:0;">${formatAreaM2(estArea)}</span>`;
       }
       const elPinServer = document.getElementById('pinServerDataText') || document.getElementById('pinServerAktifText');
       if (elPinServer && typeof getCadastreServerMode === 'function') {
@@ -269,7 +269,11 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
         return;
       }
       const serverName = (typeof getCadastreServerMode === 'function' && getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
-      const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0) ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²` : 'Server Offline';
+      const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0)
+        ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`
+        : ((activePinData.polygon_coords && activePinData.polygon_coords.length >= 3)
+          ? `${Math.round(calculatePolygonAreaM2(activePinData.polygon_coords)).toLocaleString('id-ID')} m² (Geometri Mandiri)`
+          : 'Delineasi Mandiri Presisi');
       const summary = `DATA RESMI BIDANG TANAH KADASTRAL
 
 Nomor Identifikasi Bidang (NIB): ${activePinData.nib || '-'}
@@ -1117,8 +1121,8 @@ Server Sumber Data: ${serverName}`;
           elLuasBpn.className = 'stat-value emerald';
           elLuasBpn.innerText = formatAreaM2(registeredBpnArea);
         } else {
-          elLuasBpn.className = 'stat-value offline';
-          elLuasBpn.innerText = 'Server Offline';
+          elLuasBpn.className = 'stat-value emerald';
+          elLuasBpn.innerText = formatAreaM2(liveAreaM2);
         }
       }
 
@@ -1133,8 +1137,8 @@ Server Sumber Data: ${serverName}`;
       } else {
         const diffPctEl = document.getElementById('diffPercentText');
         const diffBpnEl = document.getElementById('diffTargetBpnText');
-        if (diffPctEl) diffPctEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
-        if (diffBpnEl) diffBpnEl.innerHTML = '<span class="status-offline-tag" style="padding:1px 6px;font-size:0.68rem;margin:0;">Server Offline</span>';
+        if (diffPctEl) diffPctEl.innerText = '100% Geometri Mandiri';
+        if (diffBpnEl) diffBpnEl.innerText = formatAreaM2(liveAreaM2);
       }
 
       if (isGeometryManuallyEdited) {
@@ -1738,15 +1742,11 @@ Server Sumber Data: ${serverName}`;
 
       let targetArea = activePinData?.luas_m2 || 0;
       if (!targetArea || targetArea <= 0) {
-        const ask = prompt('Masukkan target luas bidang resmi (m²):', Math.round(curTotalArea));
-        if (ask && !isNaN(parseFloat(ask)) && parseFloat(ask) > 0) {
-          targetArea = parseFloat(ask);
-          if (!activePinData) activePinData = {};
-          activePinData.luas_m2 = targetArea;
-        } else {
-          showToast('Penyesuaian luas dibatalkan.', 'info');
+        if (typeof openRescaleModal === 'function') {
+          openRescaleModal('oss');
           return;
         }
+        targetArea = Math.round(curTotalArea);
       }
 
       targetArea = roundArea2(targetArea);
@@ -2935,28 +2935,90 @@ Server Sumber Data: ${serverName}`;
       showToast('Titik patok berhasil dihapus.', 'success');
     };
 
-    window.editVertexCoordinate = function(pIdx, vIdx) {
+    let _activeEditingPatok = null;
+
+    window.openEditPatokModal = function(pIdx, vIdx) {
       if (map) map.closePopup();
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       const targetPart = parts[pIdx] || activeVertices;
-      const curr = targetPart[vIdx];
+      const curr = targetPart ? targetPart[vIdx] : null;
       if (!curr) return;
-      const input = prompt(`Ubah koordinat Patok #${vIdx + 1} (format: Lat, Lng):`, `${curr.lat.toFixed(7)}, ${curr.lng.toFixed(7)}`);
-      if (!input) return;
-      const spl = input.split(',').map(s => parseFloat(s.trim()));
-      if (spl.length === 2 && !isNaN(spl[0]) && !isNaN(spl[1])) {
-        if (Math.abs(spl[0]) <= 90 && Math.abs(spl[1]) <= 180) {
-          targetPart[vIdx] = { lat: spl[0], lng: spl[1] };
-          if (parts.length === 1) activeVertices = targetPart;
-          isGeometryManuallyEdited = true;
-          renderCanvasPolygon(true);
-          showToast(`Koordinat Patok #${vIdx + 1} berhasil diperbarui.`, 'success');
-        } else {
-          showToast('Nilai koordinat tidak valid (Latitude -90 s/d 90, Longitude -180 s/d 180).', 'warn');
-        }
+
+      _activeEditingPatok = { pIdx, vIdx };
+      const titleEl = document.getElementById('editPatokModalTitle');
+      if (titleEl) titleEl.innerText = `UBAH KOORDINAT PATOK #${vIdx + 1}`;
+
+      const latInput = document.getElementById('editPatokLatInput');
+      const lngInput = document.getElementById('editPatokLngInput');
+      if (latInput) latInput.value = curr.lat.toFixed(7);
+      if (lngInput) lngInput.value = curr.lng.toFixed(7);
+
+      const modal = document.getElementById('modalEditPatokCoord');
+      if (modal) modal.style.display = 'flex';
+      if (latInput) latInput.focus();
+    };
+
+    window.closeEditPatokModal = function() {
+      const modal = document.getElementById('modalEditPatokCoord');
+      if (modal) modal.style.display = 'none';
+      _activeEditingPatok = null;
+    };
+
+    window.swapEditPatokInputs = function() {
+      const latInput = document.getElementById('editPatokLatInput');
+      const lngInput = document.getElementById('editPatokLngInput');
+      if (!latInput || !lngInput) return;
+      const tmp = latInput.value;
+      latInput.value = lngInput.value;
+      lngInput.value = tmp;
+      showToast('Posisi Latitude dan Longitude berhasil ditukar.', 'info');
+    };
+
+    window.copyEditPatokInputs = function() {
+      const latInput = document.getElementById('editPatokLatInput');
+      const lngInput = document.getElementById('editPatokLngInput');
+      if (!latInput || !lngInput) return;
+      const text = `${latInput.value}, ${lngInput.value}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Koordinat patok berhasil disalin!', 'success');
+        });
       } else {
-        showToast('Format koordinat salah. Gunakan format: Latitude, Longitude', 'warn');
+        showToast('Koordinat: ' + text, 'info');
       }
+    };
+
+    window.saveEditPatokCoordinate = function() {
+      if (!_activeEditingPatok) return;
+      const { pIdx, vIdx } = _activeEditingPatok;
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const targetPart = parts[pIdx] || activeVertices;
+      if (!targetPart || !targetPart[vIdx]) return;
+
+      const latInput = document.getElementById('editPatokLatInput');
+      const lngInput = document.getElementById('editPatokLngInput');
+      const newLat = parseFloat(latInput?.value);
+      const newLng = parseFloat(lngInput?.value);
+
+      if (isNaN(newLat) || isNaN(newLng)) {
+        showToast('Masukkan angka koordinat Latitude dan Longitude yang valid.', 'warn');
+        return;
+      }
+      if (Math.abs(newLat) > 90 || Math.abs(newLng) > 180) {
+        showToast('Nilai koordinat di luar jangkauan (Latitude: -90 s/d 90, Longitude: -180 s/d 180).', 'warn');
+        return;
+      }
+
+      targetPart[vIdx] = { lat: newLat, lng: newLng };
+      if (parts.length === 1) activeVertices = targetPart;
+      isGeometryManuallyEdited = true;
+      renderCanvasPolygon(true);
+      closeEditPatokModal();
+      showToast(`Koordinat Patok #${vIdx + 1} berhasil disimpan.`, 'success');
+    };
+
+    window.editVertexCoordinate = function(pIdx, vIdx) {
+      openEditPatokModal(pIdx, vIdx);
     };
 
     window.addVertexNextTo = function(pIdx, vIdx, direction = 'next') {

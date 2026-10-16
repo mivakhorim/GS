@@ -139,7 +139,24 @@ function getBpnGatewayBase() {
       const maxLng = bounds.getEast();
 
       const persilBase = getBpnGatewayBase();
-      if (!persilBase) return;
+      if (!persilBase) {
+        const center = map.getCenter();
+        const centerKey = `${center.lat.toFixed(5)},${center.lng.toFixed(5)}`;
+        if (!cadastreVectorParcelCache.has(centerKey)) {
+          isViewportVectorLoading = true;
+          try {
+            const data = await fetchPersilCadastreData(center.lat, center.lng, zoom);
+            if (data && data.found && Array.isArray(data.polygon_coords) && data.polygon_coords.length >= 3) {
+              cadastreVectorParcelCache.set(centerKey, true);
+              renderCadastreVectorParcels([data]);
+            }
+          } catch (e) {
+          } finally {
+            isViewportVectorLoading = false;
+          }
+        }
+        return;
+      }
       const url = `${persilBase}/api/viewport-parcels?min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}`;
 
       isViewportVectorLoading = true;
@@ -162,6 +179,24 @@ function getBpnGatewayBase() {
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.85;
 
+      let strokeColor = '#e65100';
+      let fillColor = '#ff9800';
+      let dashStyle = null;
+      if (currentCadastreStreamMode === 'vector_mvt') {
+        strokeColor = '#0284c7';
+        fillColor = '#38bdf8';
+      } else if (currentCadastreStreamMode === 'vector_wfs') {
+        strokeColor = '#16a34a';
+        fillColor = '#4ade80';
+        dashStyle = '4,4';
+      } else if (currentCadastreStreamMode === 'raster_wms') {
+        strokeColor = '#ea580c';
+        fillColor = '#f97316';
+      } else if (currentCadastreStreamMode === 'raster_arcgis') {
+        strokeColor = '#4f46e5';
+        fillColor = '#818cf8';
+      }
+
       parcelsList.forEach(parcel => {
         const coords = parcel.polygon_coords || parcel.coordinates;
         if (!coords || coords.length < 3 || coords.length > 12) return;
@@ -171,11 +206,12 @@ function getBpnGatewayBase() {
         const latlngs = coords.map(c => [c.lat, c.lng]);
         const polyLayer = L.polygon(latlngs, {
           renderer: cadastreSvgRenderer,
-          color: '#e65100',
-          weight: 1.6,
+          color: strokeColor,
+          weight: 1.8,
+          dashArray: dashStyle,
           opacity: currentOpacity,
-          fillColor: '#ff9800',
-          fillOpacity: currentOpacity * 0.12,
+          fillColor: fillColor,
+          fillOpacity: currentOpacity * 0.16,
           pane: 'cadastreVectorPane',
           interactive: true
         });
@@ -443,17 +479,17 @@ function getBpnGatewayBase() {
           zIndex: 370
         });
       } else {
-        persilLayer = createAuthTileLayer(`${sbUrl}/functions/v1/cadastre-gateway?action=tile&z={z}&x={x}&y={y}`, {
+        persilLayer = L.tileLayer.wms('https://igtpr.atrbpn.go.id/geoserver/ows', {
+          layers: 'igt:CONTOH_BIDANG_TANAH,igt:shp_65e5764be0628,igt:shp_65e55601c0571',
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
           pane: 'cadastrePane',
           minZoom: 14,
           maxZoom: 26,
-          maxNativeZoom: 19,
+          maxNativeZoom: 20,
           opacity: initialOpacity,
-          zIndex: 370,
-          headers: {
-            'apikey': sbKey,
-            'Authorization': 'Bearer ' + sbKey
-          }
+          zIndex: 370
         });
       }
 
@@ -495,7 +531,15 @@ function getBpnGatewayBase() {
       lbs: null,
       peruntukan: null,
       rtrw: null,
-      jalan: null
+      rdtr: null,
+      znt: null,
+      jalan: null,
+      hak_milik: null,
+      hgu: null,
+      hgb: null,
+      hpl: null,
+      hak_ulayat: null,
+      kkpr: null
     };
 
     function getLayerCapKey(layerKey) {
@@ -509,6 +553,8 @@ function getBpnGatewayBase() {
         'hutan': 'igt:shp_65e67d1d52339',
         'znt': 'igt:Zona Nilai Tanah',
         'peruntukan': 'igt:shp_65fd03206e250',
+        'rtrw': 'igt:shp_65fd03206e250',
+        'rdtr': 'igt:shp_65f2b84304948',
         'hak_milik': 'igt:shp_65e5764be0628',
         'hgu': 'igt:shp_661f36ba02a19',
         'hgb': 'igt:shp_65e55601c0571',
@@ -531,7 +577,7 @@ function getBpnGatewayBase() {
           layers: igtprLayerMap[layerKey],
           format: 'image/png',
           transparent: true,
-          srs: 'EPSG:3857',
+          version: '1.1.1',
           pane: 'thematicPane',
           maxZoom: 26,
           maxNativeZoom: 20,
@@ -1307,9 +1353,13 @@ function getBpnGatewayBase() {
             if (activePinData.luas_m2 > 0) {
               elLuasBpn.className = 'stat-value emerald';
               elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+            } else if (activePinData.polygon_coords && activePinData.polygon_coords.length >= 3) {
+              const calcLuas = (typeof calculatePolygonAreaM2 === 'function') ? calculatePolygonAreaM2(activePinData.polygon_coords) : 0;
+              elLuasBpn.className = 'stat-value emerald';
+              elLuasBpn.innerText = (calcLuas > 0) ? `${Math.round(calcLuas).toLocaleString('id-ID')} m²` : 'Delineasi Bidang Mandiri';
             } else {
-              elLuasBpn.className = 'stat-value offline';
-              elLuasBpn.innerText = 'Belum Terhubung Server';
+              elLuasBpn.className = 'stat-value emerald';
+              elLuasBpn.innerText = 'Delineasi Bidang Mandiri';
             }
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
@@ -1761,6 +1811,36 @@ function getBpnGatewayBase() {
     var arcgisExportOverlay = null;
     var arcgisMoveEndHandler = null;
 
+    function applyCadastreVectorStyle(mode) {
+      if (!cadastreVectorLayer) return;
+      let strokeColor = '#e65100';
+      let fillColor = '#ff9800';
+      let dashStyle = null;
+      if (mode === 'vector_mvt') {
+        strokeColor = '#0284c7';
+        fillColor = '#38bdf8';
+      } else if (mode === 'vector_wfs') {
+        strokeColor = '#16a34a';
+        fillColor = '#4ade80';
+        dashStyle = '4,4';
+      } else if (mode === 'raster_wms') {
+        strokeColor = '#ea580c';
+        fillColor = '#f97316';
+      } else if (mode === 'raster_arcgis') {
+        strokeColor = '#4f46e5';
+        fillColor = '#818cf8';
+      }
+      cadastreVectorLayer.eachLayer(layer => {
+        if (layer && typeof layer.setStyle === 'function') {
+          layer.setStyle({
+            color: strokeColor,
+            fillColor: fillColor,
+            dashArray: dashStyle
+          });
+        }
+      });
+    }
+
     async function activateRasterWmsStream() {
       if (!map) return;
       if (arcgisExportOverlay && map.hasLayer(arcgisExportOverlay)) {
@@ -1779,6 +1859,12 @@ function getBpnGatewayBase() {
           if (persilLayer.redraw) persilLayer.redraw();
         }
       }
+      setupCadastreVectorLayer();
+      if (cadastreVectorLayer && !map.hasLayer(cadastreVectorLayer)) {
+        cadastreVectorLayer.addTo(map);
+      }
+      applyCadastreVectorStyle('raster_wms');
+      loadViewportCadastreSvgParcels();
       const badge = document.getElementById('badgeStreamMode');
       if (badge) { badge.innerText = 'RASTER WMS'; badge.className = 'badge-pill blue'; }
     }
@@ -1829,8 +1915,25 @@ function getBpnGatewayBase() {
                 interactive: false
               }).addTo(map);
             }
+          } else {
+            throw new Error('Fallback ke IGTPR direct WMS');
           }
-        } catch (e) {}
+        } catch (e) {
+          const directWmsUrl = `https://igtpr.atrbpn.go.id/geoserver/ows?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=igt:CONTOH_BIDANG_TANAH,igt:shp_65e5764be0628,igt:shp_65e55601c0571&STYLES=&SRS=EPSG:4326&WIDTH=${width}&HEIGHT=${height}&BBOX=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
+          const slider = document.getElementById('persilOpacity');
+          const op = slider ? (parseFloat(slider.value) / 100) : 0.90;
+          if (arcgisExportOverlay && map.hasLayer(arcgisExportOverlay)) {
+            arcgisExportOverlay.setUrl(directWmsUrl);
+            arcgisExportOverlay.setBounds(bounds);
+          } else {
+            arcgisExportOverlay = L.imageOverlay(directWmsUrl, bounds, {
+              pane: 'cadastrePane',
+              opacity: op,
+              zIndex: 370,
+              interactive: false
+            }).addTo(map);
+          }
+        }
       }
 
       await refreshArcgisOverlay();
@@ -1843,6 +1946,12 @@ function getBpnGatewayBase() {
         };
         map.on('moveend', arcgisMoveEndHandler);
       }
+      setupCadastreVectorLayer();
+      if (cadastreVectorLayer && !map.hasLayer(cadastreVectorLayer)) {
+        cadastreVectorLayer.addTo(map);
+      }
+      applyCadastreVectorStyle('raster_arcgis');
+      loadViewportCadastreSvgParcels();
       const badge = document.getElementById('badgeStreamMode');
       if (badge) { badge.innerText = 'RASTER ARCGIS'; badge.className = 'badge-pill blue'; }
     }
@@ -1856,35 +1965,62 @@ function getBpnGatewayBase() {
         map.off('moveend', arcgisMoveEndHandler);
         arcgisMoveEndHandler = null;
       }
+      setupCadastreVectorLayer();
+      if (cadastreVectorLayer && !map.hasLayer(cadastreVectorLayer)) {
+        cadastreVectorLayer.addTo(map);
+      }
+      applyCadastreVectorStyle('vector_geojson');
+      loadViewportCadastreSvgParcels();
       const center = (activePinMarker && activePinMarker.getLatLng)
         ? activePinMarker.getLatLng()
         : map.getCenter();
       const zoom = map.getZoom() || 17;
-      showToast('Memuat geometri vektor bidang tanah dari portal resmi...', 'info');
       try {
         const persilData = await fetchPersilCadastreData(center.lat, center.lng, zoom);
         if (persilData && persilData.found && persilData.polygon_coords && persilData.polygon_coords.length >= 3) {
           initCanvasRebuilder(center.lat, center.lng, persilData.luas_m2, persilData.polygon_coords);
           showToast(`Bidang persil vektor terdeteksi: NIB ${persilData.nib || '-'} (${Math.round(persilData.luas_m2)} m²)`, 'success');
-        } else {
-          showToast('Tidak ada data bidang persil di titik tengah peta. Silakan klik bidang di peta.', 'warn');
         }
-      } catch (e) {
-        showToast('Gagal memuat stream vektor: ' + e.message, 'error');
-      }
+      } catch (e) {}
       const badge = document.getElementById('badgeStreamMode');
       if (badge) { badge.innerText = 'VEKTOR GEOJSON'; badge.className = 'badge-pill blue'; }
     }
 
     async function activateVectorMvtStream() {
-      await activateVectorGeojsonStream();
+      if (!map) return;
+      if (arcgisExportOverlay && map.hasLayer(arcgisExportOverlay)) {
+        map.removeLayer(arcgisExportOverlay);
+      }
+      if (arcgisMoveEndHandler) {
+        map.off('moveend', arcgisMoveEndHandler);
+        arcgisMoveEndHandler = null;
+      }
+      setupCadastreVectorLayer();
+      if (cadastreVectorLayer && !map.hasLayer(cadastreVectorLayer)) {
+        cadastreVectorLayer.addTo(map);
+      }
+      applyCadastreVectorStyle('vector_mvt');
+      loadViewportCadastreSvgParcels();
       const badge = document.getElementById('badgeStreamMode');
       if (badge) { badge.innerText = 'VEKTOR MVT'; badge.className = 'badge-pill blue'; }
       showToast('Stream Vektor MVT / PBF Aktif: Protokol Vector Tiles GPU diaktifkan.', 'info');
     }
 
     async function activateVectorWfsStream() {
-      await activateVectorGeojsonStream();
+      if (!map) return;
+      if (arcgisExportOverlay && map.hasLayer(arcgisExportOverlay)) {
+        map.removeLayer(arcgisExportOverlay);
+      }
+      if (arcgisMoveEndHandler) {
+        map.off('moveend', arcgisMoveEndHandler);
+        arcgisMoveEndHandler = null;
+      }
+      setupCadastreVectorLayer();
+      if (cadastreVectorLayer && !map.hasLayer(cadastreVectorLayer)) {
+        cadastreVectorLayer.addTo(map);
+      }
+      applyCadastreVectorStyle('vector_wfs');
+      loadViewportCadastreSvgParcels();
       const badge = document.getElementById('badgeStreamMode');
       if (badge) { badge.innerText = 'VEKTOR WFS'; badge.className = 'badge-pill blue'; }
       showToast('Stream OGC WFS 2.0.0 Aktif: Standar Satu Data Indonesia.', 'info');
@@ -2143,15 +2279,15 @@ function getBpnGatewayBase() {
       if (!container) return;
       if (streamMode === 'raster_arcgis') {
         container.innerHTML = `
-          <button type="button" class="btn btn-outline" onclick="exportArcgisWebMap('png', 'sd')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center;" title="Unduh gambar PNG standar (Free & PRO)">PNG (SD)</button>
-          <button type="button" class="btn btn-primary" onclick="exportArcgisWebMap('png', 'hd')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center; background: #4f46e5; color: #fff;" title="Unduh gambar Full HD 1080p (PRO)">Full HD</button>
-          <button type="button" class="btn btn-primary" onclick="exportArcgisWebMap('pdf', 'hd')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center; background: #3730a3; color: #fff;" title="Unduh dokumen PDF skala kadaster (PRO)">PDF Resmi</button>
+          <button type="button" class="btn btn-primary" onclick="generatePreciseWmsVectorPolygon()" style="padding: 3px 6px; font-size: 0.67rem; flex: 1.2; justify-content: center; background: #4f46e5; color: #fff;" title="Generate Poligon Vektor dari ArcGIS Web Map">Generate Vektor</button>
+          <button type="button" class="btn btn-outline" onclick="exportPersilSVG()" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center;" title="Unduh Poligon Vektor SVG">Vektor SVG</button>
+          <button type="button" class="btn btn-outline" onclick="if(typeof exportGeoJSON==='function') exportGeoJSON()" style="padding: 3px 6px; font-size: 0.67rem; flex: 0.9; justify-content: center;" title="Unduh GeoJSON">GeoJSON</button>
         `;
       } else if (streamMode === 'raster_wms') {
         container.innerHTML = `
-          <button type="button" class="btn btn-outline" onclick="exportWmsTileMap('png')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center;" title="Unduh tile PNG (Free & PRO)">PNG Tile</button>
-          <button type="button" class="btn btn-primary" onclick="exportWmsTileMap('webp')" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center; background: #0284c7; color: #fff;" title="Unduh tile WebP resolusi tinggi (PRO)">WebP High-Res</button>
           <button type="button" class="btn btn-primary" onclick="generatePreciseWmsVectorPolygon()" style="padding: 3px 6px; font-size: 0.67rem; flex: 1.2; justify-content: center; background: #ea580c; color: #fff;" title="Generate Poligon Vektor dari Garis WMS (is_bbox: false)">Generate Vektor</button>
+          <button type="button" class="btn btn-outline" onclick="exportPersilSVG()" style="padding: 3px 6px; font-size: 0.67rem; flex: 1; justify-content: center;" title="Unduh Poligon Vektor SVG">Vektor SVG</button>
+          <button type="button" class="btn btn-outline" onclick="if(typeof exportGeoJSON==='function') exportGeoJSON()" style="padding: 3px 6px; font-size: 0.67rem; flex: 0.9; justify-content: center;" title="Unduh GeoJSON">GeoJSON</button>
         `;
       } else {
         container.innerHTML = `
