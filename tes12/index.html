@@ -123,6 +123,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="data/admin_catalog.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -673,14 +674,10 @@
               <input type="checkbox" id="chkPersil" checked onchange="togglePersilLayer(this.checked)" style="accent-color: var(--accent);">
               Tampilkan Garis Batas Persil Kadastral
             </label>
-            <div class="form-group" style="margin-top: 0.4rem;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted);">
-                <span>Transparansi Layer</span>
-                <span id="opacityLabel" class="range-val">90%</span>
-              </div>
-              <div class="range-wrap">
-                <input type="range" id="persilOpacity" min="10" max="100" value="90" oninput="changePersilOpacity(this.value)" class="range-input">
-              </div>
+            <div class="transparency-control-bar">
+              <span class="transparency-label">Transparansi</span>
+              <input type="range" id="persilOpacity" min="10" max="100" value="90" oninput="changePersilOpacity(this.value)" class="range-input">
+              <span id="opacityLabel" class="transparency-value-pill">90%</span>
             </div>
             <button class="btn btn-outline" onclick="syncLiveBpnMap()" style="width: 100%; margin-top: 0.6rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.74rem;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
@@ -767,12 +764,10 @@
                   </label>
                   <span id="badgeCekingHutan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelHutan">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hutan', this.value)" class="range-input">
+                  <span id="opacityLabelHutan" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -788,12 +783,10 @@
                   </label>
                   <span id="badgeCekingLsd" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelLsd">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lsd', this.value)" class="range-input">
+                  <span id="opacityLabelLsd" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -809,12 +802,10 @@
                   </label>
                   <span id="badgeCekingLbs" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelLbs">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lbs', this.value)" class="range-input">
+                  <span id="opacityLabelLbs" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -830,12 +821,10 @@
                   </label>
                   <span id="badgeCekingPeruntukan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelPeruntukan">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('peruntukan', this.value)" class="range-input">
+                  <span id="opacityLabelPeruntukan" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -851,12 +840,10 @@
                   </label>
                   <span id="badgeCekingRtrw" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelRtrw">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rtrw', this.value)" class="range-input">
+                  <span id="opacityLabelRtrw" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -872,12 +859,10 @@
                   </label>
                   <span id="badgeCekingRdtr" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelRdtr">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rdtr', this.value)" class="range-input">
+                  <span id="opacityLabelRdtr" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -893,12 +878,10 @@
                   </label>
                   <span id="badgeCekingZnt" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelZnt">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('znt', this.value)" class="range-input">
+                  <span id="opacityLabelZnt" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -914,12 +897,10 @@
                   </label>
                   <span id="badgeCekingJalan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelJalan">85%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="85" oninput="changeCekingOpacity('jalan', this.value)" class="range-input">
+                  <span id="opacityLabelJalan" class="transparency-value-pill">85%</span>
                 </div>
               </div>
 
@@ -950,12 +931,10 @@
                   </label>
                   <span id="badgeCekingHakMilik" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelHakMilik">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hak_milik', this.value)" class="range-input">
+                  <span id="opacityLabelHakMilik" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -971,12 +950,10 @@
                   </label>
                   <span id="badgeCekingHgu" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelHgu">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hgu', this.value)" class="range-input">
+                  <span id="opacityLabelHgu" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -992,12 +969,10 @@
                   </label>
                   <span id="badgeCekingHgb" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelHgb">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hgb', this.value)" class="range-input">
+                  <span id="opacityLabelHgb" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -1013,12 +988,10 @@
                   </label>
                   <span id="badgeCekingHpl" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelHpl">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hpl', this.value)" class="range-input">
+                  <span id="opacityLabelHpl" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -1034,12 +1007,10 @@
                   </label>
                   <span id="badgeCekingHakUlayat" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelHakUlayat">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hak_ulayat', this.value)" class="range-input">
+                  <span id="opacityLabelHakUlayat" class="transparency-value-pill">75%</span>
                 </div>
               </div>
 
@@ -1055,12 +1026,10 @@
                   </label>
                   <span id="badgeCekingKkpr" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
-                <div class="range-wrap" style="margin-top: 0.25rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>Transparansi</span>
-                    <span id="opacityLabelKkpr">75%</span>
-                  </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
                   <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('kkpr', this.value)" class="range-input">
+                  <span id="opacityLabelKkpr" class="transparency-value-pill">75%</span>
                 </div>
               </div>
             </div>
@@ -1497,7 +1466,7 @@
   </main>
 
   <div id="memberModal" class="modal-backdrop" onclick="if(event.target===this) closeMemberModal()">
-    <div class="modal-card" style="max-width: 460px; width: min(460px, calc(100vw - 2rem)); max-height: min(650px, calc(100dvh - 2.5rem));">
+    <div class="modal-card modal-card-wide" style="max-height: min(650px, calc(100dvh - 2rem));">
       <div class="modal-head" style="padding: 0.85rem 1.15rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1508,93 +1477,101 @@
         </button>
       </div>
 
-      <div class="modal-body" id="memberModalBodyGuest" style="padding: 1rem 1.15rem; gap: 0.85rem;">
-        <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.85rem 1rem; border-radius: var(--radius-sm);">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.35rem;">
-            <div>
-              <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Promo Akses Seumur Hidup</span>
-              <div style="display: flex; align-items: baseline; gap: 0.45rem; margin-top: 3px; flex-wrap: nowrap;">
-                <span style="font-size: clamp(1.1rem, 3.5vw, 1.35rem); font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; white-space: nowrap;">Rp 75.000</span>
-                <del style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">Rp 375.000</del>
-                <span style="font-size: 0.62rem; background-color: #dcfce7; color: #15803d; font-weight: 800; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px; white-space: nowrap;">HEMAT 80%</span>
+      <div class="modal-body" id="memberModalBodyGuest" style="padding: 1rem 1.15rem;">
+        <div class="modal-grid-2col">
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.85rem 1rem; border-radius: var(--radius-sm);">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.35rem;">
+                <div>
+                  <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Promo Akses Seumur Hidup</span>
+                  <div style="display: flex; align-items: baseline; gap: 0.45rem; margin-top: 3px; flex-wrap: nowrap;">
+                    <span style="font-size: clamp(1.1rem, 3.5vw, 1.35rem); font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; white-space: nowrap;">Rp 75.000</span>
+                    <del style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">Rp 375.000</del>
+                    <span style="font-size: 0.62rem; background-color: #dcfce7; color: #15803d; font-weight: 800; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px; white-space: nowrap;">HEMAT 80%</span>
+                  </div>
+                </div>
+                <span style="font-size: 0.7rem; color: var(--text-sub); font-weight: 700; white-space: nowrap;">Lifetime</span>
+              </div>
+              <div style="font-size: 0.74rem; color: var(--text-sub); margin-top: 0.45rem; line-height: 1.45;">
+                Akses penuh tool Ekspor Shapefile ESRI (.SHP .SHX .DBF .PRJ), CAD Script (.SCR), GeoJSON, Excel, dan Cetak Peta.
               </div>
             </div>
-            <span style="font-size: 0.7rem; color: var(--text-sub); font-weight: 700; white-space: nowrap;">Lifetime</span>
-          </div>
-          <div style="font-size: 0.74rem; color: var(--text-sub); margin-top: 0.45rem; line-height: 1.45;">
-            Akses penuh tool Ekspor Shapefile ESRI (.SHP .SHX .DBF .PRJ), CAD Script (.SCR), GeoJSON, Excel, dan Cetak Peta.
-          </div>
-        </div>
 
-        <div id="googleSignInContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; margin: 0.25rem 0;">
-          <div id="gisButtonSlot" style="display: flex; justify-content: center; width: 100%;"></div>
-          <button type="button" class="btn-google" onclick="loginWithGoogle()" id="btnGoogleAuth" style="width: 100%; max-width: 320px; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 0.65rem; font-size: 0.8rem; font-weight: 600;">
-            <svg width="18" height="18" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-            </svg>
-            <span>Masuk Menggunakan Akun Google</span>
-          </button>
-        </div>
-
-        <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; line-height: 1.4; padding: 0 0.25rem;">
-          Wajib login dengan Akun Google untuk otentikasi data resmi dan verifikasi aktivasi status PRO.
-        </div>
-
-        <div style="border-top: 1px solid var(--border-light); padding-top: 0.65rem;">
-          <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; font-size: 0.74rem; line-height: 1.5; color: var(--text-main);">
-            <div style="font-weight: 700; color: var(--accent); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              <span>Akses Fitur Data Geospasial</span>
+            <div id="googleSignInContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px;">
+              <div id="gisButtonSlot" style="display: flex; justify-content: center; width: 100%;"></div>
+              <button type="button" class="btn-google" onclick="loginWithGoogle()" id="btnGoogleAuth" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 0.65rem; font-size: 0.8rem; font-weight: 600;">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Masuk Menggunakan Akun Google</span>
+              </button>
             </div>
-            Untuk mengedit atribut peta memerlukan akses PRO. Akun gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
+
+            <div style="font-size: 0.71rem; color: var(--text-muted); text-align: center; line-height: 1.4;">
+              Wajib login dengan Akun Google untuk otentikasi data resmi dan verifikasi aktivasi status PRO.
+            </div>
           </div>
-          <div style="margin-top: 0.6rem; background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;">
-            <strong>Dukungan &amp; Saran Fitur:</strong> Jika ada fitur yang memerlukan penyesuaian khusus atau saran fitur baru, pengguna dapat menghubungi Admin Duta Digital Agensi (dutamik.id) untuk penambahan pembaruan pada versi berikutnya.
+
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; font-size: 0.74rem; line-height: 1.5; color: var(--text-main);">
+              <div style="font-weight: 700; color: var(--accent); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span>Akses Fitur Data Geospasial</span>
+              </div>
+              Untuk mengedit atribut peta memerlukan akses PRO. Akun gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
+            </div>
+            <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;">
+              <strong>Dukungan &amp; Saran Fitur:</strong> Jika ada fitur yang memerlukan penyesuaian khusus atau saran fitur baru, pengguna dapat menghubungi Admin Duta Digital Agensi (dutamik.id) untuk penambahan pembaruan pada versi berikutnya.
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="modal-body" id="memberModalBodyUser" style="display: none; padding: 1rem 1.15rem; gap: 0.85rem;">
-        <div class="member-profile-card" style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.85rem;">
-          <div class="member-avatar" id="memberAvatarInitials">U</div>
-          <div class="member-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem;">
-            <div class="member-name" id="memberProfileName" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Nama Pengguna</div>
-            <div class="member-email" id="memberProfileEmail" style="font-size: 0.74rem; color: var(--text-sub);">user@gmail.com</div>
-            <div style="margin-top: 3px;">
-              <span id="memberProfileBadge" class="member-plan-badge free">FREE MEMBER</span>
+      <div class="modal-body" id="memberModalBodyUser" style="display: none; padding: 1rem 1.15rem;">
+        <div class="modal-grid-2col">
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="member-profile-card" style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.85rem;">
+              <div class="member-avatar" id="memberAvatarInitials">U</div>
+              <div class="member-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem;">
+                <div class="member-name" id="memberProfileName" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Nama Pengguna</div>
+                <div class="member-email" id="memberProfileEmail" style="font-size: 0.74rem; color: var(--text-sub);">user@gmail.com</div>
+                <div style="margin-top: 3px;">
+                  <span id="memberProfileBadge" class="member-plan-badge free">FREE MEMBER</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div id="memberStatusAlert" style="background-color: var(--bg-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.74rem; line-height: 1.45;">
-          Untuk mengedit atribut peta memerlukan akses PRO. Mode Akun Gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
-          <div id="proMemberThankYouCard" style="display: none; background-color: var(--accent); color: #ffffff; padding: 0.85rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--accent); font-size: 0.78rem; line-height: 1.5; text-align: center;">
-            <div style="font-weight: 700; font-size: 0.84rem; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-              <span>Terima Kasih atas Kepercayaan Anda</span>
-            </div>
-            <div style="font-size: 0.73rem; opacity: 0.95;">
-              Akun Anda telah berstatus PRO Lifetime. Seluruh hak akses fitur ekspor SHP, CAD, GeoJSON, dan analisis spasial aktif sepenuhnya.
-            </div>
-            <div style="margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.25); font-size: 0.71rem; text-align: left; opacity: 0.95; line-height: 1.45;">
-              <strong>Catatan Dukungan Member PRO:</strong> Jika terdapat fitur yang error, membutuhkan penyesuaian khusus, atau ingin menyampaikan saran fitur baru, silakan hubungi Admin Duta Digital Agensi (dutamik.id) untuk menambahkan update ke versi berikutnya.
+            <div id="memberStatusAlert" style="background-color: var(--bg-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 0.74rem; line-height: 1.45;">
+              Untuk mengedit atribut peta memerlukan akses PRO. Mode Akun Gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
             </div>
           </div>
 
-          <button id="btnUpgradeQris" type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 0.45rem; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-size: 0.78rem; padding: 0.55rem 0.85rem;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
-            <span>Bayar QRIS &amp; Upgrade ke PRO (Kode Unik 3 Digit)</span>
-          </button>
-          <button type="button" class="btn btn-outline btn-block" onclick="logoutMember()" style="justify-content: center; gap: 0.45rem; font-size: 0.76rem; padding: 0.5rem 0.85rem;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Keluar Akun (Logout)</span>
-          </button>
+          <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <div id="proMemberThankYouCard" style="display: none; background-color: var(--accent); color: #ffffff; padding: 0.85rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--accent); font-size: 0.78rem; line-height: 1.5; text-align: center;">
+              <div style="font-weight: 700; font-size: 0.84rem; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>Terima Kasih atas Kepercayaan Anda</span>
+              </div>
+              <div style="font-size: 0.73rem; opacity: 0.95;">
+                Akun Anda telah berstatus PRO Lifetime. Seluruh hak akses fitur ekspor SHP, CAD, GeoJSON, dan analisis spasial aktif sepenuhnya.
+              </div>
+              <div style="margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.25); font-size: 0.71rem; text-align: left; opacity: 0.95; line-height: 1.45;">
+                <strong>Catatan Dukungan Member PRO:</strong> Jika terdapat fitur yang error, membutuhkan penyesuaian khusus, atau ingin menyampaikan saran fitur baru, silakan hubungi Admin Duta Digital Agensi (dutamik.id) untuk menambahkan update ke versi berikutnya.
+              </div>
+            </div>
+
+            <button id="btnUpgradeQris" type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 0.45rem; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-size: 0.78rem; padding: 0.55rem 0.85rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+              <span>Bayar QRIS &amp; Upgrade ke PRO (Kode Unik 3 Digit)</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-block" onclick="logoutMember()" style="justify-content: center; gap: 0.45rem; font-size: 0.76rem; padding: 0.5rem 0.85rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Keluar Akun (Logout)</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1610,7 +1587,7 @@
   </div>
 
   <div id="qrisPaymentModal" class="modal-backdrop" onclick="if(event.target===this) closeQrisPaymentModal()">
-    <div class="modal-card" style="max-width: 440px; max-height: calc(100dvh - 2rem); margin: auto;">
+    <div class="modal-card modal-card-wide" style="max-height: calc(100dvh - 2rem); margin: auto;">
       <div class="modal-head">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
@@ -1621,56 +1598,54 @@
         </button>
       </div>
 
-      <div class="modal-body" style="gap: 0.65rem; padding: 0.85rem;">
-        <div style="text-align: center;">
-          <div style="font-size: 0.68rem; color: var(--text-sub); font-weight: 700; letter-spacing: 0.03em;">
-            TOTAL TRANSFER AKTIVASI PRO (LIFETIME)
+      <div class="modal-body" style="padding: 1rem 1.15rem;">
+        <div class="qris-grid-2col">
+          <div style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.75rem;">
+            <img src="assets/img/qris-duta.jpg" alt="QRIS Duta Digital Agensi" style="width: 100%; max-width: 210px; height: auto; object-fit: contain; border: 1px solid var(--border-light); border-radius: 4px; display: block; margin: 0 auto;">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-main); margin-top: 0.2rem;">Duta Digital Agensi</div>
+            <div style="font-size: 0.63rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">NMID: ID1025430780847</div>
+            <a href="assets/img/qris-duta.jpg" download="QRIS_Duta_Digital_Agensi.jpg" class="btn btn-outline" style="font-size: 0.66rem; padding: 2px 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Unduh Gambar QRIS</span>
+            </a>
           </div>
-          <div style="display: flex; align-items: baseline; justify-content: center; gap: 0.5rem; margin: 3px 0;">
-            <del style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
-            <div id="qrisTotalDisplay" style="font-size: clamp(1.25rem, 4vw, 1.45rem); font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
-              Rp 75.000
+
+          <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <div style="background-color: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-sub); font-weight: 700; letter-spacing: 0.03em;">
+                TOTAL TRANSFER AKTIVASI PRO (LIFETIME)
+              </div>
+              <div style="display: flex; align-items: baseline; justify-content: center; gap: 0.5rem; margin: 3px 0;">
+                <del style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Rp 375.000</del>
+                <div id="qrisTotalDisplay" style="font-size: clamp(1.25rem, 4vw, 1.45rem); font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
+                  Rp 75.000
+                </div>
+              </div>
+              <div style="font-size: 0.7rem; color: #b91c1c; font-weight: 700; margin-top: 2px;">
+                Wajib transfer tepat 3 digit unik: <span id="qrisUniqueCodeDisplay" style="font-weight: 800; text-decoration: underline;">000</span>
+              </div>
+              <div style="margin-top: 0.35rem;">
+                <button type="button" class="btn btn-outline" onclick="copyQrisAmount()" style="font-size: 0.7rem; padding: 3px 10px; margin: 0 auto; display: inline-flex; align-items: center; gap: 0.35rem;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Salin Nominal Transfer</span>
+                </button>
+              </div>
             </div>
-          </div>
-          <div style="font-size: 0.7rem; color: #b91c1c; font-weight: 700; margin-top: 2px;">
-            Wajib transfer tepat 3 digit unik: <span id="qrisUniqueCodeDisplay" style="font-weight: 800; text-decoration: underline;">000</span>
-          </div>
-          <div style="margin-top: 0.35rem;">
-            <button type="button" class="btn btn-outline" onclick="copyQrisAmount()" style="font-size: 0.7rem; padding: 3px 10px; margin: 0 auto; display: inline-flex; align-items: center; gap: 0.35rem;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span>Salin Nominal Transfer</span>
+
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.45rem 0.65rem; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 0.72rem; font-weight: 600; border-radius: 4px;">
+              <span class="live-pulse-dot"></span>
+              <span>Pengecekan pembayaran otomatis aktif (tiap 5 detik)</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.68rem;">EMAIL AKUN TERDAFTAR</label>
+              <input type="email" id="qrisBuyerEmail" class="form-input" placeholder="emailanda@gmail.com" style="font-size: 0.74rem; background-color: var(--bg-subtle);" readonly>
+            </div>
+            <button type="button" class="btn btn-primary btn-block" onclick="confirmPaymentWhatsApp()" style="background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-weight: 700; font-size: 0.76rem; justify-content: center; gap: 0.4rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>Konfirmasi Sudah Bayar (WhatsApp Admin)</span>
             </button>
           </div>
-        </div>
-
-        <div style="text-align: center;">
-          <img src="assets/img/qris-duta.jpg" alt="QRIS Duta Digital Agensi" style="width: 80%; max-width: 320px; height: auto; object-fit: contain; border: 1px solid var(--border-light); border-radius: 4px; display: block; margin: 0 auto;">
-          <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-main); margin-top: 0.35rem;">Duta Digital Agensi</div>
-          <div style="font-size: 0.63rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">NMID: ID1025430780847</div>
-          <a href="assets/img/qris-duta.jpg" download="QRIS_Duta_Digital_Agensi.jpg" class="btn btn-outline" style="margin-top: 0.3rem; font-size: 0.66rem; padding: 2px 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Unduh Gambar QRIS</span>
-          </a>
-        </div>
-
-        <div style="display: flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.45rem 0.65rem; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 0.72rem; font-weight: 600; border-radius: 4px;">
-          <span class="live-pulse-dot"></span>
-          <span>Pengecekan pembayaran otomatis aktif (tiap 5 detik)</span>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 0.45rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-size: 0.68rem;">EMAIL AKUN TERDAFTAR</label>
-            <input type="email" id="qrisBuyerEmail" class="form-input" placeholder="emailanda@gmail.com" style="font-size: 0.74rem; background-color: var(--bg-subtle);" readonly>
-          </div>
-          <button type="button" class="btn btn-primary btn-block" onclick="confirmPaymentWhatsApp()" style="background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-weight: 700; font-size: 0.76rem; justify-content: center; gap: 0.4rem;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <span>Konfirmasi Sudah Bayar (WhatsApp Admin)</span>
-          </button>
-        </div>
-
-        <div style="font-size: 0.66rem; color: var(--text-muted); line-height: 1.35; text-align: center;">
-          Status akun akan otomatis aktif dalam 5 detik setelah pembayaran diverifikasi oleh sistem.
         </div>
       </div>
 
@@ -2193,29 +2168,6 @@
             </div>
           </div>
 
-          <div class="export-type-card">
-            <div class="export-type-header">
-              <span class="export-type-badge" style="background-color: #0284c7; color: #ffffff;">RASTER TILE (WMS / WMTS)</span>
-              <div class="export-type-name">WMS / WMTS Image Tiles (PNG / WebP)</div>
-              <div class="export-type-desc">
-                Gambar tile raster transparan batas bidang persil standar OGC WMS/WMTS. Menghasilkan gambar overlay bidang bergeoreferensi untuk integrasi basemap, GIS offline, atau pencetakan cepat.
-              </div>
-            </div>
-            <div class="export-type-meta">
-              <div class="meta-row"><span>Aturan Free:</span><span class="font-mono">SD 256x256 px (Max Zoom 16, Watermark)</span></div>
-              <div class="meta-row"><span>Aturan PRO:</span><span class="font-mono">HD 512x512 px (Zoom s/d 21, WebP/PNG, Bebas Watermark)</span></div>
-            </div>
-            <div class="export-type-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
-              <button class="btn btn-primary" onclick="exportWmsTileMap('png')" style="background-color: #0284c7; color: #ffffff; border-color: #0284c7; font-size: 0.72rem; padding: 6px 8px; justify-content: center; gap: 0.35rem;" title="Unduh gambar tile format PNG">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>Unduh Tile PNG</span>
-              </button>
-              <button class="btn btn-primary" onclick="exportWmsTileMap('webp')" style="background-color: #0369a1; color: #ffffff; border-color: #0369a1; font-size: 0.72rem; padding: 6px 8px; justify-content: center; gap: 0.35rem;" title="Unduh gambar tile format WebP (PRO / Resolusi Tinggi)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
-                <span>Unduh WebP (PRO)</span>
-              </button>
-            </div>
-          </div>
 
           <div class="export-type-card">
             <div class="export-type-header">
@@ -2621,7 +2573,7 @@
   </div>
   </div>
 
-  <script src="assets/sec/duta-shield.js?v=0.110"></script>
+  <script src="assets/sec/duta-shield.js?v=0.112"></script>
   <div id="toastContainer" class="toast-container"></div>
 </body>
 </html>

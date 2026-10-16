@@ -1620,10 +1620,19 @@ Server Sumber Data: ${serverName}`;
           part.forEach(v => { sumLat += v.lat; sumLng += v.lng; });
           const cLat = sumLat / part.length;
           const cLng = sumLng / part.length;
-          const s = Math.sqrt(Math.max(0.0001, targetPartArea / curPartArea));
-          return part.map(v => ({
-            lat: Number((cLat + s * (v.lat - cLat)).toFixed(7)),
-            lng: Number((cLng + s * (v.lng - cLng)).toFixed(7))
+          let currentPts = part.map(v => ({ lat: v.lat, lng: v.lng }));
+          for (let iter = 0; iter < 24; iter++) {
+            const curArea = calculatePolygonArea(currentPts);
+            if (curArea <= 0 || Math.abs(curArea - targetPartArea) < 0.00001) break;
+            const factor = Math.sqrt(targetPartArea / curArea);
+            currentPts = currentPts.map(v => ({
+              lat: cLat + factor * (v.lat - cLat),
+              lng: cLng + factor * (v.lng - cLng)
+            }));
+          }
+          return currentPts.map(v => ({
+            lat: Number(v.lat.toFixed(7)),
+            lng: Number(v.lng.toFixed(7))
           }));
         }
 
@@ -1639,7 +1648,7 @@ Server Sumber Data: ${serverName}`;
         let high = 15.0;
         let bestPts = part;
 
-        for (let it = 0; it < 36; it++) {
+        for (let it = 0; it < 48; it++) {
           const mid = (low + high) / 2.0;
           const testPts = part.map((v, idx) => {
             if (lockedIndices.includes(idx)) {
@@ -1657,6 +1666,7 @@ Server Sumber Data: ${serverName}`;
             high = mid;
           }
           bestPts = testPts;
+          if (Math.abs(testArea - targetPartArea) < 0.00001) break;
         }
         return bestPts;
       });

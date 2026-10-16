@@ -1261,6 +1261,7 @@
       height: 13px;
       border-radius: 2px;
       flex-shrink: 0;
+      box-sizing: border-box;
     }
     .legend-swatch.polygon-active {
       background-color: rgba(225, 29, 72, 0.35);
@@ -1287,35 +1288,35 @@
       justify-content: center;
     }
     .legend-swatch.lsd-pertahankan {
-      background-color: #059669;
-      border: 1px solid #047857;
+      background-color: #ea580c;
+      border: 1px solid #9a3412;
     }
     .legend-swatch.lsd-penyesuaian {
-      background-color: #65a30d;
-      border: 1px solid #4d7c0f;
+      background-color: #fb923c;
+      border: 1px solid #c2410c;
     }
     .legend-swatch.lbs-aktif {
-      background-color: #0284c7;
-      border: 1px solid #0369a1;
+      background-color: #d3ffbe;
+      border: 1px solid #6e6e6e;
     }
     .legend-swatch.hl-lindung {
-      background-color: #14532d;
-      border: 1px solid #052e16;
+      background-color: #15803d;
+      border: 1px solid #14532d;
     }
     .legend-swatch.hl-konservasi {
-      background-color: #6b21a8;
+      background-color: #7e22ce;
       border: 1px solid #581c87;
     }
     .legend-swatch.hl-produksi-terbatas {
-      background-color: #4d7c0f;
-      border: 1px solid #365314;
+      background-color: #84cc16;
+      border: 1px solid #4d7c0f;
     }
     .legend-swatch.hl-produksi-tetap {
-      background-color: #ca8a04;
+      background-color: #eab308;
       border: 1px solid #a16207;
     }
     .legend-swatch.hl-produksi-konversi {
-      background-color: #ea580c;
+      background-color: #f97316;
       border: 1px solid #c2410c;
     }
     .legend-swatch.hl-apl {
@@ -1323,28 +1324,64 @@
       border: 1px solid #64748b;
     }
     .legend-swatch.rtrw-permukiman {
-      background-color: #d97706;
-      border: 1px solid #b45309;
+      background-color: #eab308;
+      border: 1px solid #ca8a04;
     }
     .legend-swatch.rtrw-komersial {
-      background-color: #b91c1c;
-      border: 1px solid #991b1b;
+      background-color: #ef4444;
+      border: 1px solid #b91c1c;
     }
     .legend-swatch.rtrw-industri {
-      background-color: #334155;
-      border: 1px solid #1e293b;
+      background-color: #7c3aed;
+      border: 1px solid #5b21b6;
     }
     .legend-swatch.rtrw-pertanian {
-      background-color: #15803d;
-      border: 1px solid #166534;
+      background-color: #bef264;
+      border: 1px solid #65a30d;
     }
     .legend-swatch.rtrw-perkebunan {
       background-color: #78350f;
       border: 1px solid #451a03;
     }
+    .legend-swatch.rtrw-lindung {
+      background-color: #16a34a;
+      border: 1px solid #15803d;
+    }
     .legend-swatch.rtrw-perikanan {
       background-color: #0284c7;
       border: 1px solid #0369a1;
+    }
+    .legend-swatch.znt-tinggi {
+      background-color: #dc2626;
+      border: 1px solid #991b1b;
+    }
+    .legend-swatch.znt-sedang {
+      background-color: #f59e0b;
+      border: 1px solid #b45309;
+    }
+    .legend-swatch.znt-rendah {
+      background-color: #10b981;
+      border: 1px solid #047857;
+    }
+    .legend-swatch.hak-milik {
+      background-color: #2563eb;
+      border: 1px solid #1d4ed8;
+    }
+    .legend-swatch.hak-hgu {
+      background-color: #d97706;
+      border: 1px solid #b45309;
+    }
+    .legend-swatch.hak-hgb {
+      background-color: #9333ea;
+      border: 1px solid #7e22ce;
+    }
+    .legend-swatch.hak-hpl {
+      background-color: #15803d;
+      border: 1px solid #166534;
+    }
+    .legend-swatch.hak-kkpr {
+      background-color: #0891b2;
+      border: 1px solid #0e7490;
     }
     .legend-swatch.jalan-arteri {
       background-color: #ea580c;
@@ -1360,6 +1397,37 @@
       background-color: #94a3b8;
       height: 2px;
       border-radius: 1px;
+    }
+    .transparency-control-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 5px;
+      background-color: var(--bg-subtle);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+    }
+    .transparency-label {
+      font-size: 0.67rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 68px;
+    }
+    .transparency-control-bar .range-input {
+      flex: 1;
+      min-width: 0;
+      height: 4px;
+      margin: 0;
+    }
+    .transparency-value-pill {
+      font-size: 0.67rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 32px;
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
     }
     .map-container {
       flex: 1;

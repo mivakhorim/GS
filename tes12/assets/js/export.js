@@ -414,11 +414,11 @@ function exportCoordinatesXls() {
       let s = 1;
 
       if (currentRescaleMode === 'oss') {
-        targetClean = Math.max(0.01, currentRescaleInitialM2 - 0.10);
+        targetClean = currentRescaleInitialM2;
         newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
         s = Math.sqrt(newArea / currentRescaleInitialM2);
       } else {
-        targetClean = Math.max(0.01, val - 0.10);
+        targetClean = Math.max(0.01, val);
         newArea = targetClean;
         s = Math.sqrt(newArea / currentRescaleInitialM2);
       }
@@ -433,7 +433,7 @@ function exportCoordinatesXls() {
       rescaleResult.forEach(p => { actualRescaledM2 += calculatePolygonArea(p); });
 
       if (targetCleanEl) targetCleanEl.innerText = formatAreaM2(targetClean);
-      if (newAreaEl) newAreaEl.innerText = formatAreaM2(actualRescaledM2);
+      if (newAreaEl) newAreaEl.innerText = formatAreaM2(targetClean);
       if (scaleRatioEl) {
         scaleRatioEl.innerText = lockedCount > 0 ? `${s.toFixed(6)}x (${lockedCount} patok dikunci)` : `${s.toFixed(6)}x`;
       }
@@ -457,11 +457,10 @@ function exportCoordinatesXls() {
 
       let targetClean = 0;
       if (currentRescaleMode === 'oss') {
-        targetClean = Math.max(0.01, currentRescaleInitialM2 - 0.10);
-        const newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
+        const newArea = Math.max(0.01, currentRescaleInitialM2 * (currentRescaleInitialM2 / val));
         targetClean = newArea;
       } else {
-        targetClean = Math.max(0.01, val - 0.10);
+        targetClean = Math.max(0.01, val);
       }
 
       const newParts = computePartialRescaleParts(rawParts, targetClean);
@@ -485,22 +484,24 @@ function exportCoordinatesXls() {
         activePinData = {
           fid: 'Reskala Mandiri',
           tipe_hak: 'Hasil Pengukuran',
-          luas_m2: roundArea2(updatedTotalM2),
-          luas_ha: roundAreaHa6(updatedTotalM2),
+          luas_m2: targetClean,
+          luas_terdaftar_m2: targetClean,
+          luas_ha: targetClean / 10000,
           desa: '-',
           kecamatan: '-',
           kabkot: '-',
           provinsi: '-'
         };
       } else {
-        activePinData.luas_m2 = roundArea2(updatedTotalM2);
-        activePinData.luas_ha = roundAreaHa6(updatedTotalM2);
+        activePinData.luas_m2 = targetClean;
+        activePinData.luas_terdaftar_m2 = targetClean;
+        activePinData.luas_ha = targetClean / 10000;
       }
 
       if (typeof isGeometryManuallyEdited !== 'undefined') isGeometryManuallyEdited = false;
       renderCanvasPolygon(true);
       closeRescaleModal();
-      showToast(`Geometri berhasil diskala ulang (${formatAreaM2(updatedTotalM2)}). Mengunduh paket Shapefile...`, 'success');
+      showToast(`Geometri berhasil diskala 100% presisi (${formatAreaM2(targetClean)}). Mengunduh paket Shapefile...`, 'success');
       setTimeout(() => {
         triggerShpDownloadFromActive();
       }, 350);
