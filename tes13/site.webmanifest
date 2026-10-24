@@ -1,0 +1,21 @@
+{
+  "name": "Duta GeoSpasi",
+  "short_name": "GeoSpasi",
+  "description": "Sistem Digitalisasi Geospasial Indonesia dan SHP Builder OSS RBA AMDALNET",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0a2e5c",
+  "icons": [
+    {
+      "src": "assets/icon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "assets/icon-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
+}

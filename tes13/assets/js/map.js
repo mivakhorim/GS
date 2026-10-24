@@ -46,26 +46,28 @@ async function geocodeAndFly(query, zoomLevel = 14) {
     }
 
 
-    var ArcGisExportLayer = L.TileLayer.extend({
-      getTileUrl: function(coords) {
-        if (!this._map) return '';
-        const nwPoint = coords.scaleBy(this.getTileSize());
-        const sePoint = nwPoint.add(this.getTileSize());
-        const crs = this._map.options.crs;
-        const nw = crs.project(this._map.unproject(nwPoint, coords.z));
-        const se = crs.project(this._map.unproject(sePoint, coords.z));
-        const minX = Math.min(nw.x, se.x);
-        const maxX = Math.max(nw.x, se.x);
-        const minY = Math.min(nw.y, se.y);
-        const maxY = Math.max(nw.y, se.y);
-        const bbox = `${minX},${minY},${maxX},${maxY}`;
-        let url = `${this._url}?bbox=${bbox}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&f=image`;
-        if (this.options.layers) {
-          url += `&layers=${encodeURIComponent(this.options.layers)}`;
+    if (typeof L !== 'undefined' && L.TileLayer) {
+      ArcGisExportLayer = L.TileLayer.extend({
+        getTileUrl: function(coords) {
+          if (!this._map) return '';
+          const nwPoint = coords.scaleBy(this.getTileSize());
+          const sePoint = nwPoint.add(this.getTileSize());
+          const crs = this._map.options.crs;
+          const nw = crs.project(this._map.unproject(nwPoint, coords.z));
+          const se = crs.project(this._map.unproject(sePoint, coords.z));
+          const minX = Math.min(nw.x, se.x);
+          const maxX = Math.max(nw.x, se.x);
+          const minY = Math.min(nw.y, se.y);
+          const maxY = Math.max(nw.y, se.y);
+          const bbox = `${minX},${minY},${maxX},${maxY}`;
+          let url = `${this._url}?bbox=${bbox}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&f=image`;
+          if (this.options.layers) {
+            url += `&layers=${encodeURIComponent(this.options.layers)}`;
+          }
+          return url;
         }
-        return url;
-      }
-    });
+      });
+    }
 
     function initMap() {
       map = L.map('map', {
@@ -147,13 +149,10 @@ async function geocodeAndFly(query, zoomLevel = 14) {
           openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'shp');
           return;
         }
-<<<<<<< HEAD
         if (isMerging) {
-          openConfirmSwitchModal(e.latlng.lat, e.latlng.lng, 'merge');
-=======
-        if (isParcelLocked && activeVertices && activeVertices.length >= 3) {
-          showToast('Bidang khusus aktif (hasil import / gabungan / gambar manual). Klik tombol Batal Pilihan terlebih dahulu jika ingin beralih ke bidang lain.', 'warn');
->>>>>>> parent of 9c74cb0 (up)
+          if (typeof handleMergeParcelClick === 'function') {
+            handleMergeParcelClick(e.latlng.lat, e.latlng.lng);
+          }
           return;
         }
         if (isMergedResult) {
@@ -222,19 +221,10 @@ async function geocodeAndFly(query, zoomLevel = 14) {
       const persilBase = getBpnGatewayBase();
       const timestamp = Date.now();
       try {
-        if (persilBase) {
-          await fetch(`${persilBase}/api/clear-cache`, { method: 'POST' }).catch(() => {});
-          if (persilLayer) {
-            persilLayer.setUrl(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1&t=${timestamp}`);
-            if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
-            persilLayer.redraw();
-          }
-        } else if (persilLayer) {
-          if (typeof persilLayer.setParams === 'function') {
-            persilLayer.setParams({ _t: timestamp });
-          }
-          if (!map.hasLayer(persilLayer)) persilLayer.addTo(map);
-          persilLayer.redraw();
+        if (typeof refreshPersilTiles === 'function') {
+          await refreshPersilTiles();
+        } else if (typeof loadViewportCadastreSvgParcels === 'function') {
+          await loadViewportCadastreSvgParcels();
         }
         if (currentBaseLayer) {
           currentBaseLayer.redraw();
@@ -576,7 +566,6 @@ async function geocodeAndFly(query, zoomLevel = 14) {
         }, 500);
       }
     }
-<<<<<<< HEAD
 
     let pendingSwitchCoord = null;
     let pendingSwitchContext = null;
@@ -686,5 +675,3 @@ async function geocodeAndFly(query, zoomLevel = 14) {
     window.handleConfirmSwitchStay = handleConfirmSwitchStay;
     window.proceedSwitchToNewParcel = proceedSwitchToNewParcel;
     window.cancelSwitchParcel = cancelSwitchParcel;
-=======
->>>>>>> parent of 9c74cb0 (up)
