@@ -959,14 +959,12 @@
     }
     .btn-tool-icon {
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 46px;
+      height: 32px;
       width: 100%;
       min-width: 0;
-      padding: 4px 2px;
-      gap: 2px;
+      padding: 0;
       box-sizing: border-box;
       background-color: var(--bg-surface);
       border: 1px solid var(--border-light);
