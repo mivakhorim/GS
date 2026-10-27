@@ -2712,6 +2712,10 @@ Server Sumber Data: ${serverName}`;
       customDrawUndoStack = [];
       const tb = document.getElementById('smartDrawToolbar');
       if (tb) tb.classList.add('active');
+      const banner = document.getElementById('liveMapInstructionBanner');
+      if (banner) banner.style.display = 'inline-flex';
+      const guide = document.getElementById('patokStatusGuideText');
+      if (guide) guide.innerHTML = '✏️ <strong>Mode Gambar Poligon:</strong> Klik titik sudut pada peta. Dobel klik atau klik titik awal jika sudah selesai.';
       updateDrawCountBadge();
       showToast('Mode gambar poligon aktif. Klik pada peta untuk membuat patok batas.', 'info');
     }
@@ -2820,7 +2824,11 @@ Server Sumber Data: ${serverName}`;
       isGeometryManuallyEdited = true;
       renderCanvasPolygon(true);
 
-      switchTab('tab-bidang');
+      switchTab('tab-digitasi');
+      const banner = document.getElementById('liveMapInstructionBanner');
+      if (banner) banner.style.display = 'none';
+      const guide = document.getElementById('patokStatusGuideText');
+      if (guide) guide.innerHTML = `✅ <strong>Poligon Siap:</strong> ${finalPts.length} patok sudut terpasang. Geser patok untuk menyesuaikan ukuran.`;
       showToast(`Poligon selesai: ${finalPts.length} patok batas terpasang presisi.`, 'success');
     }
 
@@ -2840,6 +2848,10 @@ Server Sumber Data: ${serverName}`;
       }
       const tb = document.getElementById('smartDrawToolbar');
       if (tb) tb.classList.remove('active');
+      const banner = document.getElementById('liveMapInstructionBanner');
+      if (banner) banner.style.display = 'none';
+      const guide = document.getElementById('patokStatusGuideText');
+      if (guide) guide.innerHTML = '💡 Klik poligon bidang di peta atau tombol di atas untuk mulai menggambar.';
     }
 
     function toggleSnapMode() {
@@ -3331,5 +3343,49 @@ Server Sumber Data: ${serverName}`;
     window.swapBatchCoordsOrder = swapBatchCoordsOrder;
     window.clearBatchCoordsInput = clearBatchCoordsInput;
     window.captureGpsCoordinate = captureGpsCoordinate;
+
+    window.startAddVertexMode = function() {
+      if (!activeVertices || activeVertices.length < 3) {
+        if (typeof showToast === 'function') showToast('Pilih bidang tanah di peta atau gambar poligon terlebih dahulu.', 'warn');
+        const guide = document.getElementById('patokStatusGuideText');
+        if (guide) guide.innerHTML = '⚠️ Pilih bidang di peta terlebih dahulu untuk menambah patok.';
+        return;
+      }
+      if (typeof showToast === 'function') showToast('Mode Tambah Patok Aktif: Klik pada garis oranye atau ikon (+) hijau di garis batas untuk menyisipkan sudut baru.', 'info');
+      const guide = document.getElementById('patokStatusGuideText');
+      if (guide) guide.innerHTML = '👉 <strong>Mode Tambah Patok:</strong> Klik pada garis oranye atau ikon (+) di peta untuk menyisipkan sudut baru.';
+    };
+
+    window.toggleSnapGuideLines = function() {
+      if (typeof toggleSnapMode === 'function') {
+        toggleSnapMode();
+        const isSnap = document.getElementById('btnSnapToggle') ? document.getElementById('btnSnapToggle').classList.contains('active') : true;
+        const btn = document.getElementById('btnToolbarSnap');
+        if (btn) btn.classList.toggle('active', isSnap);
+        const guide = document.getElementById('patokStatusGuideText');
+        if (guide) guide.innerHTML = isSnap ? '👉 <strong>Snap Siku 90° Aktif:</strong> Patok otomatis mengunci sudut 90 derajat saat digeser.' : '👉 Snap siku-siku dinonaktifkan.';
+      }
+    };
+
+    window.startDeleteVertexMode = function() {
+      if (!activeVertices || activeVertices.length < 3) {
+        if (typeof showToast === 'function') showToast('Pilih bidang tanah di peta terlebih dahulu.', 'warn');
+        const guide = document.getElementById('patokStatusGuideText');
+        if (guide) guide.innerHTML = '⚠️ Pilih bidang di peta terlebih dahulu.';
+        return;
+      }
+      if (typeof toggleFreeDeleteVertexMode === 'function') {
+        toggleFreeDeleteVertexMode();
+        const isActive = (typeof isFreeDeleteVertexMode !== 'undefined') && isFreeDeleteVertexMode;
+        const btn = document.getElementById('btnToolbarDeleteVertex');
+        if (btn) btn.classList.toggle('active', isActive);
+        const guide = document.getElementById('patokStatusGuideText');
+        if (guide) {
+          guide.innerHTML = isActive
+            ? '👉 <strong>Mode Hapus Patok Aktif:</strong> Klik langsung titik patok (P1, P2...) di peta yang ingin dihapus.'
+            : '💡 Patok aktif. Geser titik sudut patok di peta atau gunakan tombol di atas.';
+        }
+      }
+    };
 
 
