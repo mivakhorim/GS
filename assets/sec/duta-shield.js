@@ -12,6 +12,7 @@
     'assets/js/wilayah.js',
     'assets/js/export.js',
     'assets/js/print.js',
+    'assets/js/drive-sync.js',
     'assets/js/app.js'
   ];
 

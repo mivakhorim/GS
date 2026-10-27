@@ -36,6 +36,9 @@ function toggleMobileSidebar(forceClose = false) {
     }
 
     function switchTab(tabId) {
+      if (tabId === "tab-bidang") {
+        tabId = "tab-digitasi";
+      }
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-view').forEach(panel => panel.classList.remove('active'));
 
@@ -55,6 +58,9 @@ function toggleMobileSidebar(forceClose = false) {
       const panel = document.getElementById(tabId);
       if (panel) panel.classList.add('active');
 
+      if (tabId === 'tab-katalog' && typeof DutaDriveSync !== 'undefined' && typeof DutaDriveSync.renderCatalogUI === 'function') {
+        DutaDriveSync.renderCatalogUI();
+      }
       if (tabId === 'tab-koordinat' && typeof renderCoordinatesTable === 'function') {
         renderCoordinatesTable();
       }

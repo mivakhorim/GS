@@ -1433,9 +1433,15 @@ function closeServerModal() {
           access_token: accessToken,
           user: userObj
         };
+        try {
+          localStorage.setItem('duta_google_drive_token', accessToken);
+        } catch (e) {}
         fetchMemberProfile(userObj).then(() => {
           showToast('Selamat datang, ' + (profile.name || profile.email) + '!', 'success');
           closeMemberModal();
+          if (typeof DutaDriveSync !== 'undefined' && typeof DutaDriveSync.syncCatalogToGoogleDrive === 'function') {
+            DutaDriveSync.syncCatalogToGoogleDrive().catch(() => {});
+          }
         });
       })
       .catch(err => {
@@ -1453,7 +1459,7 @@ function closeServerModal() {
     const top = Math.max(0, Math.round((screenHeight - height) / 2));
 
     const redirectUri = window.location.origin + window.location.pathname;
-    const scope = encodeURIComponent('openid email profile');
+    const scope = encodeURIComponent('openid email profile https://www.googleapis.com/auth/drive.file');
     const state = 'geospasi_pkce_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + encodeURIComponent(clientId) + '&redirect_uri=' + encodeURIComponent(redirectUri) + '&response_type=token&scope=' + scope + '&state=' + encodeURIComponent(state) + '&prompt=consent';
 
@@ -1495,6 +1501,9 @@ function closeServerModal() {
       signInWithOAuth2Popup();
     },
     logout: logoutMember,
+    getAccessToken: function() {
+      return (currentMemberSession && currentMemberSession.access_token) || localStorage.getItem('duta_google_drive_token') || null;
+    },
     getCurrentUser: function() {
       return currentMemberSession && currentMemberSession.user ? { ...currentMemberSession.user } : null;
     },

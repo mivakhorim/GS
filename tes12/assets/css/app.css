@@ -1547,3 +1547,23 @@
   color: #1e293b;
   letter-spacing: 0.2px;
 }
+
+/* KATALOG BIDANG GOOGLE DRIVE FLAT UI */
+.katalog-card:hover {
+  border-color: #0a2e5c !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+#modalAtributBidang .form-input,
+#modalAtributBidang .form-control {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+#modalAtributBidang .form-input:focus,
+#modalAtributBidang .form-control:focus {
+  border-color: #0a2e5c;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(10, 46, 92, 0.12);
+}
