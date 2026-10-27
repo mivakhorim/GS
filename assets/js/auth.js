@@ -301,21 +301,19 @@ function closeServerModal() {
       const slot = document.getElementById('gisButtonSlot');
       const btn = document.getElementById('btnGoogleAuth');
 
+      if (btn) {
+        btn.style.display = 'inline-flex';
+      }
+
       if (window.location.protocol === 'file:') {
         if (slot) {
-          slot.innerHTML = '<div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.73rem; color: #92400e; line-height: 1.45; text-align: center; width: 100%; max-width: 360px; margin-bottom: 0.25rem;"><div style="font-weight: 700; margin-bottom: 4px;">Pemberitahuan Protokol Berkas (file://)</div><div>Kebijakan Google OAuth melarang login langsung dari berkas lokal. Silakan buka aplikasi pada domain resmi atau gunakan tombol uji mode:</div><a href="https://geospasi.dutamik.id" class="btn btn-sm" style="background-color: #0f3b73; color: #ffffff; text-decoration: none; padding: 5px 12px; font-weight: 700; border-radius: 4px; display: inline-block; margin-top: 6px;">Buka geospasi.dutamik.id</a><div style="margin-top: 8px; font-weight: 700; color: #1e293b; font-size: 0.71rem;">Atau uji seketika di berkas lokal:</div><div style="display: flex; gap: 4px; justify-content: center; margin-top: 5px;"><button type="button" class="btn btn-sm" onclick="switchSimulationRole(\'free\'); closeMemberModal();" style="font-size: 0.67rem; padding: 2px 7px; font-weight: 700; background-color: #475569; color: #ffffff; border-radius: 3px;">Uji Free</button><button type="button" class="btn btn-sm" onclick="switchSimulationRole(\'pro\'); closeMemberModal();" style="font-size: 0.67rem; padding: 2px 7px; font-weight: 700; background-color: #059669; color: #ffffff; border-radius: 3px;">Uji PRO</button><button type="button" class="btn btn-sm" onclick="switchSimulationRole(\'admin\'); closeMemberModal();" style="font-size: 0.67rem; padding: 2px 7px; font-weight: 700; background-color: #d97706; color: #ffffff; border-radius: 3px;">Uji Admin</button></div></div>';
+          slot.style.display = 'block';
+          slot.innerHTML = '<div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.73rem; color: #92400e; line-height: 1.45; text-align: center; width: 100%; max-width: 360px; margin-bottom: 0.5rem;"><div style="font-weight: 700; margin-bottom: 4px;">Pemberitahuan Protokol Berkas (file://)</div><div>Kebijakan Google OAuth melarang login langsung dari berkas lokal. Silakan buka aplikasi pada domain resmi:</div><a href="https://geospasi.dutamik.id" class="btn btn-sm" style="background-color: #0f3b73; color: #ffffff; text-decoration: none; padding: 5px 12px; font-weight: 700; border-radius: 4px; display: inline-block; margin-top: 6px;">Buka geospasi.dutamik.id</a></div>';
         }
-        if (btn) btn.style.display = 'none';
         return;
       }
 
       if (typeof window.google === 'undefined' || !window.google.accounts || !window.google.accounts.id) {
-        if (btn) btn.style.display = 'inline-flex';
-        setTimeout(() => {
-          if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.id) {
-            initGoogleIdentityServices();
-          }
-        }, 600);
         return;
       }
       try {
@@ -326,22 +324,7 @@ function closeServerModal() {
           cancel_on_tap_outside: true,
           context: 'signin'
         });
-        if (slot) {
-          slot.innerHTML = '';
-          window.google.accounts.id.renderButton(slot, {
-            theme: 'outline',
-            size: 'large',
-            type: 'standard',
-            shape: 'rectangular',
-            text: 'signin_with',
-            logo_alignment: 'left',
-            width: 320
-          });
-          if (btn) btn.style.display = 'none';
-        }
-      } catch (err) {
-        if (btn) btn.style.display = 'inline-flex';
-      }
+      } catch (err) {}
     }
 
     async function handleGoogleSignInResponse(response) {
