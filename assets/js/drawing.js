@@ -249,18 +249,15 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
       activePinData.lng = lng;
       activePinData.luas_m2 = 0;
       activePinData.tipe_hak = 'Delineasi Mandiri';
-      activePinData.nib = '-';
-      activePinData.nomor_hak = '-';
-      activePinData.nosu = '-';
+      activePinData.source = 'MANUAL_DELINEATION';
+      activePinData.nib = '';
+      activePinData.nomor_hak = '';
+      activePinData.nosu = '';
       rawInitialBboxCoords = manualBox;
       initCanvasRebuilder(lat, lng, estArea, manualBox);
-      const elLuasBpn = document.getElementById('pinLuasBpnText');
-      if (elLuasBpn) {
-        elLuasBpn.className = 'stat-value emerald';
-        elLuasBpn.innerText = formatAreaM2(estArea);
-      }
-      const elTipeHak = document.getElementById('pinTipeHakText'); if (elTipeHak) elTipeHak.innerText = 'Delineasi Mandiri';
-      if (typeof renderCadastralProFields === 'function') {
+      if (typeof window.renderBidangInfoPanel === 'function') {
+        window.renderBidangInfoPanel(activePinData, manualBox);
+      } else if (typeof renderCadastralProFields === 'function') {
         renderCadastralProFields();
       }
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
@@ -1156,15 +1153,22 @@ Server Sumber Data: ${serverName}`;
         ? activePinData.luas_terdaftar_m2
         : (activePinData?.luas_m2 || 0);
 
+      const isManual = (activePinData && (activePinData.tipe_hak === 'Delineasi Mandiri' || activePinData.source === 'MANUAL_DELINEATION'));
+      const cardTerdaftar = document.getElementById('cardLuasTerdaftar');
+      const grid = document.getElementById('gridLuasCards');
       const elLuasBpn = document.getElementById('pinLuasBpnText');
-      if (elLuasBpn) {
-        if (registeredBpnArea > 0) {
-          elLuasBpn.className = 'stat-value emerald';
+      if (cardTerdaftar && elLuasBpn) {
+        if (!isManual && registeredBpnArea > 0) {
+          cardTerdaftar.style.display = 'block';
           elLuasBpn.innerText = formatAreaM2(registeredBpnArea);
+          if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
         } else {
-          elLuasBpn.className = 'stat-value emerald';
-          elLuasBpn.innerText = formatAreaM2(liveAreaM2);
+          cardTerdaftar.style.display = 'none';
+          if (grid) grid.style.gridTemplateColumns = '1fr';
         }
+      }
+      if (typeof window.renderBidangInfoPanel === 'function') {
+        window.renderBidangInfoPanel(activePinData, activeVertices);
       }
 
       if (registeredBpnArea > 0) {

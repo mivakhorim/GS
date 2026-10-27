@@ -169,11 +169,6 @@
       <button id="btnHeaderPrintMap" class="header-icon-btn" onclick="handlePrintMapTrigger()" title="Cetak Peta Format Resmi Standar (A4 / A3 Landscape)" aria-label="Cetak Peta">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       </button>
-      <div class="header-role-switcher" id="headerRoleSwitcher" role="group" aria-label="Pengalih Mode Pengujian">
-        <button type="button" class="role-pill-btn" id="btnRoleFree" data-role="free" onclick="switchSimulationRole('free')" title="Mode Free : Maksimal 150 m2, Atribut Terbatas">FREE</button>
-        <button type="button" class="role-pill-btn" id="btnRolePro" data-role="pro" onclick="switchSimulationRole('pro')" title="Mode PRO : Luas Tanpa Batas, Ekspor Lengkap">PRO</button>
-        <button type="button" class="role-pill-btn" id="btnRoleAdmin" data-role="admin" onclick="switchSimulationRole('admin')" title="Mode Admin : Server Prioritas &amp; Meja Kerja">ADMIN</button>
-      </div>
       <button id="btnHeaderMember" class="header-auth-badge" onclick="openMemberModal()" title="Portal Akun &amp; Lisensi Member Duta GeoSpasi" aria-label="Portal Member">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3-3m0 0l-3 3m3-3v8"/></svg>
         <span id="headerMemberText">AKUN</span>
@@ -237,18 +232,18 @@
                   <button type="button" class="btn-tool-icon" onclick="copyBidangData()" title="Salin Data Kadaster Lengkap (Khusus Member PRO)" aria-label="Salin Data Kadaster" style="width: 24px; height: 24px; padding: 0;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                   </button>
-                  <span class="badge-pill blue" id="badgeTipeHak">HAK MILIK</span>
+                  <span class="badge-pill blue" id="badgeTipeHak" style="display: none;">HAK MILIK</span>
                 </div>
               </div>
 
-              <div class="card-equal-grid" style="margin-bottom: 0.65rem;">
-                <div class="stat-card">
+              <div class="card-equal-grid" id="gridLuasCards" style="margin-bottom: 0.65rem;">
+                <div class="stat-card" id="cardLuasTerdaftar" style="display: none;">
                   <span class="stat-label">Luas Data Terdaftar</span>
                   <div style="margin-top: 3px; display: flex; align-items: center; min-height: 24px;">
                     <span id="pinLuasBpnText" class="stat-value emerald">-</span>
                   </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="cardLuasUkur">
                   <span class="stat-label">Luas Ukur Bidang</span>
                   <div style="margin-top: 3px; display: flex; align-items: center; min-height: 24px;">
                     <span id="canvasLiveAreaM2" class="stat-value highlight">-</span>
@@ -286,80 +281,88 @@
                 </div>
               </div>
 
-              <div class="spec-list" style="margin-bottom: 0.6rem;">
-                <div class="spec-item">
+              <div class="spec-list" id="bidangSpecList" style="margin-bottom: 0.6rem;">
+                <div class="spec-item" id="rowPinNib" style="display: none;">
                   <span class="spec-label">NIB</span>
-                  <span class="spec-value font-mono" id="pinNibText">-</span>
+                  <span class="spec-value font-mono" id="pinNibText"></span>
                 </div>
-                <div class="spec-item">
+                <div class="spec-item" id="rowPinTipeHak" style="display: none;">
                   <span class="spec-label">Jenis Hak</span>
-                  <span class="spec-value" id="pinTipeHakText">-</span>
+                  <span class="spec-value" id="pinTipeHakText"></span>
                 </div>
-                <div class="spec-item" id="itemPinNomorHak" style="display: none;">
-                  <span class="spec-label">No. Hak Milik</span>
-                  <span class="spec-value font-mono" id="pinNomorHakText">-</span>
+                <div class="spec-item" id="rowPinNomorHak" style="display: none;">
+                  <span class="spec-label">No. Sertipikat / Hak</span>
+                  <span class="spec-value font-mono" id="pinNomorHakText"></span>
                 </div>
-                <div class="spec-item">
+                <div class="spec-item" id="rowPinKabkot" style="display: none;">
                   <span class="spec-label">Kabupaten / Kota</span>
-                  <span class="spec-value" id="pinKabkotText">-</span>
+                  <span class="spec-value" id="pinKabkotText"></span>
                 </div>
-                <div class="spec-item">
+                <div class="spec-item" id="rowPinKecamatan" style="display: none;">
+                  <span class="spec-label">Kecamatan</span>
+                  <span class="spec-value" id="pinKecamatanText"></span>
+                </div>
+                <div class="spec-item" id="rowPinDesa" style="display: none;">
+                  <span class="spec-label">Desa / Kelurahan</span>
+                  <span class="spec-value" id="pinDesaText"></span>
+                </div>
+                <div class="spec-item" id="rowPinCoords" style="display: none;">
                   <span class="spec-label">Koordinat Titik</span>
-                  <span class="spec-value font-mono" id="pinCoordsText" style="font-size: 0.71rem;">-</span>
+                  <span class="spec-value font-mono" id="pinCoordsText" style="font-size: 0.71rem;"></span>
                 </div>
-                <div class="spec-item">
+                <div class="spec-item" id="rowPinKeliling" style="display: none;">
+                  <span class="spec-label">Keliling Bidang</span>
+                  <span class="spec-value font-mono" id="pinKelilingText"></span>
+                </div>
+                <div class="spec-item" id="rowPinJumlahPatok" style="display: none;">
+                  <span class="spec-label">Jumlah Patok</span>
+                  <span class="spec-value font-mono" id="pinJumlahPatokText"></span>
+                </div>
+                <div class="spec-item" id="rowPinStatusValidasi" style="display: none;">
                   <span class="spec-label">Status Validasi</span>
-                  <span class="spec-value" id="pinStatusValidasiText">-</span>
+                  <span class="spec-value" id="pinStatusValidasiText"></span>
                 </div>
-
-                <div class="spec-item pro-only-field" id="itemPinKantah" style="display: none;">
+                <div class="spec-item" id="rowPinKantah" style="display: none;">
                   <span class="spec-label">Kantor Pertanahan</span>
-                  <span class="spec-value" id="pinKantahText">-</span>
+                  <span class="spec-value" id="pinKantahText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinKlusterPtsl" style="display: none;">
+                <div class="spec-item" id="rowPinKlusterPtsl" style="display: none;">
                   <span class="spec-label">Kluster PTSL</span>
-                  <span class="spec-value" id="pinKlusterPtslText">-</span>
+                  <span class="spec-value" id="pinKlusterPtslText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinAkurasiAlat" style="display: none;">
+                <div class="spec-item" id="rowPinAkurasiAlat" style="display: none;">
                   <span class="spec-label">Akurasi &amp; Alat</span>
-                  <span class="spec-value" id="pinAkurasiAlatText">-</span>
+                  <span class="spec-value" id="pinAkurasiAlatText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinRtrw" style="display: none;">
+                <div class="spec-item" id="rowPinRtrw" style="display: none;">
                   <span class="spec-label">RTRW Kab/Kota</span>
-                  <span class="spec-value" id="pinRtrwText">-</span>
+                  <span class="spec-value" id="pinRtrwText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinRdtr" style="display: none;">
+                <div class="spec-item" id="rowPinRdtr" style="display: none;">
                   <span class="spec-label">RDTR (Detail)</span>
-                  <span class="spec-value" id="pinRdtrText">-</span>
+                  <span class="spec-value" id="pinRdtrText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinLsd" style="display: none;">
+                <div class="spec-item" id="rowPinLsd" style="display: none;">
                   <span class="spec-label">Status LSD</span>
-                  <span class="spec-value" id="pinLsdText">-</span>
+                  <span class="spec-value" id="pinLsdText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinLbs" style="display: none;">
+                <div class="spec-item" id="rowPinLbs" style="display: none;">
                   <span class="spec-label">Status LBS</span>
-                  <span class="spec-value" id="pinLbsText">-</span>
+                  <span class="spec-value" id="pinLbsText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinHutan" style="display: none;">
+                <div class="spec-item" id="rowPinHutan" style="display: none;">
                   <span class="spec-label">Kawasan Hutan (KLHK)</span>
-                  <span class="spec-value" id="pinHutanText">-</span>
+                  <span class="spec-value" id="pinHutanText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinZnt" style="display: none;">
+                <div class="spec-item" id="rowPinZnt" style="display: none;">
                   <span class="spec-label">Zona Nilai Tanah</span>
-                  <span class="spec-value" id="pinZntText">-</span>
+                  <span class="spec-value" id="pinZntText"></span>
                 </div>
-                <div class="spec-item pro-only-field" id="itemPinZntRange" style="display: none;">
+                <div class="spec-item" id="rowPinZntRange" style="display: none;">
                   <span class="spec-label">Rentang Nilai ZNT</span>
-                  <span class="spec-value font-mono" id="pinZntRangeText">-</span>
+                  <span class="spec-value font-mono" id="pinZntRangeText"></span>
                 </div>
               </div>
-
-              <div id="proSpecTeaser" class="pro-teaser-card" onclick="openMemberModal()" style="display: block; cursor: pointer; margin-bottom: 0.75rem; padding: 0.5rem 0.65rem; background: var(--bg-subtle); border: 1px dashed var(--accent); border-radius: var(--radius-sm); transition: var(--transition-fast);">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent); flex-shrink: 0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    <span style="font-weight: 700; font-size: 0.72rem; color: var(--text-main);">Buka Fitur &amp; Data Lengkap PRO</span>
-                  </div>
                   <span style="font-size: 0.68rem; font-weight: 700; color: var(--accent); white-space: nowrap;">Upgrade &rarr;</span>
                 </div>
                 <div style="font-size: 0.67rem; color: var(--text-muted); margin-top: 3px; line-height: 1.35;">
@@ -1418,14 +1421,7 @@
           <h3 style="font-size: 0.88rem; font-weight: 700; color: var(--text-main);">Portal Member Duta GeoSpasi</h3>
         </div>
 
-      <div class="simulation-banner" style="background-color: var(--bg-subtle); border-bottom: 1px solid var(--border-light); padding: 0.65rem 1.15rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.45rem;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          <div style="line-height: 1.25;">
-            <span style="font-size: 0.73rem; font-weight: 700; color: var(--text-main);">Koreksi Mode Akses</span>
-            <span style="font-size: 0.66rem; color: var(--text-muted); margin-left: 4px;">Uji tampilan &amp; pembatasan</span>
-          </div>
-        </div>
+      
         <div style="display: inline-flex; align-items: center; gap: 4px;">
           <button type="button" class="btn btn-sm" id="modalBtnSimFree" onclick="switchSimulationRole('free')" style="font-size: 0.68rem; padding: 2px 7px; font-weight: 700; border-radius: 3px;">Free</button>
           <button type="button" class="btn btn-sm" id="modalBtnSimPro" onclick="switchSimulationRole('pro')" style="font-size: 0.68rem; padding: 2px 7px; font-weight: 700; border-radius: 3px;">PRO</button>

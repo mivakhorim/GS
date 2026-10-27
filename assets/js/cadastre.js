@@ -15,10 +15,7 @@ function getBpnGatewayBase() {
           return 'http://127.0.0.1:8085';
         }
       }
-      const defaultCloudGateway = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL)
-        ? `${SUPABASE_PROJECT_URL}/functions/v1/cadastre-gateway`
-        : 'https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway';
-      return defaultCloudGateway;
+      return '';
     }
 
     function saveBpnGatewayUrlFromInput() {
@@ -42,6 +39,33 @@ function getBpnGatewayBase() {
         if (isActive) map.removeLayer(cekingLayers[k]);
         cekingLayers[k] = createThematicLayer(k);
         if (isActive && cekingLayers[k]) map.addLayer(cekingLayers[k]);
+      });
+    }
+
+    const CadastreWmsLayer = L.TileLayer.WMS.extend({
+      getTileUrl: function(coords) {
+        const originalUrl = L.TileLayer.WMS.prototype.getTileUrl.call(this, coords);
+        const cleanUrl = originalUrl.replace(/^https?:\/\//i, '');
+        return 'https://images.weserv.nl/?url=' + encodeURIComponent(cleanUrl);
+      }
+    });
+
+    function createCadastreProxyLayer() {
+      const slider = document.getElementById('persilOpacity');
+      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
+      return new CadastreWmsLayer('https://bhumi.atrbpn.go.id/mprx/service', {
+        layers: 'bhumi_persil',
+        format: 'image/png',
+        transparent: true,
+        version: '1.3.0',
+        crs: L.CRS.EPSG3857,
+        pane: 'persilPane',
+        minZoom: 14,
+        maxZoom: 26,
+        opacity: currentOpacity,
+        zIndex: 360,
+        updateWhenZooming: false,
+        updateInterval: 100
       });
     }
 
@@ -465,76 +489,66 @@ function getBpnGatewayBase() {
 
     function setupPersilLayer() {
       if (!map) return;
+      if (!map.getPane('persilPane')) {
+        const pp = map.createPane('persilPane');
+        pp.style.zIndex = 360;
+        pp.style.pointerEvents = 'none';
+      }
+      setupCadastreVectorLayer();
       const persilBase = getBpnGatewayBase();
-      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+      const slider = document.getElementById('persilOpacity');
+      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
 
-      if (!map.getPane('cadastrePane')) {
-        const cp = map.createPane('cadastrePane');
-        cp.style.zIndex = 370;
-        cp.style.pointerEvents = 'none';
+      if (slider && !slider._vectorListenerAttached) {
+        slider._vectorListenerAttached = true;
+        slider.addEventListener('input', function() {
+          const val = parseFloat(this.value) / 100;
+          if (persilLayer && typeof persilLayer.setOpacity === 'function') {
+            persilLayer.setOpacity(val);
+          }
+          if (cadastreVectorLayer) {
+            cadastreVectorLayer.eachLayer(layer => {
+              if (layer && typeof layer.setStyle === 'function') {
+                layer.setStyle({ opacity: val, fillOpacity: val * 0.15 });
+              }
+            });
+          }
+        });
       }
 
       if (persilLayer && map.hasLayer(persilLayer)) {
         map.removeLayer(persilLayer);
       }
 
-      const slider = document.getElementById('persilOpacity');
-      const initialOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
-
       if (persilBase) {
-        if (persilBase.includes('supabase.co')) {
-          persilLayer = createAuthTileLayer(`${persilBase}?action=wms-tile&z={z}&x={x}&y={y}&role=admin`, {
-            pane: 'cadastrePane',
-            minZoom: 14,
-            maxZoom: 26,
-            maxNativeZoom: 19,
-            opacity: initialOpacity,
-            zIndex: 370,
-            headers: {
-              'apikey': sbKey,
-              'Authorization': 'Bearer ' + sbKey
-            }
-          });
-        } else {
-          persilLayer = L.tileLayer(`${persilBase}/api/tile/{z}/{x}/{y}.png`, {
-            pane: 'cadastrePane',
-            minZoom: 14,
-            maxZoom: 26,
-            maxNativeZoom: 19,
-            opacity: initialOpacity,
-            zIndex: 370
-          });
-        }
-      } else {
-        persilLayer = L.tileLayer.wms('https://bhumi.atrbpn.go.id/mprx/service', {
-          layers: 'bhumi_persil',
-          format: 'image/png',
-          transparent: true,
-          version: '1.3.0',
-          crs: L.CRS.EPSG3857,
-          pane: 'cadastrePane',
+        persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
+          pane: 'persilPane',
           minZoom: 14,
           maxZoom: 26,
-          maxNativeZoom: 20,
-          opacity: initialOpacity,
-          zIndex: 370
+          maxNativeZoom: 19,
+          opacity: currentOpacity,
+          zIndex: 360,
+          updateWhenZooming: false,
+          updateInterval: 100
         });
-      }
-
-      const savedStream = localStorage.getItem('cadastre_stream_mode');
-      if (savedStream === 'raster_arcgis' && (typeof isMemberAdminActive === 'function') && isMemberAdminActive()) {
-        activateRasterArcgisStream();
+        persilLayer.on('tileerror', function() {
+          if (!persilLayer._fallbackActive) {
+            persilLayer._fallbackActive = true;
+            if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
+            persilLayer = createCadastreProxyLayer();
+            map.addLayer(persilLayer);
+          }
+        });
       } else {
-        const chk = document.getElementById('chkPersil');
-        if (!chk || chk.checked) {
-          persilLayer.addTo(map);
-        }
+        persilLayer = createCadastreProxyLayer();
       }
 
-      setupCadastreVectorLayer();
+      const chk = document.getElementById('chkPersil');
+      if (!chk || chk.checked) {
+        persilLayer.addTo(map);
+      }
+
       loadViewportCadastreSvgParcels();
-      updateDynamicMapLegend();
     }
 
     async function refreshPersilTiles() {
@@ -805,51 +819,29 @@ function getBpnGatewayBase() {
     }
 
     function togglePersilLayer(checked) {
-      if (persilLayer) {
-        if (checked) {
-          if (!map.hasLayer(persilLayer)) map.addLayer(persilLayer);
-        } else {
-          if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
-        }
+      if (!persilLayer) {
+        setupPersilLayer();
       }
-      if (cadastreVectorLayer) {
-        if (checked) {
-          if (!map.hasLayer(cadastreVectorLayer)) cadastreVectorLayer.addTo(map);
-          loadViewportCadastreSvgParcels();
-        } else {
-          if (map.hasLayer(cadastreVectorLayer)) map.removeLayer(cadastreVectorLayer);
-        }
+      if (checked) {
+        if (!map.hasLayer(persilLayer)) map.addLayer(persilLayer);
+        if (cadastreVectorLayer && !map.hasLayer(cadastreVectorLayer)) map.addLayer(cadastreVectorLayer);
+        loadViewportCadastreSvgParcels();
+      } else {
+        if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
+        if (cadastreVectorLayer) cadastreVectorLayer.clearLayers();
+        cadastreVectorParcelCache.clear();
       }
       const badge = document.getElementById('badgePersil');
       if (badge) {
         badge.className = checked ? 'badge-pill green' : 'badge-pill';
         badge.innerText = checked ? 'Aktif' : 'Nonaktif';
       }
-      const badgeStatus = document.getElementById('badgeStatusBidang');
-      if (badgeStatus) {
-        badgeStatus.className = checked ? 'badge-pill green' : 'badge-pill';
-        badgeStatus.innerText = checked ? 'Aktif' : 'Nonaktif';
-      }
-      updateDynamicMapLegend();
     }
 
     function changePersilOpacity(val) {
       const opacity = val / 100;
       if (persilLayer && typeof persilLayer.setOpacity === 'function') {
         persilLayer.setOpacity(opacity);
-      }
-      if (arcgisExportOverlay && typeof arcgisExportOverlay.setOpacity === 'function') {
-        arcgisExportOverlay.setOpacity(opacity);
-      }
-      if (cadastreVectorLayer) {
-        cadastreVectorLayer.eachLayer(layer => {
-          if (typeof layer.setStyle === 'function') {
-            layer.setStyle({
-              opacity: opacity,
-              fillOpacity: opacity * 0.12
-            });
-          }
-        });
       }
       const label = document.getElementById('opacityLabel');
       if (label) label.innerText = `${val}%`;
@@ -1278,71 +1270,99 @@ function getBpnGatewayBase() {
       return statusRes;
     }
 
-    function renderCadastralProFields() {
-      const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
-      const proRows = document.querySelectorAll('.pro-only-field');
-      const teaser = document.getElementById('proSpecTeaser');
+    window.renderBidangInfoPanel = function(pinData, vertices) {
+      const p = pinData || activePinData || {};
+      const v = vertices || (typeof activeVertices !== 'undefined' ? activeVertices : []);
 
-      if (isPro) {
-        proRows.forEach(row => { row.style.display = 'flex'; });
-        if (teaser) teaser.style.display = 'none';
-
-        if (activePinData) {
-          const elNib = document.getElementById('pinNibText');
-          if (elNib) elNib.innerText = activePinData.nib_lengkap || activePinData.nib || '-';
-
-          const elNomorHak = document.getElementById('pinNomorHakText');
-          if (elNomorHak) elNomorHak.innerText = activePinData.nomor_hak || '-';
-
-          const elKantah = document.getElementById('pinKantahText');
-          if (elKantah) elKantah.innerText = activePinData.kantah || '-';
-
-          const elKluster = document.getElementById('pinKlusterPtslText');
-          if (elKluster) elKluster.innerText = activePinData.kluster_ptsl || '-';
-
-          const elAkurasi = document.getElementById('pinAkurasiAlatText');
-          if (elAkurasi) elAkurasi.innerText = activePinData.akurasibidang || '-';
-
-          const elRtrw = document.getElementById('pinRtrwText');
-          if (elRtrw) elRtrw.innerText = activePinData.rtrw || '-';
-
-          const elRdtr = document.getElementById('pinRdtrText');
-          if (elRdtr) elRdtr.innerText = activePinData.rdtr || '-';
-
-          const elLsd = document.getElementById('pinLsdText');
-          if (elLsd) elLsd.innerText = activePinData.lsd || '-';
-
-          const elLbs = document.getElementById('pinLbsText');
-          if (elLbs) elLbs.innerText = activePinData.lbs || '-';
-
-          const elHutan = document.getElementById('pinHutanText');
-          if (elHutan) elHutan.innerText = activePinData.hutan || '-';
-
-          const elZnt = document.getElementById('pinZntText');
-          if (elZnt) elZnt.innerText = activePinData.znt || '-';
-
-          const elZntRange = document.getElementById('pinZntRangeText');
-          if (elZntRange) elZntRange.innerText = activePinData.znt_range || '-';
+      function setRow(rowId, textId, val) {
+        const row = document.getElementById(rowId);
+        const text = document.getElementById(textId);
+        const isValid = val && typeof val === 'string' && val.trim() !== '' && val.trim() !== '-' && val.trim() !== 'null' && val.trim() !== 'undefined' && !val.includes('Memuat') && !val.includes('Memeriksa') && !val.includes('Memverifikasi');
+        if (row) {
+          row.style.display = isValid ? 'flex' : 'none';
         }
+        if (text && isValid) {
+          text.innerText = val.trim();
+        }
+      }
+
+      // 1. Luas Terdaftar vs Luas Ukur
+      const cardTerdaftar = document.getElementById('cardLuasTerdaftar');
+      const grid = document.getElementById('gridLuasCards');
+      const elLuasBpn = document.getElementById('pinLuasBpnText');
+
+      const isManual = (p.tipe_hak === 'Delineasi Mandiri' || p.source === 'MANUAL_DELINEATION' || !p.luas_m2 || p.luas_m2 <= 0);
+      if (cardTerdaftar && elLuasBpn) {
+        if (!isManual && p.luas_m2 > 0) {
+          cardTerdaftar.style.display = 'block';
+          elLuasBpn.innerText = Math.round(p.luas_m2).toLocaleString('id-ID') + ' m²';
+          if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
+        } else {
+          cardTerdaftar.style.display = 'none';
+          if (grid) grid.style.gridTemplateColumns = '1fr';
+        }
+      }
+
+      // 2. Badge Hak (Only show authentic BPN hak)
+      const badgeHak = document.getElementById('badgeTipeHak');
+      if (badgeHak) {
+        const isAuthenticHak = p.tipe_hak && p.tipe_hak !== '-' && p.tipe_hak !== 'Delineasi Mandiri' && p.tipe_hak !== 'Delineasi Bidang Mandiri';
+        if (isAuthenticHak) {
+          badgeHak.style.display = 'inline-block';
+          badgeHak.innerText = p.tipe_hak.toUpperCase();
+        } else {
+          badgeHak.style.display = 'none';
+        }
+      }
+
+      // 3. Spec items with zero dummy display
+      const nibVal = (p.nib && p.nib !== '-') ? (p.nib_lengkap || p.nib) : null;
+      setRow('rowPinNib', 'pinNibText', nibVal);
+      setRow('rowPinTipeHak', 'pinTipeHakText', (p.tipe_hak && p.tipe_hak !== 'Delineasi Mandiri') ? p.tipe_hak : null);
+      setRow('rowPinNomorHak', 'pinNomorHakText', (p.nomor_hak && p.nomor_hak !== '-') ? p.nomor_hak : null);
+      setRow('rowPinKabkot', 'pinKabkotText', (p.kabkot && p.kabkot !== '-') ? p.kabkot : null);
+      setRow('rowPinKecamatan', 'pinKecamatanText', (p.kecamatan && p.kecamatan !== '-') ? p.kecamatan : null);
+      setRow('rowPinDesa', 'pinDesaText', (p.desa && p.desa !== '-') ? p.desa : null);
+
+      if (p.lat && p.lng) {
+        setRow('rowPinCoords', 'pinCoordsText', p.lat.toFixed(6) + ', ' + p.lng.toFixed(6));
       } else {
-        proRows.forEach(row => { row.style.display = 'none'; });
-        if (teaser) teaser.style.display = 'block';
+        setRow('rowPinCoords', 'pinCoordsText', null);
+      }
 
-        if (activePinData) {
-          const elNib = document.getElementById('pinNibText');
-          if (elNib) elNib.innerText = (activePinData.nib && activePinData.nib !== '-') ? `Bidang NIB ${activePinData.nib}` : 'Bidang Terdaftar';
+      if (v && v.length >= 3) {
+        let kelilingM = 0;
+        for (let i = 0; i < v.length; i++) {
+          const a = v[i], b = v[(i + 1) % v.length];
+          kelilingM += L.latLng(a.lat, a.lng).distanceTo(L.latLng(b.lat, b.lng));
         }
+        setRow('rowPinKeliling', 'pinKelilingText', kelilingM.toFixed(2) + ' m');
+        setRow('rowPinJumlahPatok', 'pinJumlahPatokText', v.length + ' Titik Sudut');
+      } else {
+        setRow('rowPinKeliling', 'pinKelilingText', null);
+        setRow('rowPinJumlahPatok', 'pinJumlahPatokText', null);
       }
 
-      if (activePinData) {
-        const elNomorHak = document.getElementById('pinNomorHakText');
-        if (elNomorHak) elNomorHak.innerText = activePinData.nomor_hak || activePinData.nomor_hak_raw || '-';
-        const rowNomorHak = document.getElementById('itemPinNomorHak');
-        if (rowNomorHak) rowNomorHak.style.display = 'none';
-      }
+      setRow('rowPinStatusValidasi', 'pinStatusValidasiText', (p.status_validasi && p.status_validasi !== '-') ? p.status_validasi : null);
+      setRow('rowPinKantah', 'pinKantahText', (p.kantah && p.kantah !== '-' && p.kantah !== 'Kantor Pertanahan') ? p.kantah : null);
+      setRow('rowPinKlusterPtsl', 'pinKlusterPtslText', (p.kluster_ptsl && p.kluster_ptsl !== '-') ? p.kluster_ptsl : null);
+      setRow('rowPinAkurasiAlat', 'pinAkurasiAlatText', (p.akurasibidang && p.akurasibidang !== '-') ? p.akurasibidang : null);
+      setRow('rowPinRtrw', 'pinRtrwText', p.rtrw);
+      setRow('rowPinRdtr', 'pinRdtrText', p.rdtr);
+      setRow('rowPinLsd', 'pinLsdText', p.lsd);
+      setRow('rowPinLbs', 'pinLbsText', p.lbs);
+      setRow('rowPinHutan', 'pinHutanText', p.hutan);
+      setRow('rowPinZnt', 'pinZntText', p.znt);
+      setRow('rowPinZntRange', 'pinZntRangeText', p.znt_range);
 
       if (typeof updateAdminPolygonCoordsUI === 'function') {
         updateAdminPolygonCoordsUI();
+      }
+    };
+
+    function renderCadastralProFields() {
+      if (typeof window.renderBidangInfoPanel === 'function') {
+        window.renderBidangInfoPanel();
       }
     }
 

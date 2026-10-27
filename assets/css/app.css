@@ -257,60 +257,7 @@
       border: 1px solid rgba(191, 219, 254, 0.28);
     }
     
-    .header-role-switcher {
-      display: inline-flex;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      border-radius: 4px;
-      padding: 2px;
-      gap: 2px;
-    }
-    .role-pill-btn {
-      height: 24px;
-      padding: 0 7px;
-      border: none;
-      background: transparent;
-      color: rgba(255, 255, 255, 0.75);
-      font-size: 0.64rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: background-color 0.12s ease, color 0.12s ease;
-      line-height: 24px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .role-pill-btn:hover {
-      background-color: rgba(255, 255, 255, 0.18);
-      color: #ffffff;
-    }
-    .role-pill-btn.active[data-role="free"] {
-      background-color: #475569;
-      color: #ffffff;
-    }
-    .role-pill-btn.active[data-role="pro"] {
-      background-color: #059669;
-      color: #ffffff;
-    }
-    .role-pill-btn.active[data-role="admin"] {
-      background-color: #d97706;
-      color: #ffffff;
-    }
-    @media (max-width: 640px) {
-      .header-role-switcher {
-        padding: 1px;
-        gap: 1px;
-      }
-      .role-pill-btn {
-        height: 22px;
-        padding: 0 5px;
-        font-size: 0.58rem;
-        line-height: 22px;
-      }
-    }
+    
 
     .tier-tag.pro {
       background-color: #059669;
