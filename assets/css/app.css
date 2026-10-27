@@ -945,11 +945,27 @@
       display: flex;
       gap: 0.45rem;
     }
+    .geo-patok-toolbar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      background: var(--bg-alt);
+      padding: 5px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      align-items: center;
+      box-sizing: border-box;
+      width: 100%;
+    }
     .btn-tool-icon {
       display: flex;
       align-items: center;
       justify-content: center;
       height: 32px;
+      width: 100%;
+      min-width: 0;
+      padding: 0;
+      box-sizing: border-box;
       background-color: var(--bg-surface);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-sm);

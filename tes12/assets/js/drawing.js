@@ -808,7 +808,15 @@ Server Sumber Data: ${serverName}`;
     function handleActivePolygonClick(e) {
       if (checkAndInsertBoundaryVertex(e.latlng, 22)) {
         L.DomEvent.stopPropagation(e);
+        return;
       }
+      if (typeof switchTab === 'function') {
+        switchTab('tab-bidang');
+      }
+      if (typeof window.renderBidangInfoPanel === 'function') {
+        window.renderBidangInfoPanel(activePinData, activeVertices);
+      }
+      L.DomEvent.stopPropagation(e);
     }
 
     function latLngToMeters(coords, refLat, refLng) {
