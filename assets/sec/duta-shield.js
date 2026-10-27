@@ -97,7 +97,7 @@
   }
 
   async function loadPayload(url) {
-    const cacheBust = '?v=0.93_' + Date.now();
+    const cacheBust = '?v=0.113_' + Date.now();
     const resp = await fetch(url + cacheBust);
     if (!resp.ok) {
       throw new Error('Arsip data tidak dapat diakses.');
@@ -138,6 +138,11 @@
     if (window.location.protocol === 'file:') {
       await bootFallback();
       return;
+    }
+    let waitAttempts = 0;
+    while (typeof window.L === 'undefined' && waitAttempts < 100) {
+      await new Promise(r => setTimeout(r, 50));
+      waitAttempts++;
     }
     try {
       for (let i = 0; i < DATA_PAYLOADS.length; i++) {

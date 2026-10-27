@@ -67,6 +67,11 @@
     var mergeParcelsList = [];
     var mergePreviewLayers = [];
     var isGeometryManuallyEdited = false;
+    var getCleanParcelTitle = null;
+    var toggleMergeMode = null;
+    var cancelMergeMode = null;
+    var finishMergeParcels = null;
+    var handleMergeParcelClick = null;
 
     var DEFAULT_LAT = -6.1884;
     var DEFAULT_LON = 106.8320;
@@ -78,7 +83,8 @@
     var currentAttrTab = 'oss';
     var lastHoverCoords = { lat: -6.1884, lng: 106.8320 };
     var headerCopyFlip = false;
-    var cekingLayers = { hutan: null, lsd: null, lbs: null, peruntukan: null, rtrw: null, jalan: null };
+    var cekingLayers = { hutan: null, lsd: null, lbs: null, peruntukan: null, rtrw: null, rdtr: null, znt: null, jalan: null, hak_milik: null, hgu: null, hgb: null, hpl: null, hak_ulayat: null, kkpr: null };
+    var IGTPR_GEOSERVER_URL = 'https://igtpr.atrbpn.go.id/geoserver/ows';
     var ArcGisExportLayer = null;
     var SUPABASE_PROJECT_URL = 'https://vezruyffzmabhtylxigc.supabase.co';
     var SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
@@ -214,7 +220,7 @@
       if (lower.includes('west java') || lower.includes('jawa barat')) return 'Jawa Barat';
       if (lower.includes('east java') || lower.includes('jawa timur')) return 'Jawa Timur';
       if (lower.includes('yogyakarta') || lower.includes('jogja')) return 'D.I. Yogyakarta';
-      if (lower.includes('jakarta')) return 'DKI Jakarta';
+      if (lower.includes('jakarta') || lower.includes('special capital region') || lower.includes('daerah khusus ibukota') || lower.includes('dki')) return 'DKI Jakarta';
       if (lower.includes('banten')) return 'Banten';
       if (lower.includes('bali')) return 'Bali';
       if (lower.includes('lampung')) return 'Lampung';

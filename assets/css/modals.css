@@ -29,6 +29,34 @@
   from { transform: scale(0.96) translateY(6px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
 }
+.modal-card.modal-card-wide {
+  max-width: 680px;
+  width: min(680px, calc(100vw - 1.5rem));
+}
+.modal-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+@media (min-width: 640px) {
+  .modal-grid-2col {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.15rem;
+    align-items: start;
+  }
+}
+.qris-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+@media (min-width: 640px) {
+  .qris-grid-2col {
+    grid-template-columns: 240px 1fr;
+    gap: 1.15rem;
+    align-items: center;
+  }
+}
 .modal-head {
       padding: 0.65rem 0.85rem;
       border-bottom: 1px solid var(--border-light);

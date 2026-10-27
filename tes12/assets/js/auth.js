@@ -120,6 +120,142 @@ function closeServerModal() {
       window.isMemberAdminActive = verifyAdminLicenseIntegrity;
     }
 
+    
+    function updateSimulationUI() {
+      const isA = (typeof window !== 'undefined' && typeof window.isMemberAdminActive === 'function') ? window.isMemberAdminActive() : false; const isP = (typeof window !== 'undefined' && typeof window.isMemberProActive === 'function') ? window.isMemberProActive() : false; const simRole = localStorage.getItem('duta_simulation_role') || (isA ? 'admin' : (isP ? 'pro' : 'free'));
+      document.querySelectorAll('.role-pill-btn').forEach(btn => {
+        const r = btn.getAttribute('data-role');
+        if (r === simRole) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      const btnSimFree = document.getElementById('modalBtnSimFree');
+      const btnSimPro = document.getElementById('modalBtnSimPro');
+      const btnSimAdmin = document.getElementById('modalBtnSimAdmin');
+      
+      if (btnSimFree) {
+        btnSimFree.className = (simRole === 'free') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
+        if (simRole === 'free') {
+          btnSimFree.style.backgroundColor = '#475569';
+          btnSimFree.style.borderColor = '#475569';
+          btnSimFree.style.color = '#ffffff';
+        } else {
+          btnSimFree.style.backgroundColor = '';
+          btnSimFree.style.borderColor = '';
+          btnSimFree.style.color = '';
+        }
+      }
+      if (btnSimPro) {
+        btnSimPro.className = (simRole === 'pro') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
+        if (simRole === 'pro') {
+          btnSimPro.style.backgroundColor = '#059669';
+          btnSimPro.style.borderColor = '#059669';
+          btnSimPro.style.color = '#ffffff';
+        } else {
+          btnSimPro.style.backgroundColor = '';
+          btnSimPro.style.borderColor = '';
+          btnSimPro.style.color = '';
+        }
+      }
+      if (btnSimAdmin) {
+        btnSimAdmin.className = (simRole === 'admin') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
+        if (simRole === 'admin') {
+          btnSimAdmin.style.backgroundColor = '#d97706';
+          btnSimAdmin.style.borderColor = '#d97706';
+          btnSimAdmin.style.color = '#ffffff';
+        } else {
+          btnSimAdmin.style.backgroundColor = '';
+          btnSimAdmin.style.borderColor = '';
+          btnSimAdmin.style.color = '';
+        }
+      }
+    }
+
+    function switchSimulationRole(targetRole) {
+      if (targetRole === 'real') {
+        localStorage.removeItem('duta_simulation_role');
+        sessionStorage.removeItem('duta_admin_local_auth');
+        if (supabaseClient && currentMemberSession && currentMemberSession.user) {
+          fetchMemberProfile(currentMemberSession.user).then(() => {
+            updateMemberUI();
+            updateSimulationUI();
+            if (typeof showToast === 'function') showToast('Mode dikembalikan ke status otentikasi Google asli.', 'info');
+          });
+        } else {
+          setMemberSecureData({ role: 'free', status: 'none', email: '', name: '', expires_at: null });
+          currentMemberSession = null;
+          updateMemberUI();
+          updateSimulationUI();
+          if (typeof showToast === 'function') showToast('Mode dikembalikan ke status akun gratis (Guest).', 'info');
+        }
+        return;
+      }
+
+      localStorage.setItem('duta_simulation_role', targetRole);
+
+      if (targetRole === 'admin') {
+        setMemberSecureData({
+          role: 'admin',
+          status: 'active',
+          email: 'admin@dutamik.id',
+          name: 'Administrator (Koreksi)',
+          expires_at: null
+        });
+        currentMemberSession = {
+          user: { email: 'admin@dutamik.id', id: 'sim_admin_01' },
+          access_token: 'duta_sim_token_admin_valid'
+        };
+        sessionStorage.setItem('duta_admin_local_auth', 'verified');
+        if (typeof showToast === 'function') showToast('Beralih ke Mode ADMIN: Server Kadaster Prioritas & Meja Kerja Aktif', 'success');
+      } else if (targetRole === 'pro') {
+        setMemberSecureData({
+          role: 'pro',
+          status: 'active',
+          email: 'member.pro@dutamik.id',
+          name: 'Member PRO (Koreksi)',
+          expires_at: null
+        });
+        currentMemberSession = {
+          user: { email: 'member.pro@dutamik.id', id: 'sim_pro_01' },
+          access_token: 'duta_sim_token_pro_valid'
+        };
+        sessionStorage.removeItem('duta_admin_local_auth');
+        if (typeof showToast === 'function') showToast('Beralih ke Mode PRO: Luas Tanpa Batas & Atribut Kustom Terbuka', 'success');
+      } else {
+        setMemberSecureData({
+          role: 'free',
+          status: 'active',
+          email: 'member.free@dutamik.id',
+          name: 'Member Gratis (Koreksi)',
+          expires_at: null
+        });
+        currentMemberSession = {
+          user: { email: 'member.free@dutamik.id', id: 'sim_free_01' },
+          access_token: 'duta_sim_token_free_valid'
+        };
+        sessionStorage.removeItem('duta_admin_local_auth');
+        if (typeof showToast === 'function') showToast('Beralih ke Mode FREE: Batas Luas 150 m2 & Atribut Standar OSS', 'info');
+      }
+
+      updateMemberUI();
+      updateSimulationUI();
+
+      if (typeof updateCadastreServerUI === 'function') {
+        updateCadastreServerUI();
+      }
+      if (typeof renderCadastralProFields === 'function') {
+        renderCadastralProFields();
+      }
+    }
+
+    try {
+      window.switchSimulationRole = switchSimulationRole;
+      window.updateSimulationUI = updateSimulationUI;
+    } catch (_) {}
+
     function initSupabase() {
       localStorage.removeItem('duta_pro_token');
       if (typeof window.supabase === 'undefined') return;
@@ -167,7 +303,7 @@ function closeServerModal() {
 
       if (window.location.protocol === 'file:') {
         if (slot) {
-          slot.innerHTML = '<div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.73rem; color: #92400e; line-height: 1.45; text-align: center; width: 100%; max-width: 360px; margin-bottom: 0.25rem;"><div style="font-weight: 700; margin-bottom: 4px;">Pemberitahuan Protokol Berkas (file://)</div><div>Kebijakan keamanan Google OAuth melarang login dari berkas lokal. Buka aplikasi melalui domain resmi:</div><a href="https://geospasi.dutamik.id" class="btn btn-sm" style="background-color: #0f3b73; color: #ffffff; text-decoration: none; padding: 6px 14px; font-weight: 700; border-radius: 4px; display: inline-block; margin-top: 8px;">Buka geospasi.dutamik.id</a></div>';
+          slot.innerHTML = '<div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.73rem; color: #92400e; line-height: 1.45; text-align: center; width: 100%; max-width: 360px; margin-bottom: 0.25rem;"><div style="font-weight: 700; margin-bottom: 4px;">Pemberitahuan Protokol Berkas (file://)</div><div>Kebijakan Google OAuth melarang login langsung dari berkas lokal. Silakan buka aplikasi pada domain resmi atau gunakan tombol uji mode:</div><a href="https://geospasi.dutamik.id" class="btn btn-sm" style="background-color: #0f3b73; color: #ffffff; text-decoration: none; padding: 5px 12px; font-weight: 700; border-radius: 4px; display: inline-block; margin-top: 6px;">Buka geospasi.dutamik.id</a><div style="margin-top: 8px; font-weight: 700; color: #1e293b; font-size: 0.71rem;">Atau uji seketika di berkas lokal:</div><div style="display: flex; gap: 4px; justify-content: center; margin-top: 5px;"><button type="button" class="btn btn-sm" onclick="switchSimulationRole(\'free\'); closeMemberModal();" style="font-size: 0.67rem; padding: 2px 7px; font-weight: 700; background-color: #475569; color: #ffffff; border-radius: 3px;">Uji Free</button><button type="button" class="btn btn-sm" onclick="switchSimulationRole(\'pro\'); closeMemberModal();" style="font-size: 0.67rem; padding: 2px 7px; font-weight: 700; background-color: #059669; color: #ffffff; border-radius: 3px;">Uji PRO</button><button type="button" class="btn btn-sm" onclick="switchSimulationRole(\'admin\'); closeMemberModal();" style="font-size: 0.67rem; padding: 2px 7px; font-weight: 700; background-color: #d97706; color: #ffffff; border-radius: 3px;">Uji Admin</button></div></div>';
         }
         if (btn) btn.style.display = 'none';
         return;
@@ -426,7 +562,7 @@ function closeServerModal() {
       const guestBody = document.getElementById('memberModalBodyGuest');
       const userBody = document.getElementById('memberModalBodyUser');
 
-      const isPro = isMemberProActive();
+      const isPro = (typeof window !== "undefined" && typeof window.isMemberProActive === "function") ? window.isMemberProActive() : (typeof isMemberProActive === "function" ? isMemberProActive() : false);
       const isAdmin = (typeof isMemberAdminActive === 'function') ? isMemberAdminActive() : (_memberSecureState.role === 'admin');
       const isLoggedIn = !!currentMemberSession?.user;
 
@@ -588,6 +724,7 @@ function closeServerModal() {
         syncAdminMejaKerjaVisibility(isAdmin);
       }
       renderAdminRoleManagementUI(isAdmin);
+      if (typeof updateSimulationUI === "function") updateSimulationUI();
     }
 
     function openMemberModal() {
@@ -1264,3 +1401,128 @@ function closeServerModal() {
     if (typeof window.supabase !== 'undefined') {
       initSupabase();
     }
+
+
+// ========================================================
+// GOOGLE AUTH MANAGER : STANDAR rab.dutamik.id
+// ========================================================
+(function initGoogleAuthManagerAdapter() {
+  function checkUrlHashForOAuthToken() {
+    if (typeof window === 'undefined' || !window.location || !window.location.hash) return;
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+      if (window.opener && !window.opener.closed) {
+        try {
+          window.opener.postMessage({ type: 'oauth_token', accessToken: accessToken }, '*');
+          window.close();
+          return;
+        } catch (e) {}
+      }
+      try {
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      } catch (e) {}
+      fetchUserInfoFromGoogle(accessToken);
+    }
+  }
+
+  function fetchUserInfoFromGoogle(accessToken) {
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + accessToken }
+    })
+      .then(res => res.json())
+      .then(profile => {
+        if (!profile || !profile.sub) {
+          showToast('Gagal memproses profil Akun Google.', 'error');
+          return;
+        }
+        const userObj = {
+          id: profile.sub,
+          email: profile.email,
+          user_metadata: {
+            full_name: profile.name,
+            name: profile.name,
+            avatar_url: profile.picture
+          }
+        };
+        currentMemberSession = {
+          access_token: accessToken,
+          user: userObj
+        };
+        fetchMemberProfile(userObj).then(() => {
+          showToast('Selamat datang, ' + (profile.name || profile.email) + '!', 'success');
+          closeMemberModal();
+        });
+      })
+      .catch(err => {
+        showToast('Koneksi Google terputus: ' + err.message, 'crimson');
+      });
+  }
+
+  function signInWithOAuth2Popup() {
+    const clientId = GOOGLE_CLIENT_ID || '194944801134-etvtpajb04e1jdkrmiv07sjupsqul29p.apps.googleusercontent.com';
+    const width = 520;
+    const height = 640;
+    const screenWidth = (typeof window !== 'undefined' && window.screen && window.screen.width) ? window.screen.width : ((typeof window !== 'undefined' && window.innerWidth) || 1024);
+    const screenHeight = (typeof window !== 'undefined' && window.screen && window.screen.height) ? window.screen.height : ((typeof window !== 'undefined' && window.innerHeight) || 768);
+    const left = Math.max(0, Math.round((screenWidth - width) / 2));
+    const top = Math.max(0, Math.round((screenHeight - height) / 2));
+
+    const redirectUri = window.location.origin + window.location.pathname;
+    const scope = encodeURIComponent('openid email profile');
+    const state = 'geospasi_pkce_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + encodeURIComponent(clientId) + '&redirect_uri=' + encodeURIComponent(redirectUri) + '&response_type=token&scope=' + scope + '&state=' + encodeURIComponent(state) + '&prompt=consent';
+
+    const popup = window.open(authUrl, 'GoogleOAuth2Login', 'width=' + width + ',height=' + height + ',top=' + top + ',left=' + left + ',status=no,toolbar=no,menubar=no,resizable=yes');
+    if (!popup) {
+      showToast('Pop-up login diblokir peramban. Harap izinkan pop-up untuk memilih Akun Google.', 'warn');
+      return;
+    }
+
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(timer);
+      }
+    }, 1000);
+  }
+
+  window.addEventListener('message', function(ev) {
+    if (ev.data && ev.data.type === 'oauth_token' && ev.data.accessToken) {
+      fetchUserInfoFromGoogle(ev.data.accessToken);
+    }
+  });
+
+  const GoogleAuthManagerInstance = Object.freeze({
+    loginWithGoogle: function() {
+      if (window.location.protocol === 'file:') {
+        showToast('Otentikasi Google membutuhkan koneksi online. Silakan buka aplikasi pada domain resmi https://geospasi.dutamik.id', 'warn');
+        return;
+      }
+      if (typeof supabaseClient !== 'undefined' && supabaseClient && supabaseClient.auth) {
+        const redirectTo = window.location.origin + window.location.pathname;
+        supabaseClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: redirectTo, scopes: 'openid email profile' }
+        }).catch(() => {
+          signInWithOAuth2Popup();
+        });
+        return;
+      }
+      signInWithOAuth2Popup();
+    },
+    logout: logoutMember,
+    getCurrentUser: function() {
+      return currentMemberSession && currentMemberSession.user ? { ...currentMemberSession.user } : null;
+    },
+    isPaidMember: verifyProLicenseIntegrity,
+    updateMemberUI: updateMemberUI,
+    showLoginModal: openMemberModal,
+    openMemberModal: openMemberModal,
+    closeMemberModal: closeMemberModal,
+    showUpgradeModal: openQrisPaymentModal
+  });
+
+  window.GoogleAuthManager = GoogleAuthManagerInstance;
+  checkUrlHashForOAuthToken();
+})();

@@ -657,11 +657,227 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    
+    /* ADAPTIVE MULTI-COLUMN COORDS & ATTACHMENT SHEET */
+    .print-coords-dual-grid {
+      display: flex;
+      gap: 3px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .print-coords-dual-grid .print-kop-coords-table {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .print-kop-coords-table.compact {
+      font-size: 5.4px;
+      line-height: 1.2;
+    }
+    .print-kop-coords-table.compact th {
+      font-size: 5.4px;
+      padding: 1px 2px;
+      font-weight: 800;
+      background-color: #f1f5f9;
+    }
+    .print-kop-coords-table.compact td {
+      font-size: 5.4px;
+      padding: 0.8px 2px;
+      letter-spacing: -0.01em;
+    }
+    .print-kop-coords-table.dense {
+      font-size: 4.8px;
+      line-height: 1.15;
+    }
+    .print-kop-coords-table.dense th {
+      font-size: 4.8px;
+      padding: 0.6px 1.5px;
+      font-weight: 800;
+      background-color: #f1f5f9;
+    }
+    .print-kop-coords-table.dense td {
+      font-size: 4.8px;
+      padding: 0.5px 1.5px;
+      letter-spacing: -0.02em;
+    }
+    .print-sheet-paper.a3 .print-kop-coords-table.compact {
+      font-size: 7px;
+    }
+    .print-sheet-paper.a3 .print-kop-coords-table.compact th,
+    .print-sheet-paper.a3 .print-kop-coords-table.compact td {
+      font-size: 7px;
+      padding: 1.5px 3px;
+    }
+    .print-sheet-paper.a3 .print-kop-coords-table.dense {
+      font-size: 6.2px;
+    }
+    .print-sheet-paper.a3 .print-kop-coords-table.dense th,
+    .print-sheet-paper.a3 .print-kop-coords-table.dense td {
+      font-size: 6.2px;
+      padding: 1.2px 2.5px;
+    }
+    .print-coords-overflow-badge {
+      font-size: 5.2px;
+      color: #0369a1;
+      background-color: #f0f9ff;
+      border: 1px dashed #7dd3fc;
+      border-radius: 2px;
+      padding: 2px 4px;
+      text-align: center;
+      margin-top: 3px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .print-pages-bundle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    .print-sheet-paper.print-page-2 {
+      page-break-before: always;
+      break-before: page;
+      margin-top: 25px;
+      background-color: #ffffff;
+    }
+    .print-attachment-inner {
+      background-color: #ffffff;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .print-att-top-row {
+      border-bottom: 2px solid #000000;
+      padding-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .print-att-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 6.5px;
+      line-height: 1.25;
+    }
+    .print-att-table th {
+      background-color: #f1f5f9;
+      border: 0.8px solid #cbd5e1;
+      border-bottom: 1.5px solid #000000;
+      padding: 2px 4px;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+      font-size: 6.5px;
+    }
+    .print-att-table td {
+      border: 0.6px solid #e2e8f0;
+      padding: 1.5px 3.5px;
+      color: #1e293b;
+      font-size: 6.5px;
+    }
+    .print-att-table tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+    .print-sheet-paper.a3 .print-att-table {
+      font-size: 8px;
+    }
+    .print-sheet-paper.a3 .print-att-table th,
+    .print-sheet-paper.a3 .print-att-table td {
+      font-size: 8px;
+      padding: 2.5px 5px;
+    }
+    .print-toolbar-select {
+      height: 28px;
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background-color: #ffffff;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    @media print {
+      .print-pages-bundle {
+        display: block !important;
+      }
+      .print-sheet-paper.print-page-1 {
+        page-break-after: always !important;
+        break-after: page !important;
+        margin-bottom: 0 !important;
+      }
+      .print-sheet-paper.print-page-2 {
+        page-break-before: always !important;
+        break-before: page !important;
+        margin-top: 0 !important;
+        display: flex !important;
+      }
+    }
+
     .print-scale-bar-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       margin-top: 1px;
+    }
+    .print-kop-coords-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 6.5px;
+      line-height: 1.25;
+    }
+    .print-kop-coords-table th {
+      background-color: #f1f5f9;
+      border-bottom: 1px solid #000000;
+      padding: 1.5px 3px;
+      text-align: left;
+      font-weight: 800;
+      color: #0f172a;
+      font-size: 6.5px;
+    }
+    .print-kop-coords-table td {
+      padding: 1.5px 3px;
+      border-bottom: 0.5px solid #e2e8f0;
+      color: #1e293b;
+      font-size: 6.5px;
+    }
+    .print-kop-coords-table tr:last-child td {
+      border-bottom: none;
+    }
+    .print-sheet-paper.a3 .print-kop-coords-table {
+      font-size: 8px;
+    }
+    .print-sheet-paper.a3 .print-kop-coords-table th,
+    .print-sheet-paper.a3 .print-kop-coords-table td {
+      font-size: 8px;
+      padding: 2.5px 4px;
+    }
+    .leaflet-tile {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+    .leaflet-tile-container {
+      border: none !important;
+      outline: none !important;
+    }
+    .leaflet-tile-error,
+    img.leaflet-tile:not([src]),
+    img.leaflet-tile[src=""] {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      border: none !important;
     }
     .print-sheet-paper.a3 .print-kop-column {
       font-size: 9.5px;
@@ -813,9 +1029,27 @@
       .btn-kop-helper,
       .print-mobile-magnifier,
       #printMobileMagnifier,
+      .print-map-area .leaflet-control-container,
       .print-map-tools {
         display: none !important;
         visibility: hidden !important;
+      }
+      #kopPatokCoordsContainer {
+        max-height: none !important;
+        overflow: visible !important;
+      }
+      .leaflet-tile {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+      }
+      .leaflet-tile-error,
+      img.leaflet-tile:not([src]),
+      img.leaflet-tile[src=""] {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        border: none !important;
       }
       .print-sheet-paper {
         position: relative !important;

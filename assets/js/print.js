@@ -75,7 +75,7 @@ function togglePrintDimensions(show) {
         if (infoEl) infoEl.readOnly = false;
       } else {
         if (badgeEl) badgeEl.textContent = 'PRO FITUR';
-        if (imgEl) imgEl.src = 'assets/img/logo.png';
+        if (imgEl) imgEl.src = 'assets/img/logo.png?v=0.105';
         if (nameEl) {
           nameEl.value = 'Duta Digital Agensi (dutamik.id)';
           nameEl.readOnly = true;
@@ -132,9 +132,13 @@ function togglePrintDimensions(show) {
       }
       if (size === 'a3') {
         sheet.classList.add('a3');
+        const attSheet = document.getElementById('printAttachmentSheet');
+        if (attSheet) attSheet.classList.add('a3');
         dynStyle.textContent = '@media print { @page { size: A3 landscape; margin: 0 !important; } html, body { width: 420mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; } .print-sheet-paper.a3 { width: 420mm !important; height: 297mm !important; margin: 0 auto !important; padding: 10mm !important; } }';
       } else {
         sheet.classList.remove('a3');
+        const attSheet = document.getElementById('printAttachmentSheet');
+        if (attSheet) attSheet.classList.remove('a3');
         dynStyle.textContent = '@media print { @page { size: A4 landscape; margin: 0 !important; } html, body { width: 297mm !important; height: 210mm !important; margin: 0 !important; padding: 0 !important; } .print-sheet-paper { width: 297mm !important; height: 210mm !important; margin: 0 auto !important; padding: 8mm !important; } }';
       }
       setTimeout(() => {
@@ -174,7 +178,9 @@ function togglePrintDimensions(show) {
 
       const elLuas = document.getElementById('kopLuas');
       if (elLuas) {
-        const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+        const curVerts = (typeof activeVertices !== 'undefined' && activeVertices) ? activeVertices : ((typeof window !== 'undefined' && window.activeVertices) ? window.activeVertices : []);
+      const curMulti = (typeof activeMultiParts !== 'undefined' && activeMultiParts) ? activeMultiParts : ((typeof window !== 'undefined' && window.activeMultiParts) ? window.activeMultiParts : null);
+      const parts = (curMulti && curMulti.length > 1) ? curMulti : [curVerts];
         let totalM2 = 0;
         parts.forEach(p => {
           if (p && p.length >= 3) {
@@ -187,7 +193,333 @@ function togglePrintDimensions(show) {
           elLuas.innerText = '-';
         }
       }
+
+      updatePrintPatokCoords();
     }
+
+    const transparent1x1 = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+    function attachTileClean(layer) {
+      if (!layer) return;
+      if (layer instanceof L.TileLayer) {
+        layer.options.errorTileUrl = transparent1x1;
+        layer.on('tileerror', function(ev) {
+          if (ev.tile) {
+            ev.tile.src = transparent1x1;
+            ev.tile.style.opacity = '0';
+            ev.tile.style.display = 'none';
+            ev.tile.style.visibility = 'hidden';
+            ev.tile.style.border = 'none';
+          }
+        });
+      } else if (layer instanceof L.LayerGroup) {
+        layer.eachLayer(sub => attachTileClean(sub));
+      }
+    }
+
+    function sanitizePrintTiles() {
+      const containers = [
+        document.getElementById('printMapContainer'),
+        document.getElementById('printInsetContainer')
+      ];
+      containers.forEach(ct => {
+        if (!ct) return;
+        const tiles = ct.querySelectorAll('img.leaflet-tile');
+        tiles.forEach(img => {
+          img.style.border = 'none';
+          img.style.outline = 'none';
+          img.style.boxShadow = 'none';
+          if (!img.complete || img.naturalWidth === 0 || img.classList.contains('leaflet-tile-error')) {
+            img.src = transparent1x1;
+            img.style.display = 'none';
+            img.style.opacity = '0';
+            img.style.visibility = 'hidden';
+          }
+        });
+      });
+    }
+
+    window.addEventListener('beforeprint', sanitizePrintTiles);
+
+    function togglePrintPatokCoords(show) {
+      const box = document.getElementById('kopPatokCoordsBox');
+      if (!box) return;
+      box.style.display = show ? 'flex' : 'none';
+      if (show) {
+        updatePrintPatokCoords();
+      }
+    }
+
+    
+    function getDistanceMetersGeo(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+
+    function changePrintCoordsLayout(val) {
+      updatePrintPatokCoords();
+    }
+
+    function changePrintPagesMode(val) {
+      updatePrintPatokCoords();
+    }
+
+    function renderPrintAttachmentSheet(pts) {
+      const attSheet = document.getElementById('printAttachmentSheet');
+      if (!attSheet) return;
+
+      const dateEl = document.getElementById('attPrintDate');
+      if (dateEl) {
+        const d = new Date();
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        dateEl.textContent = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+      }
+
+      const elKeg = document.getElementById('attKegiatan');
+      if (elKeg) {
+        elKeg.textContent = document.getElementById('kopKegiatan')?.innerText?.trim() || document.getElementById('shpKegiatan')?.value?.trim() || 'KKPR / PERIZINAN BERUSAHA';
+      }
+
+      const elPem = document.getElementById('attPemrakarsa');
+      if (elPem) {
+        elPem.textContent = document.getElementById('kopPemrakarsa')?.innerText?.trim() || document.getElementById('shpPemrakarsa')?.value?.trim() || 'PEMOHON OSS RBA';
+      }
+
+      const elNib = document.getElementById('attNib');
+      if (elNib) {
+        const nibVal = document.getElementById('bidangNib')?.value?.trim() || document.getElementById('shpNIB')?.value?.trim() || 'NIB-KADASTRAL-TERDAFTAR';
+        elNib.textContent = nibVal;
+      }
+
+      const elLuas = document.getElementById('attLuas');
+      if (elLuas) {
+        elLuas.textContent = document.getElementById('kopLuas')?.innerText?.trim() || '-';
+      }
+
+      const elTot = document.getElementById('attTotalPatok');
+      if (elTot) {
+        elTot.textContent = pts.length + ' Titik Batas';
+      }
+
+      const container = document.getElementById('printAttachmentTablesContainer');
+      if (!container) return;
+
+      if (!pts || pts.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 7.5px; font-style: italic; padding: 10px;">Belum ada data koordinat batas bidang.</div>';
+        return;
+      }
+
+      // Multi-column split for attachment sheet
+      let numCols = 2;
+      if (pts.length > 25 && pts.length <= 50) numCols = 3;
+      else if (pts.length > 50) numCols = 4;
+
+      const itemsPerCol = Math.ceil(pts.length / numCols);
+      const cols = [];
+      for (let i = 0; i < numCols; i++) {
+        const start = i * itemsPerCol;
+        const end = Math.min(start + itemsPerCol, pts.length);
+        if (start < pts.length) {
+          cols.push(pts.slice(start, end));
+        }
+      }
+
+      const isA3 = attSheet.classList.contains('a3');
+      const tableHtmlList = cols.map((colPts, colIdx) => {
+        const offset = colIdx * itemsPerCol;
+        const rows = colPts.map((p, idx) => {
+          const rowNum = offset + idx + 1;
+          const xStr = (p.utmX && p.utmX > 0) ? Number(p.utmX).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+          const yStr = (p.utmY && p.utmY > 0) ? Number(p.utmY).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+          const distStr = (p.dist && p.dist > 0) ? Number(p.dist).toFixed(2) + ' m' : '-';
+          return '<tr>' +
+            '<td style="text-align: center; font-weight: 700; color: #64748b;">' + rowNum + '</td>' +
+            '<td style="font-weight: 800; color: #0a2e5c; text-align: center;">' + p.label + '</td>' +
+            '<td style="text-align: right; font-family: monospace;">' + xStr + '</td>' +
+            '<td style="text-align: right; font-family: monospace;">' + yStr + '</td>' +
+            '<td style="text-align: right; font-family: monospace;">' + Number(p.lat).toFixed(7) + '</td>' +
+            '<td style="text-align: right; font-family: monospace;">' + Number(p.lng).toFixed(7) + '</td>' +
+            '<td style="text-align: right; font-weight: 600; color: #0f766e;">' + distStr + '</td>' +
+            '</tr>';
+        }).join('');
+
+        return '<table class="print-att-table" style="flex: 1 1 0; min-width: 0;">' +
+          '<thead>' +
+            '<tr>' +
+              '<th style="width: 7%;">No</th>' +
+              '<th style="width: 13%;">Patok</th>' +
+              '<th style="width: 18%;">X (TM-3)</th>' +
+              '<th style="width: 18%;">Y (TM-3)</th>' +
+              '<th style="width: 18%;">Lat (Y)</th>' +
+              '<th style="width: 18%;">Lng (X)</th>' +
+              '<th style="width: 8%;">Jarak</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>';
+      }).join('');
+
+      container.innerHTML = tableHtmlList;
+    }
+
+    function updatePrintPatokCoords() {
+      const container = document.getElementById('kopPatokCoordsContainer');
+      const badge = document.getElementById('kopPatokCountBadge');
+      const box = document.getElementById('kopPatokCoordsBox');
+      if (!container) return;
+
+      const chk = document.getElementById('chkPrintTogglePatokCoords');
+      if (chk && !chk.checked) {
+        if (box) box.style.display = 'none';
+        return;
+      } else if (box) {
+        box.style.display = 'flex';
+      }
+
+      if (typeof ensureActiveVerticesFromDraw === 'function') {
+        ensureActiveVerticesFromDraw();
+      }
+
+      const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      const pts = [];
+      if (parts && parts.length > 0 && parts[0] && parts[0].length > 0) {
+        parts.forEach((pList, pIdx) => {
+          if (pList && pList.length > 0) {
+            pList.forEach((v, vIdx) => {
+              const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
+              const label = pfx + (vIdx + 1);
+              pts.push({ label: label, lat: v.lat, lng: v.lng });
+            });
+          }
+        });
+      }
+
+      // Compute distances and TM-3 UTM coordinates
+      pts.forEach((pt, idx) => {
+        const nextPt = pts[(idx + 1) % pts.length];
+        pt.dist = (typeof getDistanceMetersGeo === 'function') ? getDistanceMetersGeo(pt.lat, pt.lng, nextPt.lat, nextPt.lng) : 0;
+        if (typeof getTM3Coordinates === 'function') {
+          const tm3 = getTM3Coordinates(pt.lat, pt.lng);
+          pt.utmX = tm3.x;
+          pt.utmY = tm3.y;
+          pt.zone = tm3.zone;
+        } else {
+          pt.utmX = 0;
+          pt.utmY = 0;
+          pt.zone = '-';
+        }
+      });
+
+      if (badge) {
+        badge.innerText = pts.length > 0 ? (pts.length + ' Titik') : '-';
+      }
+
+      if (pts.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 6.5px; font-style: italic; padding: 3px 0;">Belum ada titik patok batas</div>';
+        const attSheet = document.getElementById('printAttachmentSheet');
+        if (attSheet) attSheet.style.display = 'none';
+        return;
+      }
+
+      // Evaluate Multi-Column layout mode (1-column vs 2-column dual kanan-kiri)
+      const layoutSel = document.getElementById('printCoordsLayoutMode');
+      const layoutVal = (layoutSel && layoutSel.value) ? layoutSel.value : 'auto';
+      const isDual = (layoutVal === 'dual') || (layoutVal === 'auto' && pts.length > 6);
+
+      // Adaptive Density Class
+      let densityClass = '';
+      if (pts.length > 6 && pts.length <= 14) {
+        densityClass = 'compact';
+      } else if (pts.length > 14) {
+        densityClass = 'dense';
+      }
+
+      if (isDual) {
+        // Multi-column dual (Kanan - Kiri)
+        const maxDisplayInKop = 18;
+        const displayPts = (pts.length > 20) ? pts.slice(0, maxDisplayInKop) : pts;
+        const hasOverflow = pts.length > displayPts.length;
+
+        const mid = Math.ceil(displayPts.length / 2);
+        const leftPts = displayPts.slice(0, mid);
+        const rightPts = displayPts.slice(mid);
+
+        const renderSubTable = (list) => {
+          const rows = list.map(p => '<tr>' +
+            '<td style="font-weight: 700; color: #0a2e5c;">' + p.label + '</td>' +
+            '<td>' + Number(p.lat).toFixed(7) + '</td>' +
+            '<td>' + Number(p.lng).toFixed(7) + '</td>' +
+          '</tr>').join('');
+
+          return '<table class="print-kop-coords-table ' + densityClass + '" style="flex: 1 1 0; min-width: 0;">' +
+            '<thead>' +
+              '<tr>' +
+                '<th style="width: 22%;">Patok</th>' +
+                '<th style="width: 39%;">Lat (Y)</th>' +
+                '<th style="width: 39%;">Lng (X)</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>';
+        };
+
+        container.innerHTML = '<div class="print-coords-dual-grid">' +
+          renderSubTable(leftPts) +
+          renderSubTable(rightPts) +
+        '</div>' + (hasOverflow ? '<div class="print-coords-overflow-badge">*Daftar lengkap seluruh ' + pts.length + ' patok tercantum pada Lampiran Lembar 2</div>' : '');
+
+      } else {
+        // Single column layout
+        const maxSingle = 12;
+        const displayPts = (pts.length > maxSingle) ? pts.slice(0, maxSingle) : pts;
+        const hasOverflow = pts.length > displayPts.length;
+
+        const rows = displayPts.map(pt => '<tr>' +
+          '<td style="font-weight: 700; color: #0a2e5c;">' + pt.label + '</td>' +
+          '<td>' + Number(pt.lat).toFixed(7) + '</td>' +
+          '<td>' + Number(pt.lng).toFixed(7) + '</td>' +
+        '</tr>').join('');
+
+        container.innerHTML = '<table class="print-kop-coords-table ' + densityClass + '">' +
+          '<thead>' +
+            '<tr>' +
+              '<th style="width: 22%;">Patok</th>' +
+              '<th style="width: 39%;">Latitude (Y)</th>' +
+              '<th style="width: 39%;">Longitude (X)</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' + (hasOverflow ? '<div class="print-coords-overflow-badge">*Daftar lengkap seluruh ' + pts.length + ' patok tercantum pada Lampiran Lembar 2</div>' : '');
+      }
+
+      // Evaluate 1-Sheet vs 2-Sheets mode
+      const pagesSel = document.getElementById('printPagesMode');
+      const pagesVal = (pagesSel && pagesSel.value) ? pagesSel.value : 'auto';
+      const attSheet = document.getElementById('printAttachmentSheet');
+      const badgePages = document.getElementById('printPagesInfoBadge');
+
+      const showPage2 = (pagesVal === '2pages') || (pagesVal === 'auto' && pts.length > 8);
+      if (attSheet) {
+        attSheet.style.display = showPage2 ? 'flex' : 'none';
+        if (showPage2) {
+          renderPrintAttachmentSheet(pts);
+        }
+      }
+      if (badgePages) {
+        badgePages.innerText = showPage2 ? '2 Lembar (Peta + Lampiran)' : '1 Lembar (Peta Saja)';
+        badgePages.style.backgroundColor = showPage2 ? '#dcfce7' : '#e0f2fe';
+        badgePages.style.color = showPage2 ? '#15803d' : '#0369a1';
+        badgePages.style.borderColor = showPage2 ? '#86efac' : '#bae6fd';
+      }
+    }
+
 
     function syncPrintMapScale() {
       if (!printMapInstance) return;
@@ -435,6 +767,94 @@ function togglePrintDimensions(show) {
             </div>
           `);
         }
+
+        if (cekingLayers.rdtr && map && map.hasLayer(cekingLayers.rdtr)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #ec4899; border: 1px solid #be185d;"></div>
+              </div>
+              <span>Rencana Detail Tata Ruang (RDTR)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.znt && map && map.hasLayer(cekingLayers.znt)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #8b5cf6; border: 1px solid #6d28d9;"></div>
+              </div>
+              <span>Zona Nilai Tanah (ZNT Pasar)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.hak_milik && map && map.hasLayer(cekingLayers.hak_milik)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #10b981; border: 1px solid #059669;"></div>
+              </div>
+              <span>Hak Milik Tanah (BPN)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.hgu && map && map.hasLayer(cekingLayers.hgu)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #f59e0b; border: 1px solid #d97706;"></div>
+              </div>
+              <span>Hak Guna Usaha (HGU)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.hgb && map && map.hasLayer(cekingLayers.hgb)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #3b82f6; border: 1px solid #1d4ed8;"></div>
+              </div>
+              <span>Hak Guna Bangunan (HGB)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.hpl && map && map.hasLayer(cekingLayers.hpl)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #06b6d4; border: 1px solid #0891b2;"></div>
+              </div>
+              <span>Hak Pengelolaan (HPL)</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.hak_ulayat && map && map.hasLayer(cekingLayers.hak_ulayat)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #a855f7; border: 1px solid #7e22ce;"></div>
+              </div>
+              <span>Tanah Ulayat Adat</span>
+            </div>
+          `);
+        }
+
+        if (cekingLayers.kkpr && map && map.hasLayer(cekingLayers.kkpr)) {
+          items.push(`
+            <div class="print-legend-item">
+              <div class="print-legend-symbol">
+                <div class="print-legend-swatch" style="background-color: #ef4444; border: 1px solid #b91c1c;"></div>
+              </div>
+              <span>Kesesuaian Ruang (KKPR)</span>
+            </div>
+          `);
+        }
       }
 
       if (typeof kelurahanHighlightLayer !== 'undefined' && kelurahanHighlightLayer && map && map.hasLayer(kelurahanHighlightLayer)) {
@@ -628,27 +1048,33 @@ function togglePrintDimensions(show) {
       if (currentBaseLayer instanceof L.LayerGroup) {
         currentBaseLayer.eachLayer(sub => {
           if (sub._url) {
-            L.tileLayer(sub._url, {
+            const tl = L.tileLayer(sub._url, {
               maxZoom: 26,
               maxNativeZoom: 19,
               crossOrigin: 'anonymous',
+              errorTileUrl: transparent1x1,
               subdomains: sub.options?.subdomains || 'abc'
             }).addTo(printMapInstance);
+            attachTileClean(tl);
           }
         });
       } else if (currentBaseLayer && currentBaseLayer._url) {
-        L.tileLayer(currentBaseLayer._url, {
+        const tl = L.tileLayer(currentBaseLayer._url, {
           maxZoom: 26,
           maxNativeZoom: 19,
           crossOrigin: 'anonymous',
+          errorTileUrl: transparent1x1,
           subdomains: currentBaseLayer.options?.subdomains || 'abc'
         }).addTo(printMapInstance);
+        attachTileClean(tl);
       } else {
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        const tl = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
           maxZoom: 26,
           maxNativeZoom: 19,
-          crossOrigin: 'anonymous'
+          crossOrigin: 'anonymous',
+          errorTileUrl: transparent1x1
         }).addTo(printMapInstance);
+        attachTileClean(tl);
       }
 
       if (typeof cekingLayers !== 'undefined' && cekingLayers) {
@@ -657,6 +1083,7 @@ function togglePrintDimensions(show) {
           if (typeof createThematicLayer === 'function') {
             const l = createThematicLayer(k);
             if (l) {
+              attachTileClean(l);
               l.addTo(printMapInstance);
             }
           }
@@ -669,14 +1096,16 @@ function togglePrintDimensions(show) {
         const tileUrl = persilBase
           ? `${persilBase}/persil/{z}/{x}/{y}.webp`
           : `/persil/{z}/{x}/{y}.webp`;
-        L.tileLayer(tileUrl, {
+        const tl = L.tileLayer(tileUrl, {
           pane: 'persilPane',
           maxZoom: 26,
           maxNativeZoom: 19,
           opacity: pOpacity,
           zIndex: 360,
-          crossOrigin: 'anonymous'
+          crossOrigin: 'anonymous',
+          errorTileUrl: transparent1x1
         }).addTo(printMapInstance);
+        attachTileClean(tl);
       }
 
       if (typeof kelurahanHighlightLayer !== 'undefined' && kelurahanHighlightLayer && map && map.hasLayer(kelurahanHighlightLayer)) {
@@ -772,6 +1201,10 @@ function togglePrintDimensions(show) {
       const showDim = chkDim ? chkDim.checked : true;
       togglePrintDimensions(showDim);
 
+      const chkPatok = document.getElementById('chkPrintTogglePatokCoords');
+      const showPatok = chkPatok ? chkPatok.checked : true;
+      togglePrintPatokCoords(showPatok);
+
       printMapInstance.invalidateSize();
 
       if (bounds && bounds.isValid()) {
@@ -807,10 +1240,12 @@ function togglePrintDimensions(show) {
           attributionControl: false,
           interactive: false
         });
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        const insetTl = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
           maxZoom: 18,
-          crossOrigin: 'anonymous'
+          crossOrigin: 'anonymous',
+          errorTileUrl: transparent1x1
         }).addTo(printInsetInstance);
+        attachTileClean(insetTl);
       }
 
       printInsetInstance.eachLayer(l => {
@@ -894,10 +1329,10 @@ function togglePrintDimensions(show) {
       }
     });
 
-    async function generateExportPdfDirect() {
+    async function generateExportPdfDirect(targetDpi = 600) {
       const sheet = document.getElementById('printMapSheet');
       if (!sheet) return;
-      showToast('Menyiapkan dokumen PDF peta...', 'info');
+      showToast('Menyiapkan dokumen PDF peta resolusi 600 DPI...', 'info');
 
       const magEl = document.getElementById('printMobileMagnifier');
       const prevMagDisplay = magEl ? magEl.style.display : '';
@@ -916,6 +1351,7 @@ function togglePrintDimensions(show) {
       }
 
       if (typeof html2pdf === 'undefined') {
+        sanitizePrintTiles();
         window.print();
         if (magEl) magEl.style.display = prevMagDisplay;
         if (mapTools) mapTools.style.display = prevToolsDisplay;
@@ -928,38 +1364,56 @@ function togglePrintDimensions(show) {
 
       const isA3 = sheet.classList.contains('a3');
       const docTitle = (document.getElementById('kopMapTitleInput')?.value || 'PETA_KADASTRAL').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `${docTitle}_${Date.now()}.pdf`;
+      const filename = `${docTitle}_600DPI_${isA3 ? 'A3' : 'A4'}_${Date.now()}.pdf`;
 
       const prevTransform = sheet.style.transform;
       const prevOrigin = sheet.style.transformOrigin;
       sheet.style.transform = 'none';
       sheet.style.transformOrigin = 'unset';
 
+      sanitizePrintTiles();
+      await new Promise(r => setTimeout(r, 150));
+      sanitizePrintTiles();
+
+      const attSheet = document.getElementById('printAttachmentSheet');
+      const isTwoPages = attSheet && attSheet.style.display !== 'none';
+      const targetPrintEl = isTwoPages ? (document.getElementById('printPagesBundle') || sheet) : sheet;
+
+      const prevAttTransform = attSheet ? attSheet.style.transform : '';
+      const prevAttOrigin = attSheet ? attSheet.style.transformOrigin : '';
+      if (attSheet) {
+        attSheet.style.transform = 'none';
+        attSheet.style.transformOrigin = 'unset';
+      }
+
+      const captureScale = isA3 ? 4.5 : 6.25;
       const opt = {
         margin: 0,
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
-          scale: 2,
+          scale: captureScale,
           useCORS: true,
           allowTaint: true,
           logging: false,
           width: isA3 ? 1587.4 : 1122.52,
-          height: isA3 ? 1122.52 : 793.7,
+          height: isTwoPages ? (isA3 ? 2245.04 : 1587.4) : (isA3 ? 1122.52 : 793.7),
           windowWidth: isA3 ? 1587.4 : 1122.52,
-          windowHeight: isA3 ? 1122.52 : 793.7
+          windowHeight: isTwoPages ? (isA3 ? 2245.04 : 1587.4) : (isA3 ? 1122.52 : 793.7)
         },
         jsPDF: {
           unit: 'mm',
           format: isA3 ? 'a3' : 'a4',
           orientation: 'landscape'
-        }
+        },
+        pagebreak: isTwoPages ? { mode: ['css', 'legacy'], after: '.print-page-1' } : {}
       };
 
       try {
-        await html2pdf().set(opt).from(sheet).save();
-        showToast('PDF peta berhasil diunduh.', 'success');
+        await html2pdf().set(opt).from(targetPrintEl).save();
+        showToast('PDF peta 600 DPI berhasil diunduh.', 'success');
       } catch (err) {
+        sanitizePrintTiles();
         window.print();
       } finally {
         if (magEl) magEl.style.display = prevMagDisplay;
@@ -970,6 +1424,10 @@ function togglePrintDimensions(show) {
         }
         sheet.style.transform = prevTransform;
         sheet.style.transformOrigin = prevOrigin;
+        if (attSheet) {
+          attSheet.style.transform = prevAttTransform;
+          attSheet.style.transformOrigin = prevAttOrigin;
+        }
         adjustMobilePrintScale();
       }
     }
@@ -984,7 +1442,7 @@ function togglePrintDimensions(show) {
       const sheet = document.getElementById('printMapSheet');
       if (!modal || !sheet) return;
 
-      showToast('Menyiapkan dan memproses dokumen PDF peta...', 'info');
+      showToast('Menyiapkan dan memproses dokumen PDF peta 600 DPI...', 'info');
 
       const prevDisplay = modal.style.display;
       modal.classList.add('mobile-direct-print-mode');
@@ -997,7 +1455,7 @@ function togglePrintDimensions(show) {
       await new Promise(r => setTimeout(r, 650));
 
       try {
-        await generateExportPdfDirect();
+        await generateExportPdfDirect(600);
       } catch (err) {
         showToast('Gagal memproses PDF otomatis.', 'error');
       } finally {
@@ -1037,16 +1495,28 @@ function togglePrintDimensions(show) {
       }
     }
 
-    function executeMapPrint() {
-      if (isMobileDevice()) {
-        generateExportPdfDirect();
-      } else {
+    function executeMapPrint(mode = 'pdf600') {
+      if (mode === 'browser') {
+        sanitizePrintTiles();
         window.print();
+      } else {
+        generateExportPdfDirect(600);
       }
     }
 
     window.handlePrintMapTrigger = handlePrintMapTrigger;
     window.processDirectMobilePdfPrint = processDirectMobilePdfPrint;
+    window.executeMapPrint = executeMapPrint;
+    window.openMapPrintModal = openMapPrintModal;
+    window.closeMapPrintModal = closeMapPrintModal;
+    window.changePrintPaperSize = changePrintPaperSize;
+    window.changePrintCoordsLayout = changePrintCoordsLayout;
+    window.changePrintPagesMode = changePrintPagesMode;
+    window.renderPrintAttachmentSheet = renderPrintAttachmentSheet;
+    window.generateExportPdfDirect = generateExportPdfDirect;
+    window.updatePrintPatokCoords = updatePrintPatokCoords;
+    window.togglePrintPatokCoords = togglePrintPatokCoords;
+    window.sanitizePrintTiles = sanitizePrintTiles;
 
   
     function switchMagnifierTab(tabKey, btnEl) {

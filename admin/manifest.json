@@ -1,0 +1,19 @@
+{
+  "name": "Portal Pengaturan Admin - Duta GeoSpasi",
+  "short_name": "Admin GeoSpasi",
+  "description": "Pengaturan Khusus Admin Lokal & Manajemen Kadaster 74 Layer ATR/BPN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "../assets/img/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

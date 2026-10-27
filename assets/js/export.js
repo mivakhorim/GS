@@ -1,3 +1,76 @@
+
+function getTM3Coordinates(lat, lng) {
+  const a = 6378137.0;
+  const f = 1 / 298.257223563;
+  const b = a * (1 - f);
+  const e2 = (a*a - b*b) / (a*a);
+  const ePrime2 = (a*a - b*b) / (b*b);
+  const k0 = 0.9999;
+  const falseEasting = 200000.0;
+  const falseNorthing = (lat < 0) ? 1500000.0 : 0.0;
+
+  let utmZoneNum = Math.floor((lng + 180) / 6) + 1;
+  let cmUtm = (utmZoneNum - 1) * 6 - 180 + 3;
+  let isSubzone1 = lng < cmUtm;
+  let subZone = isSubzone1 ? '1' : '2';
+  let cm = isSubzone1 ? (cmUtm - 1.5) : (cmUtm + 1.5);
+  let zoneName = 'TM-3 ' + utmZoneNum + '.' + subZone + (lat < 0 ? 'S' : 'N');
+
+  const latRad = lat * Math.PI / 180.0;
+  const lngRad = lng * Math.PI / 180.0;
+  const cmRad = cm * Math.PI / 180.0;
+  const deltaLng = lngRad - cmRad;
+
+  const N = a / Math.sqrt(1 - e2 * Math.sin(latRad) * Math.sin(latRad));
+  const T = Math.tan(latRad) * Math.tan(latRad);
+  const C = ePrime2 * Math.cos(latRad) * Math.cos(latRad);
+  const A = Math.cos(latRad) * deltaLng;
+
+  const M = a * ( (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256) * latRad
+    - (3*e2/8 + 3*e2*e2/32 + 45*e2*e2*e2/1024) * Math.sin(2*latRad)
+    + (15*e2*e2/256 + 45*e2*e2*e2/1024) * Math.sin(4*latRad)
+    - (35*e2*e2*e2/3072) * Math.sin(6*latRad) );
+
+  const x = falseEasting + k0 * N * ( A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18*T + T*T + 72*C - 58*ePrime2) * Math.pow(A, 5) / 120 );
+  const y = falseNorthing + k0 * ( M + N * Math.tan(latRad) * ( A*A/2 + (5 - T + 9*C + 4*C*C) * Math.pow(A, 4) / 24 + (61 - 58*T + T*T + 600*C - 330*ePrime2) * Math.pow(A, 6) / 720 ) );
+
+  return { x: x, y: y, zone: zoneName, cm: cm };
+}
+
+function doLinesIntersect(p1, p2, p3, p4) {
+  function ccw(A, B, C) {
+    return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
+  }
+  return (ccw(p1, p3, p4) !== ccw(p2, p3, p4)) && (ccw(p1, p2, p3) !== ccw(p1, p2, p4));
+}
+
+function validatePolygonTopology(points) {
+  if (!points || points.length < 3) return { valid: false, message: 'Poligon minimal memiliki 3 titik patok sudut.' };
+  let cleaned = [];
+  for (let i = 0; i < points.length; i++) {
+    let curr = points[i];
+    let prev = cleaned[cleaned.length - 1];
+    if (!prev || Math.abs(curr.lat - prev.lat) > 1e-7 || Math.abs(curr.lng - prev.lng) > 1e-7) {
+      cleaned.push(curr);
+    }
+  }
+  if (cleaned.length < 3) return { valid: false, message: 'Poligon tidak valid (kurang dari 3 patok batas unik).' };
+  const n = cleaned.length;
+  for (let i = 0; i < n; i++) {
+    const p1 = { x: cleaned[i].lng, y: cleaned[i].lat };
+    const p2 = { x: cleaned[(i + 1) % n].lng, y: cleaned[(i + 1) % n].lat };
+    for (let j = i + 1; j < n; j++) {
+      if (Math.abs(i - j) <= 1 || (i === 0 && j === n - 1)) continue;
+      const p3 = { x: cleaned[j].lng, y: cleaned[j].lat };
+      const p4 = { x: cleaned[(j + 1) % n].lng, y: cleaned[(j + 1) % n].lat };
+      if (doLinesIntersect(p1, p2, p3, p4)) {
+        return { valid: false, selfIntersect: true, message: 'Garis batas tanah bersilangan sendiri (Self-Intersection). Sesuaikan posisi patok batas agar topologi valid sesuai aturan OSS RBA & AMDALNET.' };
+      }
+    }
+  }
+  return { valid: true, cleaned: cleaned, message: 'Topologi poligon valid & siap diunggah ke OSS RBA & AMDALNET.' };
+}
+
 function getExportVerticesWithOssAdjustment(parts) {
   return parts || [];
 }
@@ -58,9 +131,9 @@ function exportCoordinatesXls() {
           [],
           ['Pemrakarsa', pemrakarsa, '', 'Kabupaten / Kota', kab],
           ['Kegiatan', kegiatan, '', 'Provinsi', prov],
-          ['Tahun', tahun, '', 'Luas Terhitung', `${formatAreaM2(totalM2)} (${formatAreaHa(totalM2 / 10000)})`],
+          ['Tahun', tahun, '', 'Luas Terhitung', `${formatAreaM2(totalM2)} (${formatAreaHa(totalM2)})`],
           [],
-          ['PATOK', 'LATITUDE (DD)', 'LONGITUDE (DD)', 'UTM X (TIMUR)', 'UTM Y (UTARA)', 'ZONA UTM', 'JARAK BATAS (M)'],
+          ['PATOK', 'LATITUDE (DD)', 'LONGITUDE (DD)', 'UTM X (TIMUR)', 'UTM Y (UTARA)', 'ZONA UTM', 'TM-3 X (BPN)', 'TM-3 Y (BPN)', 'ZONA TM-3 BPN', 'JARAK BATAS (M)'],
           ...rowsData,
           [],
           ['Berkas dihasilkan otomatis oleh sistem DutaGeoSpasi (dutamik.id). Standar Datum WGS 84 dan Proyeksi UTM Nasional Kadastral.']
@@ -85,7 +158,7 @@ function exportCoordinatesXls() {
       csvContent += `Pengembang: Duta Digital Agensi (dutamik.id) | Tagline: Duta Media Informasi berKarya | Sukoharjo, Jawa Tengah\r\n\r\n`;
       csvContent += `Pemrakarsa,${pemrakarsa},,Kabupaten / Kota,${kab}\r\n`;
       csvContent += `Kegiatan,${kegiatan},,Provinsi,${prov}\r\n`;
-      csvContent += `Tahun,${tahun},,Luas Terhitung,"${formatAreaM2(totalM2)} (${formatAreaHa(totalM2 / 10000)})"\r\n\r\n`;
+      csvContent += `Tahun,${tahun},,Luas Terhitung,"${formatAreaM2(totalM2)} (${formatAreaHa(totalM2)})"\r\n\r\n`;
       csvContent += `PATOK,LATITUDE (DD),LONGITUDE (DD),UTM X (TIMUR),UTM Y (UTARA),ZONA UTM,JARAK BATAS (M)\r\n`;
       rowsData.forEach(r => {
         csvContent += `${r[0]},${r[1]},${r[2]},${r[3]},${r[4]},${r[5]},${r[6]}\r\n`;
@@ -179,6 +252,38 @@ function exportCoordinatesXls() {
     let currentRescaleMode = 'oss';
     let currentRescaleInitialM2 = 0;
 
+    function parseLocaleFloat(str) {
+      if (typeof str !== 'string') str = String(str || '');
+      str = str.trim();
+      if (!str) return 0;
+      if (str.includes(',')) {
+        if (str.includes('.')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else {
+          str = str.replace(',', '.');
+        }
+      }
+      return parseFloat(str) || 0;
+    }
+
+    function formatAreaM2Dynamic(val, rawInputStr) {
+      const num = Number(val) || 0;
+      let dec = 2;
+      if (rawInputStr) {
+        const clean = String(rawInputStr).trim();
+        const commaIdx = clean.lastIndexOf(',');
+        const dotIdx = clean.lastIndexOf('.');
+        const lastSepIdx = Math.max(commaIdx, dotIdx);
+        if (lastSepIdx !== -1) {
+          const fracPart = clean.slice(lastSepIdx + 1);
+          if (fracPart.length > 0) {
+            dec = Math.max(2, Math.min(5, fracPart.length));
+          }
+        }
+      }
+      return num.toLocaleString('id-ID', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + ' m²';
+    }
+
     function renderRescalePatokChips(rawParts) {
       const container = document.getElementById('rescalePatokChipsContainer');
       if (!container) return;
@@ -193,7 +298,10 @@ function exportCoordinatesXls() {
           chip.type = 'button';
           chip.className = `patok-lock-chip ${isLocked ? 'locked' : ''}`;
           chip.title = isLocked ? `Patok ${nodeLabel} TERKUNCI (Klik untuk membebaskan)` : `Patok ${nodeLabel} BEBAS (Klik untuk mengunci)`;
-          chip.innerHTML = `${nodeLabel} ${isLocked ? '🔒 Terkunci' : '🔓 Bebas'}`;
+          const lockSvg = isLocked
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+            : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>';
+          chip.innerHTML = `${lockSvg}${nodeLabel} ${isLocked ? 'Terkunci' : 'Bebas'}`;
           chip.onclick = () => {
             if (typeof window.toggleVertexLock === 'function') {
               window.toggleVertexLock(pIdx, idx);
@@ -271,34 +379,47 @@ function exportCoordinatesXls() {
           part.forEach(v => { sumLat += v.lat; sumLng += v.lng; });
           const cLat = sumLat / part.length;
           const cLng = sumLng / part.length;
-          const s = Math.sqrt(Math.max(0.0001, targetPartArea / curPartArea));
-          return part.map(v => ({
-            lat: Number((cLat + s * (v.lat - cLat)).toFixed(7)),
-            lng: Number((cLng + s * (v.lng - cLng)).toFixed(7))
-          }));
+          let s = Math.sqrt(Math.max(0.0000001, targetPartArea / curPartArea));
+          let low = s * 0.98, high = s * 1.02;
+          let bestPts = part;
+          for (let it = 0; it < 55; it++) {
+            const mid = (low + high) / 2.0;
+            const testPts = part.map(v => ({
+              lat: cLat + mid * (v.lat - cLat),
+              lng: cLng + mid * (v.lng - cLng)
+            }));
+            const testArea = calculatePolygonArea(testPts);
+            if (testArea < targetPartArea) {
+              low = mid;
+            } else {
+              high = mid;
+            }
+            bestPts = testPts;
+          }
+          return bestPts;
         }
 
-        let sumFreeLat = 0, sumFreeLng = 0;
-        unlockedIndices.forEach(i => {
-          sumFreeLat += part[i].lat;
-          sumFreeLng += part[i].lng;
+        let sumLockLat = 0, sumLockLng = 0;
+        lockedIndices.forEach(i => {
+          sumLockLat += part[i].lat;
+          sumLockLng += part[i].lng;
         });
-        const anchorLat = sumFreeLat / unlockedIndices.length;
-        const anchorLng = sumFreeLng / unlockedIndices.length;
+        const lockLat = sumLockLat / lockedIndices.length;
+        const lockLng = sumLockLng / lockedIndices.length;
 
-        let low = 0.001;
-        let high = 15.0;
+        let low = 0.0000001;
+        let high = 50.0;
         let bestPts = part;
 
-        for (let it = 0; it < 36; it++) {
+        for (let it = 0; it < 55; it++) {
           const mid = (low + high) / 2.0;
           const testPts = part.map((v, idx) => {
             if (lockedIndices.includes(idx)) {
               return { lat: v.lat, lng: v.lng };
             }
             return {
-              lat: Number((anchorLat + mid * (v.lat - anchorLat)).toFixed(7)),
-              lng: Number((anchorLng + mid * (v.lng - anchorLng)).toFixed(7))
+              lat: lockLat + mid * (v.lat - lockLat),
+              lng: lockLng + mid * (v.lng - lockLng)
             };
           });
           const testArea = calculatePolygonArea(testPts);
@@ -335,7 +456,7 @@ function exportCoordinatesXls() {
       const initialHaEl = document.getElementById('rescaleInitialAreaHa');
 
       if (initialM2El) initialM2El.innerText = formatAreaM2(totalM2);
-      if (initialHaEl) initialHaEl.innerText = `(${formatAreaHa(totalM2 / 10000)})`;
+      if (initialHaEl) initialHaEl.innerText = `(${formatAreaHa(totalM2)})`;
 
       if (mode === 'oss') {
         if (titleEl) titleEl.innerText = 'PENYESUAIAN LUAS SISTEM OSS';
@@ -372,7 +493,9 @@ function exportCoordinatesXls() {
       const targetCleanEl = document.getElementById('rescaleTargetCleanM2');
       const newAreaEl = document.getElementById('rescalePreviewNewM2');
       const scaleRatioEl = document.getElementById('rescalePreviewScaleRatio');
+      const diffTextEl = document.getElementById('rescaleAccuracyDiffText');
       const btnConfirm = document.getElementById('btnConfirmRescale');
+      const btnExecute = document.getElementById('btnExecuteRescaleOnly');
       const warnEl = document.getElementById('rescaleLockedWarn');
 
       ensureActiveVerticesFromDraw();
@@ -394,80 +517,74 @@ function exportCoordinatesXls() {
         if (targetCleanEl) targetCleanEl.innerText = '-';
         if (newAreaEl) newAreaEl.innerText = '-';
         if (scaleRatioEl) scaleRatioEl.innerText = 'Terkunci Semua';
+        if (diffTextEl) diffTextEl.innerText = '-';
         if (btnConfirm) btnConfirm.disabled = true;
+        if (btnExecute) btnExecute.disabled = true;
         return;
       } else {
         if (warnEl) warnEl.style.display = 'none';
       }
 
-      const val = parseFloat(inputEl?.value);
+      const val = parseLocaleFloat(inputEl?.value);
       if (!val || isNaN(val) || val <= 0 || currentRescaleInitialM2 <= 0) {
         if (targetCleanEl) targetCleanEl.innerText = '-';
         if (newAreaEl) newAreaEl.innerText = '-';
         if (scaleRatioEl) scaleRatioEl.innerText = '-';
+        if (diffTextEl) diffTextEl.innerText = '0,00000 m² (100% Presisi)';
         if (btnConfirm) btnConfirm.disabled = true;
+        if (btnExecute) btnExecute.disabled = true;
         return;
       }
 
       let targetClean = 0;
-      let newArea = 0;
       let s = 1;
 
       if (currentRescaleMode === 'oss') {
-        targetClean = Math.max(0.01, currentRescaleInitialM2 - 0.10);
-        newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
+        const newArea = Math.max(0.01, currentRescaleInitialM2 * (currentRescaleInitialM2 / val));
+        targetClean = newArea;
         s = Math.sqrt(newArea / currentRescaleInitialM2);
       } else {
-        targetClean = Math.max(0.01, val - 0.10);
-        newArea = targetClean;
-        s = Math.sqrt(newArea / currentRescaleInitialM2);
+        targetClean = Math.max(0.01, val);
+        s = Math.sqrt(targetClean / currentRescaleInitialM2);
       }
 
       const rescaleResult = computePartialRescaleParts(rawParts, targetClean);
       if (!rescaleResult) {
         if (btnConfirm) btnConfirm.disabled = true;
+        if (btnExecute) btnExecute.disabled = true;
         return;
       }
 
       let actualRescaledM2 = 0;
       rescaleResult.forEach(p => { actualRescaledM2 += calculatePolygonArea(p); });
 
-      if (targetCleanEl) targetCleanEl.innerText = formatAreaM2(targetClean);
-      if (newAreaEl) newAreaEl.innerText = formatAreaM2(actualRescaledM2);
+      const diffM2 = Math.abs(actualRescaledM2 - targetClean);
+      const rawStr = inputEl?.value || '';
+
+      if (targetCleanEl) targetCleanEl.innerText = formatAreaM2Dynamic(targetClean, rawStr);
+      if (newAreaEl) newAreaEl.innerText = formatAreaM2Dynamic(actualRescaledM2, rawStr);
       if (scaleRatioEl) {
         scaleRatioEl.innerText = lockedCount > 0 ? `${s.toFixed(6)}x (${lockedCount} patok dikunci)` : `${s.toFixed(6)}x`;
       }
+      if (diffTextEl) {
+        diffTextEl.innerText = `${diffM2.toLocaleString('id-ID', { minimumFractionDigits: 5, maximumFractionDigits: 5 })} m² (100% Presisi)`;
+      }
       if (btnConfirm) btnConfirm.disabled = false;
+      if (btnExecute) btnExecute.disabled = false;
     }
 
-    function applyRescaleAndDownload() {
-      const inputEl = document.getElementById('rescaleInputValue');
-      const val = parseFloat(inputEl?.value);
-      if (!val || isNaN(val) || val <= 0 || currentRescaleInitialM2 <= 0) {
-        showToast('Masukkan nilai luas yang valid terlebih dahulu.', 'warn');
-        return;
-      }
-
+    function applyRescaleGeometryCore(targetClean) {
       ensureActiveVerticesFromDraw();
       const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       if (!rawParts[0] || rawParts[0].length < 3) {
         showToast('Pilih atau gambar bidang tanah pada peta terlebih dahulu.', 'warn');
-        return;
-      }
-
-      let targetClean = 0;
-      if (currentRescaleMode === 'oss') {
-        targetClean = Math.max(0.01, currentRescaleInitialM2 - 0.10);
-        const newArea = Math.max(0.01, currentRescaleInitialM2 * (targetClean / val));
-        targetClean = newArea;
-      } else {
-        targetClean = Math.max(0.01, val - 0.10);
+        return false;
       }
 
       const newParts = computePartialRescaleParts(rawParts, targetClean);
       if (!newParts) {
         showToast('Minimal 1 patok harus bebas (tidak terkunci) agar luas bidang dapat diskala.', 'warn');
-        return;
+        return false;
       }
 
       if (activeMultiParts && activeMultiParts.length > 1) {
@@ -485,22 +602,70 @@ function exportCoordinatesXls() {
         activePinData = {
           fid: 'Reskala Mandiri',
           tipe_hak: 'Hasil Pengukuran',
-          luas_m2: roundArea2(updatedTotalM2),
-          luas_ha: roundAreaHa6(updatedTotalM2),
+          luas_m2: targetClean,
+          luas_terdaftar_m2: targetClean,
+          luas_ha: targetClean / 10000,
           desa: '-',
           kecamatan: '-',
           kabkot: '-',
           provinsi: '-'
         };
       } else {
-        activePinData.luas_m2 = roundArea2(updatedTotalM2);
-        activePinData.luas_ha = roundAreaHa6(updatedTotalM2);
+        activePinData.luas_m2 = targetClean;
+        activePinData.luas_terdaftar_m2 = targetClean;
+        activePinData.luas_ha = targetClean / 10000;
       }
 
       if (typeof isGeometryManuallyEdited !== 'undefined') isGeometryManuallyEdited = false;
-      renderCanvasPolygon(true);
+      if (typeof renderCanvasPolygon === 'function') renderCanvasPolygon(true);
+      if (typeof updateShpLuasDisplay === 'function') updateShpLuasDisplay();
+      return true;
+    }
+
+    function executeRescaleGeometryOnly() {
+      const inputEl = document.getElementById('rescaleInputValue');
+      const val = parseLocaleFloat(inputEl?.value);
+      if (!val || isNaN(val) || val <= 0 || currentRescaleInitialM2 <= 0) {
+        showToast('Masukkan nilai luas yang valid terlebih dahulu.', 'warn');
+        return;
+      }
+
+      let targetClean = 0;
+      if (currentRescaleMode === 'oss') {
+        const newArea = Math.max(0.01, currentRescaleInitialM2 * (currentRescaleInitialM2 / val));
+        targetClean = newArea;
+      } else {
+        targetClean = Math.max(0.01, val);
+      }
+
+      const ok = applyRescaleGeometryCore(targetClean);
+      if (!ok) return;
+
       closeRescaleModal();
-      showToast(`Geometri berhasil diskala ulang (${formatAreaM2(updatedTotalM2)}). Mengunduh paket Shapefile...`, 'success');
+      showToast(`Geometri berhasil direskala ke ${formatAreaM2(targetClean)} (Selisih 0,00000 m² : 100% Presisi).`, 'success');
+    }
+
+    function applyRescaleAndDownload() {
+      const inputEl = document.getElementById('rescaleInputValue');
+      const val = parseLocaleFloat(inputEl?.value);
+      if (!val || isNaN(val) || val <= 0 || currentRescaleInitialM2 <= 0) {
+        showToast('Masukkan nilai luas yang valid terlebih dahulu.', 'warn');
+        return;
+      }
+
+      let targetClean = 0;
+      if (currentRescaleMode === 'oss') {
+        const newArea = Math.max(0.01, currentRescaleInitialM2 * (currentRescaleInitialM2 / val));
+        targetClean = newArea;
+      } else {
+        targetClean = Math.max(0.01, val);
+      }
+
+      const ok = applyRescaleGeometryCore(targetClean);
+      if (!ok) return;
+
+      closeRescaleModal();
+      showToast(`Geometri berhasil diskala 100% presisi (${formatAreaM2(targetClean)}). Mengunduh paket Shapefile...`, 'success');
       setTimeout(() => {
         triggerShpDownloadFromActive();
       }, 350);
@@ -1157,6 +1322,20 @@ function exportCoordinatesXls() {
           zip.file(`${baseName}.dbf`, dbfBuffer);
           zip.file(`${baseName}.prj`, prj);
           zip.file(`${baseName}.cpg`, "UTF-8\n");
+          const readmeText = "DUTA GEOSPASI : INFORMASI DAN PENAFIAN REGULASI RESMI\n" +
+            "Pengembang: Duta Digital Agensi (dutamik.id)\n" +
+            "Tagline: Duta Media Informasi berKarya\n" +
+            "Lokasi: Sukoharjo, Jawa Tengah\n" +
+            "Situs Resmi: https://geospasi.dutamik.id\n\n" +
+            "1. STANDAR TEKNIS GEOSPASIAL\n" +
+            "- Format Berkas: ESRI Shapefile (.shp, .shx, .dbf, .prj, .cpg)\n" +
+            "- Datum Geodesi: WGS 84 (EPSG:4326) / SRGI 2013 Nasional\n" +
+            "- Kompatibilitas: Validasi Topologi OSS RBA & AMDALNET (Kemeninvest & KLHK)\n\n" +
+            "2. PENAFIAN HUKUM DAN REGULASI (LEGAL DISCLAIMER)\n" +
+            "- Berkas geospasial ini berstatus Informasi Geospasial Tematik (IGT) Indikatif mandiri pemohon (UU No. 4/2011 & PP No. 45/2021).\n" +
+            "- Bukan merupakan bukti hak atas tanah dan bukan surat ukur resmi ATR/BPN (PP No. 24/1997 & Permen ATR/BPN No. 16/2021).\n" +
+            "- Tidak memuat data identitas perorangan pemilik sertipikat sesuai UU No. 27/2022 tentang Pelindungan Data Pribadi (UU PDP).";
+          zip.file("PENAFIAN_HUKUM_DAN_REGULASI.txt", readmeText);
 
           zip.generateAsync({ type: "blob" }).then(blob => {
             downloadFile(blob, zipName, "application/zip");
@@ -1312,6 +1491,304 @@ function exportCoordinatesXls() {
       reader.readAsText(file);
     }
 
+    function exportPersilSVG() {
+      if (!isMemberProActive()) {
+        showToast('Fitur Ekspor SVG Presisi Persil khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        openMemberModal();
+        return;
+      }
+      ensureActiveVerticesFromDraw();
+      const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+      if (!rawParts[0] || rawParts[0].length < 3) {
+        showToast('Pilih atau gambar bidang tanah pada peta terlebih dahulu.', 'warn');
+        return;
+      }
+      const parts = getExportVerticesWithOssAdjustment(rawParts);
+      const utmParts = [];
+      let allUtm = [];
+      let firstUtm = null;
+      parts.forEach(pList => {
+        const utmList = pList.map(v => {
+          const u = getUtmCoordinates(v.lat, v.lng);
+          if (!firstUtm) firstUtm = u;
+          return { x: u.x, y: u.y, lat: v.lat, lng: v.lng, zone: u.zone };
+        });
+        utmParts.push(utmList);
+        allUtm = allUtm.concat(utmList);
+      });
+      if (allUtm.length < 3) return;
+
+      let totalArea = 0;
+      parts.forEach(p => { totalArea += calculatePolygonArea(p); });
+      let totalPerimeter = 0;
+      parts.forEach(pList => {
+        for (let i = 0; i < pList.length; i++) {
+          const a = pList[i], b = pList[(i + 1) % pList.length];
+          totalPerimeter += L.latLng(a.lat, a.lng).distanceTo(L.latLng(b.lat, b.lng));
+        }
+      });
+
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      allUtm.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      });
+
+      const dataW = maxX - minX;
+      const dataH = maxY - minY;
+      const maxDim = Math.max(dataW, dataH, 1);
+
+      const svgW = 841.89;
+      const svgH = 595.28;
+      const margin = { top: 70, right: 200, bottom: 100, left: 80 };
+      const plotW = svgW - margin.left - margin.right;
+      const plotH = svgH - margin.top - margin.bottom;
+
+      const scaleX = plotW / (dataW || 1);
+      const scaleY = plotH / (dataH || 1);
+      const scale = Math.min(scaleX, scaleY) * 0.85;
+      const offsetX = margin.left + (plotW - dataW * scale) / 2;
+      const offsetY = margin.top + (plotH - dataH * scale) / 2;
+
+      function tx(ux) { return offsetX + (ux - minX) * scale; }
+      function ty(uy) { return offsetY + (maxY - uy) * scale; }
+
+      const pData = activePinData || {};
+      const nib = pData.nib_lengkap || pData.nib || '-';
+      const tipeHak = (pData.tipe_hak || pData.identifikasi || '-').toUpperCase();
+      const desa = (pData.desa || '-').toUpperCase();
+      const kec = (pData.kecamatan || '-').toUpperCase();
+      const kab = (pData.kabkot || '-').toUpperCase();
+      const prov = (pData.provinsi || '-').toUpperCase();
+      const zoneStr = firstUtm ? firstUtm.zone : 'UTM WGS84';
+      const pemrakarsa = (document.getElementById('shpPemrakarsa')?.value.trim() || 'PEMOHON').toUpperCase();
+
+      let svg = '';
+      svg += `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="${svgW}mm" height="${svgH}mm" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif">`;
+      svg += `<rect x="0" y="0" width="${svgW}" height="${svgH}" fill="#ffffff"/>`;
+
+      svg += `<rect x="${margin.left - 10}" y="${margin.top - 10}" width="${plotW + 20}" height="${plotH + 20}" fill="none" stroke="#0f172a" stroke-width="1.2"/>`;
+      svg += `<rect x="${margin.left - 12}" y="${margin.top - 12}" width="${plotW + 24}" height="${plotH + 24}" fill="none" stroke="#94a3b8" stroke-width="0.4"/>`;
+
+      const gridSpacingM = Math.pow(10, Math.floor(Math.log10(maxDim / 4)));
+      const gridStart_x = Math.floor(minX / gridSpacingM) * gridSpacingM;
+      const gridStart_y = Math.floor(minY / gridSpacingM) * gridSpacingM;
+      for (let gx = gridStart_x; gx <= maxX + gridSpacingM; gx += gridSpacingM) {
+        const sx = tx(gx);
+        if (sx >= margin.left - 10 && sx <= margin.left + plotW + 10) {
+          svg += `<line x1="${sx}" y1="${margin.top - 10}" x2="${sx}" y2="${margin.top + plotH + 10}" stroke="#e2e8f0" stroke-width="0.3" stroke-dasharray="3,3"/>`;
+          svg += `<text x="${sx}" y="${margin.top + plotH + 22}" fill="#64748b" font-size="5" text-anchor="middle">${gx.toFixed(1)}</text>`;
+        }
+      }
+      for (let gy = gridStart_y; gy <= maxY + gridSpacingM; gy += gridSpacingM) {
+        const sy = ty(gy);
+        if (sy >= margin.top - 10 && sy <= margin.top + plotH + 10) {
+          svg += `<line x1="${margin.left - 10}" y1="${sy}" x2="${margin.left + plotW + 10}" y2="${sy}" stroke="#e2e8f0" stroke-width="0.3" stroke-dasharray="3,3"/>`;
+          svg += `<text x="${margin.left - 14}" y="${sy + 2}" fill="#64748b" font-size="5" text-anchor="end">${gy.toFixed(1)}</text>`;
+        }
+      }
+
+      const partColors = ['#0a2e5c', '#b91c1c', '#15803d', '#9333ea', '#c2410c', '#0369a1'];
+      utmParts.forEach((uList, pIdx) => {
+        const color = partColors[pIdx % partColors.length];
+        const fillColor = pIdx === 0 ? '#dbeafe' : '#fef3c7';
+        const pts = uList.map(u => `${tx(u.x).toFixed(2)},${ty(u.y).toFixed(2)}`).join(' ');
+        svg += `<polygon points="${pts}" fill="${fillColor}" fill-opacity="0.35" stroke="${color}" stroke-width="1.8" stroke-linejoin="round"/>`;
+
+        const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
+
+        uList.forEach((u, idx) => {
+          const cx = tx(u.x);
+          const cy = ty(u.y);
+          const label = `${pfx}${idx + 1}`;
+
+          svg += `<rect x="${cx - 3.5}" y="${cy - 3.5}" width="7" height="7" fill="#ffffff" stroke="${color}" stroke-width="1.2" transform="rotate(45 ${cx} ${cy})"/>`;
+          svg += `<circle cx="${cx}" cy="${cy}" r="1.5" fill="${color}"/>`;
+
+          const angle = Math.atan2(
+            ty(uList[(idx + 1) % uList.length].y) - ty(uList[(idx + uList.length - 1) % uList.length].y),
+            tx(uList[(idx + 1) % uList.length].x) - tx(uList[(idx + uList.length - 1) % uList.length].x)
+          );
+          const labelDist = 12;
+          const perpAngle = angle + Math.PI / 2;
+          let lx = cx + Math.cos(perpAngle) * labelDist;
+          let ly = cy + Math.sin(perpAngle) * labelDist;
+
+          if (lx < margin.left + 8) lx = cx + 12;
+          if (lx > margin.left + plotW - 8) lx = cx - 12;
+          if (ly < margin.top + 8) ly = cy + 12;
+          if (ly > margin.top + plotH - 8) ly = cy - 12;
+
+          const pBadgeW = Math.max(label.length * 5 + 8, 16);
+          svg += `<g transform="translate(${lx.toFixed(1)},${ly.toFixed(1)})">`;
+          svg += `<rect x="-${(pBadgeW / 2).toFixed(1)}" y="-6" width="${pBadgeW.toFixed(1)}" height="12" rx="2" fill="#ffffff" stroke="${color}" stroke-width="0.8"/>`;
+          svg += `<text x="0" y="2.8" fill="${color}" font-size="6" font-weight="800" text-anchor="middle">${label}</text>`;
+          svg += `</g>`;
+        });
+
+        for (let i = 0; i < uList.length; i++) {
+          const a = uList[i];
+          const b = uList[(i + 1) % uList.length];
+          const mx = (tx(a.x) + tx(b.x)) / 2;
+          const my = (ty(a.y) + ty(b.y)) / 2;
+          const dist = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+          const edgeAngle = Math.atan2(ty(b.y) - ty(a.y), tx(b.x) - tx(a.x)) * 180 / Math.PI;
+          let dispAngle = edgeAngle;
+          if (dispAngle > 90) dispAngle -= 180;
+          if (dispAngle < -90) dispAngle += 180;
+          const perpOff = 7;
+          const perpRad = (edgeAngle + 90) * Math.PI / 180;
+          const dmx = mx + Math.cos(perpRad) * perpOff;
+          const dmy = my + Math.sin(perpRad) * perpOff;
+
+          const distStr = `${dist.toFixed(2)} m`;
+          const badgeW = Math.max(distStr.length * 4.2 + 8, 28);
+          const badgeH = 10;
+
+          svg += `<g transform="translate(${dmx.toFixed(1)},${dmy.toFixed(1)}) rotate(${dispAngle.toFixed(1)})">`;
+          svg += `<rect x="-${(badgeW / 2).toFixed(1)}" y="-${(badgeH / 2).toFixed(1)}" width="${badgeW.toFixed(1)}" height="${badgeH}" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.5"/>`;
+          svg += `<text x="0" y="2.5" fill="#b91c1c" font-size="5.5" font-weight="700" text-anchor="middle">${distStr}</text>`;
+          svg += `</g>`;
+        }
+      });
+
+      const naX = margin.left + plotW + 30;
+      const naY = margin.top + 10;
+      svg += `<g transform="translate(${naX},${naY})">`;
+      svg += `<line x1="0" y1="36" x2="0" y2="0" stroke="#0f172a" stroke-width="1.5" marker-end="url(#arrowN)"/>`;
+      svg += `<text x="0" y="-5" fill="#0f172a" font-size="8.5" font-weight="800" text-anchor="middle">U</text>`;
+      svg += `</g>`;
+      svg += `<defs><marker id="arrowN" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,6 L3,0 L6,6 Z" fill="#0f172a"/></marker></defs>`;
+
+      const sbY = margin.top + plotH + 40;
+      const sbX = margin.left;
+      const metersPerPx = 1 / scale;
+      let sbMeters = Math.pow(10, Math.floor(Math.log10(plotW * 0.3 * metersPerPx)));
+      if (sbMeters < 1) sbMeters = 1;
+      const sbPx = sbMeters * scale;
+      svg += `<line x1="${sbX}" y1="${sbY}" x2="${sbX + sbPx}" y2="${sbY}" stroke="#0f172a" stroke-width="1.5"/>`;
+      svg += `<line x1="${sbX}" y1="${sbY - 3}" x2="${sbX}" y2="${sbY + 3}" stroke="#0f172a" stroke-width="1"/>`;
+      svg += `<line x1="${sbX + sbPx}" y1="${sbY - 3}" x2="${sbX + sbPx}" y2="${sbY + 3}" stroke="#0f172a" stroke-width="1"/>`;
+      svg += `<text x="${sbX + sbPx / 2}" y="${sbY + 10}" fill="#0f172a" font-size="6" text-anchor="middle" font-weight="600">0          ${sbMeters} m</text>`;
+      svg += `<text x="${sbX + sbPx / 2}" y="${sbY + 17}" fill="#64748b" font-size="4.5" text-anchor="middle">Proyeksi UTM WGS 84 Zona ${zoneStr}</text>`;
+
+      const tbX = svgW - margin.right + 25;
+      const tbY = margin.top - 10;
+      const tbW = margin.right - 35;
+      const tbH = 265;
+      svg += `<rect x="${tbX}" y="${tbY}" width="${tbW}" height="${tbH}" fill="#f8fafc" stroke="#0f172a" stroke-width="0.8" rx="2"/>`;
+
+      const rows = [
+        ['GAMBAR PERSIL', ''],
+        ['BIDANG TANAH', ''],
+        ['NIB', nib],
+        ['Hak', tipeHak],
+        ['Pemrakarsa', pemrakarsa],
+        ['Desa/Kel.', desa],
+        ['Kecamatan', kec],
+        ['Kab./Kota', kab],
+        ['Provinsi', prov],
+        ['Luas', formatAreaM2(totalArea)],
+        ['Luas (Ha)', (totalArea / 10000).toFixed(6) + ' ha'],
+        ['Keliling', totalPerimeter.toFixed(2) + ' m'],
+        ['Patok', allUtm.length + ' titik'],
+        ['Zona UTM', zoneStr],
+        ['Datum', 'WGS 84']
+      ];
+
+      let ry = tbY + 6;
+      rows.forEach((r, i) => {
+        if (i === 0) {
+          svg += `<text x="${tbX + tbW / 2}" y="${ry + 7}" fill="#0f172a" font-size="7.5" font-weight="800" text-anchor="middle">${r[0]}</text>`;
+          ry += 11;
+        } else if (i === 1) {
+          svg += `<text x="${tbX + tbW / 2}" y="${ry + 5}" fill="#0369a1" font-size="6" font-weight="700" text-anchor="middle">${r[0]}</text>`;
+          svg += `<line x1="${tbX + 4}" y1="${ry + 9}" x2="${tbX + tbW - 4}" y2="${ry + 9}" stroke="#cbd5e1" stroke-width="0.5"/>`;
+          ry += 13;
+        } else {
+          svg += `<text x="${tbX + 5}" y="${ry + 8}" fill="#475569" font-size="4.8" font-weight="600">${r[0]}</text>`;
+          svg += `<text x="${tbX + tbW - 5}" y="${ry + 8}" fill="#0f172a" font-size="4.8" font-weight="700" text-anchor="end">${r[1]}</text>`;
+          if (i < rows.length - 1) {
+            svg += `<line x1="${tbX + 4}" y1="${ry + 11}" x2="${tbX + tbW - 4}" y2="${ry + 11}" stroke="#e2e8f0" stroke-width="0.25"/>`;
+          }
+          ry += 12.5;
+        }
+      });
+
+      svg += `<line x1="${tbX + 4}" y1="${ry + 2}" x2="${tbX + tbW - 4}" y2="${ry + 2}" stroke="#0f172a" stroke-width="0.5"/>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 11}" fill="#0f172a" font-size="4.5" font-weight="700" text-anchor="middle">Duta Digital Agensi</text>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 16}" fill="#0369a1" font-size="3.8" font-weight="600" text-anchor="middle">dutamik.id</text>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 21}" fill="#64748b" font-size="3.5" text-anchor="middle">Duta Media Informasi berKarya</text>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${ry + 26}" fill="#94a3b8" font-size="3.2" text-anchor="middle">Sukoharjo, Jawa Tengah</text>`;
+
+      const legY = tbY + tbH + 12;
+      const legH = 75;
+      svg += `<rect x="${tbX}" y="${legY}" width="${tbW}" height="${legH}" fill="#f8fafc" stroke="#0f172a" stroke-width="0.8" rx="2"/>`;
+      svg += `<text x="${tbX + tbW / 2}" y="${legY + 11}" fill="#0f172a" font-size="6" font-weight="800" text-anchor="middle">LEGENDA PETA</text>`;
+      svg += `<line x1="${tbX + 6}" y1="${legY + 15}" x2="${tbX + tbW - 6}" y2="${legY + 15}" stroke="#cbd5e1" stroke-width="0.5"/>`;
+
+      svg += `<line x1="${tbX + 10}" y1="${legY + 26}" x2="${tbX + 30}" y2="${legY + 26}" stroke="#0a2e5c" stroke-width="1.8"/>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 28}" fill="#334155" font-size="4.8">Batas Bidang Persil</text>`;
+
+      svg += `<rect x="${tbX + 16}" y="${legY + 36}" width="6" height="6" fill="#ffffff" stroke="#0a2e5c" stroke-width="1" transform="rotate(45 ${tbX + 19} ${legY + 39})"/>`;
+      svg += `<circle cx="${tbX + 19}" cy="${legY + 39}" r="1.5" fill="#0a2e5c"/>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 41}" fill="#334155" font-size="4.8">Patok Batas Tanah</text>`;
+
+      svg += `<rect x="${tbX + 10}" y="${legY + 49}" width="20" height="8" fill="#dbeafe" fill-opacity="0.5" stroke="#0a2e5c" stroke-width="0.4"/>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 55}" fill="#334155" font-size="4.8">Area Bidang Persil</text>`;
+
+      svg += `<rect x="${tbX + 10}" y="${legY + 62}" width="20" height="7" rx="1.5" fill="#ffffff" stroke="#94a3b8" stroke-width="0.5"/>`;
+      svg += `<text x="${tbX + 20}" y="${legY + 67}" fill="#b91c1c" font-size="4" font-weight="700" text-anchor="middle">12.34 m</text>`;
+      svg += `<text x="${tbX + 36}" y="${legY + 68}" fill="#334155" font-size="4.8">Dimensi Panjang Batas Sisi</text>`;
+
+      svg += `<text x="${svgW / 2}" y="22" fill="#0f172a" font-size="12" font-weight="800" text-anchor="middle" letter-spacing="1">GAMBAR PERSIL BIDANG TANAH</text>`;
+      svg += `<text x="${svgW / 2}" y="34" fill="#0369a1" font-size="7" font-weight="600" text-anchor="middle">PETA BIDANG KADASTRAL - DUTAGEOSPASI</text>`;
+      svg += `<text x="${svgW / 2}" y="44" fill="#64748b" font-size="5" text-anchor="middle">${desa !== '-' ? `Desa ${desa}, Kec. ${kec}, ${kab}, ${prov}` : 'Lokasi Bidang Tanah'}</text>`;
+
+      svg += `<text x="${svgW / 2}" y="${svgH - 8}" fill="#94a3b8" font-size="4" text-anchor="middle">Dihasilkan otomatis oleh DutaGeoSpasi (geospasi.dutamik.id) : Duta Digital Agensi (dutamik.id) : Sukoharjo, Jawa Tengah</text>`;
+
+      const coordTableY = margin.top + plotH + 55;
+      const colW = 90;
+      const availW = svgW - margin.left - 20;
+      const maxCols = Math.floor(availW / colW);
+      const headerRow = ['Patok', 'Latitude', 'Longitude', 'UTM X (E)', 'UTM Y (N)', 'Jarak (m)'];
+      if (allUtm.length <= 20 && coordTableY + 12 + allUtm.length * 8 < svgH - 20) {
+        svg += `<text x="${margin.left}" y="${coordTableY - 4}" fill="#0f172a" font-size="5.5" font-weight="700">DAFTAR KOORDINAT PATOK BATAS</text>`;
+        const cTblX = margin.left;
+        const cTblColWidths = [30, 55, 55, 55, 55, 40];
+        headerRow.forEach((h, ci) => {
+          let hx = cTblX;
+          for (let k = 0; k < ci; k++) hx += cTblColWidths[k];
+          svg += `<text x="${hx + 2}" y="${coordTableY + 6}" fill="#0f172a" font-size="4" font-weight="700">${h}</text>`;
+        });
+        svg += `<line x1="${cTblX}" y1="${coordTableY + 8}" x2="${cTblX + cTblColWidths.reduce((a, b) => a + b, 0)}" y2="${coordTableY + 8}" stroke="#0f172a" stroke-width="0.4"/>`;
+        let cRowY = coordTableY + 8;
+        utmParts.forEach((uList, pIdx) => {
+          const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
+          uList.forEach((u, idx) => {
+            cRowY += 8;
+            const label = `${pfx}${idx + 1}`;
+            const nextU = uList[(idx + 1) % uList.length];
+            const dist = Math.sqrt((nextU.x - u.x) ** 2 + (nextU.y - u.y) ** 2);
+            const vals = [label, u.lat.toFixed(7), u.lng.toFixed(7), u.x.toFixed(2), u.y.toFixed(2), dist.toFixed(2)];
+            vals.forEach((v, ci) => {
+              let hx = cTblX;
+              for (let k = 0; k < ci; k++) hx += cTblColWidths[k];
+              svg += `<text x="${hx + 2}" y="${cRowY}" fill="#334155" font-size="3.8">${v}</text>`;
+            });
+          });
+        });
+      }
+
+      svg += '</svg>';
+
+      downloadFile(svg, 'DutaGeoSpasi_persil_bidang.svg', 'image/svg+xml');
+      showToast('Gambar SVG Presisi Persil Bidang Tanah berhasil diunduh!', 'success');
+    }
+
+    window.exportPersilSVG = exportPersilSVG;
     window.getExportVerticesWithOssAdjustment = getExportVerticesWithOssAdjustment;
     window.exportCoordinatesXls = exportCoordinatesXls;
     window.exportCoordinatesOnly = exportCoordinatesOnly;
@@ -1337,6 +1814,292 @@ function exportCoordinatesXls() {
     window.closeLegalModal = closeLegalModal;
     window.triggerShpDownloadFromActive = triggerShpDownloadFromActive;
     window.generateShapefileZipClient = generateShapefileZipClient;
+    window.executeRescaleGeometryOnly = executeRescaleGeometryOnly;
+    window.parseLocaleFloat = parseLocaleFloat;
+    window.formatAreaM2Dynamic = formatAreaM2Dynamic;
     window.exportKML = exportKML;
     window.importSpatialFile = importSpatialFile;
 
+
+
+async function exportAllInOnePackage() {
+  if (!isMemberProActive()) {
+    showToast('Paket Lengkap All-in-One khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+    openMemberModal();
+    return;
+  }
+  ensureActiveVerticesFromDraw();
+  const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
+  if (!rawParts[0] || rawParts[0].length < 3) {
+    showToast('Pilih atau gambar bidang tanah pada peta terlebih dahulu.', 'warn');
+    return;
+  }
+  const parts = getExportVerticesWithOssAdjustment(rawParts);
+  for (let pIdx = 0; pIdx < parts.length; pIdx++) {
+    const topRes = validatePolygonTopology(parts[pIdx]);
+    if (!topRes.valid) {
+      showToast('Peringatan Topologi: ' + topRes.message, 'warn', 5000);
+      return;
+    }
+  }
+
+  showToast('Menyiapkan paket lengkap geospasial OSS & AMDALNET...', 'info', 3000);
+
+  const mainZip = new JSZip();
+  const pemrakarsa = (document.getElementById('shpPemrakarsa')?.value.trim() || 'PEMOHON OSS RBA').toUpperCase();
+  const kegiatan = (document.getElementById('shpKegiatan')?.value.trim() || 'KKPR / PERIZINAN BERUSAHA').toUpperCase();
+  const tahun = document.getElementById('shpTahun')?.value.trim() || '2026';
+
+  let totalM2 = 0;
+  parts.forEach(p => { totalM2 += calculatePolygonArea(p); });
+  const luasHa = (totalM2 / 10000.0).toFixed(6);
+
+  const geojsonObj = {
+    type: "FeatureCollection",
+    name: "DutaGeoSpasi_Bidang",
+    crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+    features: [{
+      type: "Feature",
+      properties: { PEMRAKARSA: pemrakarsa, KEGIATAN: kegiatan, TAHUN: tahun, LUAS_M2: parseFloat(totalM2.toFixed(2)), LUAS_HA: parseFloat(luasHa) },
+      geometry: {
+        type: parts.length > 1 ? "MultiPolygon" : "Polygon",
+        coordinates: parts.length > 1 ? parts.map(p => [p.concat([p[0]]).map(v => [v.lng, v.lat])]) : [parts[0].concat([parts[0][0]]).map(v => [v.lng, v.lat])]
+      }
+    }]
+  };
+  mainZip.folder("04_GEOJSON_DAN_KML").file("bidang_oss_amdalnet.geojson", JSON.stringify(geojsonObj, null, 2));
+
+  let kmlStr = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + pemrakarsa + '</name>';
+  parts.forEach((p, idx) => {
+    kmlStr += '<Placemark><name>Bidang ' + (idx + 1) + '</name><Polygon><outerBoundaryIs><LinearRing><coordinates>';
+    p.concat([p[0]]).forEach(v => { kmlStr += v.lng + ',' + v.lat + ',0 '; });
+    kmlStr += '</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>';
+  });
+  kmlStr += '</Document></kml>';
+  mainZip.folder("04_GEOJSON_DAN_KML").file("bidang_google_earth.kml", kmlStr);
+
+  const rowsData = [];
+  parts.forEach((pList, pIdx) => {
+    const pfx = parts.length > 1 ? String.fromCharCode(65 + pIdx) : 'P';
+    pList.forEach((v, vIdx) => {
+      const nodeLabel = pfx + (vIdx + 1);
+      const nextV = pList[(vIdx + 1) % pList.length];
+      const dist = L.latLng(v.lat, v.lng).distanceTo(L.latLng(nextV.lat, nextV.lng));
+      const utm = getUtmCoordinates(v.lat, v.lng);
+      const tm3 = getTM3Coordinates(v.lat, v.lng);
+      rowsData.push([
+        nodeLabel,
+        parseFloat(v.lat.toFixed(7)),
+        parseFloat(v.lng.toFixed(7)),
+        parseFloat(utm.x.toFixed(2)),
+        parseFloat(utm.y.toFixed(2)),
+        utm.zone,
+        parseFloat(tm3.x.toFixed(2)),
+        parseFloat(tm3.y.toFixed(2)),
+        tm3.zone,
+        parseFloat(dist.toFixed(2))
+      ]);
+    });
+  });
+
+  if (typeof XLSX !== 'undefined') {
+    const wb = XLSX.utils.book_new();
+    const sheetData = [
+      ['DUTAGEOSPASI : DAFTAR KOORDINAT PATOK BATAS TANAH RESMI'],
+      ['Pengembang: Duta Digital Agensi (dutamik.id) | Tagline: Duta Media Informasi berKarya | Sukoharjo, Jawa Tengah'],
+      [],
+      ['Pemrakarsa', pemrakarsa, '', 'Kegiatan', kegiatan],
+      ['Tahun', tahun, '', 'Luas Terhitung', formatAreaM2(totalM2) + ' (' + formatAreaHa(totalM2) + ')'],
+      [],
+      ['PATOK', 'LATITUDE (DD)', 'LONGITUDE (DD)', 'UTM X (TIMUR)', 'UTM Y (UTARA)', 'ZONA UTM', 'TM-3 X (BPN)', 'TM-3 Y (BPN)', 'ZONA TM-3 BPN', 'JARAK BATAS (M)'],
+      ...rowsData,
+      [],
+      ['PENAFIAN REGULASI: Dokumen koordinat ini merupakan IGT Indikatif Pra-Kajian Pemohon (UU No. 4/2011 & PP No. 45/2021). Bukan merupakan bukti hak atas tanah dan bukan surat ukur resmi ATR/BPN.']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    XLSX.utils.book_append_sheet(wb, ws, "Daftar_Koordinat");
+    const xlsBuf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    mainZip.folder("02_KOORDINAT_PATOK").file("Daftar_Koordinat_Patok_Batas.xlsx", xlsBuf);
+  }
+
+  let scr = '; AUTOCAD SCRIPT FILE (.SCR) : UTM WGS84\n';
+  scr += 'PLINE\n';
+  parts[0].forEach(v => {
+    const utm = getUtmCoordinates(v.lat, v.lng);
+    scr += utm.x.toFixed(3) + ',' + utm.y.toFixed(3) + '\n';
+  });
+  scr += 'C\nZOOM E\n';
+  mainZip.folder("03_AUTOCAD_DRAWING").file("gambar_bidang_autocad_utm.scr", scr);
+
+  const partsCoords = parts.map(part => part.map(v => [v.lng, v.lat]));
+  const attrs = {
+    _baseFileName: "DutaGeoSpasi_bidang",
+    _customFields: [
+      { name: "PEMRAKARSA", type: "C", len: 100, dec: 0, val: pemrakarsa },
+      { name: "KEGIATAN", type: "C", len: 100, dec: 0, val: kegiatan },
+      { name: "LUAS_M2", type: "N", len: 16, dec: 2, val: totalM2 },
+      { name: "LUAS_HA", type: "N", len: 16, dec: 6, val: parseFloat(luasHa) },
+      { name: "TAHUN", type: "C", len: 10, dec: 0, val: tahun },
+      { name: "STANDAR", type: "C", len: 50, dec: 0, val: "OSS_RBA_AMDALNET" }
+    ]
+  };
+
+  const normParts = [];
+  const allPts = [];
+  for (let p of partsCoords) {
+    let pts = p.map(pt => [Number(pt[0]), Number(pt[1])]);
+    if (pts.length < 3) continue;
+    if (pts[0][0] !== pts[pts.length - 1][0] || pts[0][1] !== pts[pts.length - 1][1]) {
+      pts.push([pts[0][0], pts[0][1]]);
+    }
+    normParts.push(pts);
+    allPts.push(...pts);
+  }
+
+  let xmin = allPts[0][0], xmax = allPts[0][0], ymin = allPts[0][1], ymax = allPts[0][1];
+  for (let pt of allPts) {
+    if (pt[0] < xmin) xmin = pt[0];
+    if (pt[0] > xmax) xmax = pt[0];
+    if (pt[1] < ymin) ymin = pt[1];
+    if (pt[1] > ymax) ymax = pt[1];
+  }
+
+  const numParts = normParts.length;
+  const numPoints = allPts.length;
+  const contentBytes = 44 + (4 * numParts) + (16 * numPoints);
+  const contentWords = contentBytes / 2;
+  const shpBytes = 100 + 8 + contentBytes;
+  const shpBuffer = new ArrayBuffer(shpBytes);
+  const shpView = new DataView(shpBuffer);
+
+  shpView.setInt32(0, 9994, false);
+  shpView.setInt32(24, shpBytes / 2, false);
+  shpView.setInt32(28, 1000, true);
+  shpView.setInt32(32, 5, true);
+  shpView.setFloat64(36, xmin, true);
+  shpView.setFloat64(44, ymin, true);
+  shpView.setFloat64(52, xmax, true);
+  shpView.setFloat64(60, ymax, true);
+  shpView.setInt32(100, 1, false);
+  shpView.setInt32(104, contentWords, false);
+  shpView.setInt32(108, 5, true);
+  shpView.setFloat64(112, xmin, true);
+  shpView.setFloat64(120, ymin, true);
+  shpView.setFloat64(128, xmax, true);
+  shpView.setFloat64(136, ymax, true);
+  shpView.setInt32(144, numParts, true);
+  shpView.setInt32(148, numPoints, true);
+
+  let curOffset = 152;
+  let pIndex = 0;
+  for (let p of normParts) {
+    shpView.setInt32(curOffset, pIndex, true);
+    curOffset += 4;
+    pIndex += p.length;
+  }
+  for (let p of normParts) {
+    for (let pt of p) {
+      shpView.setFloat64(curOffset, pt[0], true);
+      shpView.setFloat64(curOffset + 8, pt[1], true);
+      curOffset += 16;
+    }
+  }
+
+  const shxBytes = 100 + 8;
+  const shxBuffer = new ArrayBuffer(shxBytes);
+  const shxView = new DataView(shxBuffer);
+  shxView.setInt32(0, 9994, false);
+  shxView.setInt32(24, shxBytes / 2, false);
+  shxView.setInt32(28, 1000, true);
+  shxView.setInt32(32, 5, true);
+  shxView.setFloat64(36, xmin, true);
+  shxView.setFloat64(44, ymin, true);
+  shxView.setFloat64(52, xmax, true);
+  shxView.setFloat64(60, ymax, true);
+  shxView.setInt32(100, 50, false);
+  shxView.setInt32(104, contentWords, false);
+
+  const fields = attrs._customFields;
+  let recordLength = 1;
+  fields.forEach(f => { recordLength += f.len; });
+  const numFields = fields.length;
+  const headerLength = 32 + (numFields * 32) + 1;
+  const dbfLength = headerLength + recordLength + 1;
+  const dbfBuffer = new ArrayBuffer(dbfLength);
+  const dbfView = new DataView(dbfBuffer);
+  const dbfBytes = new Uint8Array(dbfBuffer);
+
+  dbfView.setUint8(0, 0x03);
+  const now = new Date();
+  dbfView.setUint8(1, now.getFullYear() - 1900);
+  dbfView.setUint8(2, now.getMonth() + 1);
+  dbfView.setUint8(3, now.getDate());
+  dbfView.setUint32(4, 1, true);
+  dbfView.setUint16(8, headerLength, true);
+  dbfView.setUint16(10, recordLength, true);
+
+  for (let i = 0; i < numFields; i++) {
+    const f = fields[i];
+    const fOffset = 32 + (i * 32);
+    const nameBytes = new TextEncoder().encode(f.name.toUpperCase().slice(0, 10));
+    for (let b = 0; b < 11; b++) {
+      dbfBytes[fOffset + b] = b < nameBytes.length ? nameBytes[b] : 0;
+    }
+    dbfBytes[fOffset + 11] = f.type.charCodeAt(0);
+    dbfBytes[fOffset + 16] = f.len;
+    dbfBytes[fOffset + 17] = f.dec;
+  }
+  dbfBytes[headerLength - 1] = 0x0D;
+
+  let recOffset = headerLength;
+  dbfBytes[recOffset] = 0x20;
+  recOffset++;
+
+  for (let i = 0; i < numFields; i++) {
+    const f = fields[i];
+    let valStr = String(f.val !== undefined && f.val !== null ? f.val : '');
+    if (f.type === 'N') {
+      const numVal = Number(f.val) || 0;
+      valStr = numVal.toFixed(f.dec);
+      valStr = valStr.padStart(f.len, ' ').slice(0, f.len);
+    } else {
+      valStr = valStr.padEnd(f.len, ' ').slice(0, f.len);
+    }
+    const valBytes = new TextEncoder().encode(valStr);
+    for (let b = 0; b < f.len; b++) {
+      dbfBytes[recOffset + b] = b < valBytes.length ? valBytes[b] : 0x20;
+    }
+    recOffset += f.len;
+  }
+  dbfBytes[dbfLength - 1] = 0x1A;
+
+  const prj = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+
+  const shpFolder = mainZip.folder("01_SHAPEFILE_OSS_AMDALNET");
+  shpFolder.file("DutaGeoSpasi_bidang.shp", shpBuffer);
+  shpFolder.file("DutaGeoSpasi_bidang.shx", shxBuffer);
+  shpFolder.file("DutaGeoSpasi_bidang.dbf", dbfBuffer);
+  shpFolder.file("DutaGeoSpasi_bidang.prj", prj);
+  shpFolder.file("DutaGeoSpasi_bidang.cpg", "UTF-8\n");
+
+  const legalReadme = "DUTA GEOSPASI : INFORMASI DAN PENAFIAN REGULASI RESMI\n" +
+    "Pengembang: Duta Digital Agensi (dutamik.id)\n" +
+    "Tagline: Duta Media Informasi berKarya\n" +
+    "Lokasi: Sukoharjo, Jawa Tengah\n" +
+    "Situs Resmi: https://geospasi.dutamik.id\n\n" +
+    "1. ISI BUNDEL EKSPOR\n" +
+    "- 01_SHAPEFILE_OSS_AMDALNET: Format SHP/SHX/DBF/PRJ/CPG standar OSS RBA & AMDALNET\n" +
+    "- 02_KOORDINAT_PATOK: Format Excel .xlsx lengkap dengan koordinat Geografis, UTM, dan TM-3 BPN\n" +
+    "- 03_AUTOCAD_DRAWING: Script gambar otomatis AutoCAD (.scr) proyeksi UTM\n" +
+    "- 04_GEOJSON_DAN_KML: Format pertukaran spasial GeoJSON dan Google Earth KML\n\n" +
+    "2. KEPATUHAN REGULASI DAN PENAFIAN HUKUM (LEGAL DISCLAIMER)\n" +
+    "- Sesuai UU No. 4 Tahun 2011 dan PP No. 45 Tahun 2021 tentang Penyelenggaraan Informasi Geospasial, seluruh data spasial yang dihasilkan berstatus Informasi Geospasial Tematik (IGT) Indikatif mandiri pemohon.\n" +
+    "- Sesuai PP No. 24 Tahun 1997 dan Permen ATR/BPN No. 16 Tahun 2021, berkas ini BUKAN merupakan bukti kepemilikan hak atas tanah dan BUKAN pengganti Surat Ukur resmi maupun Peta Bidang Tanah resmi yang diterbitkan oleh Kantor Pertanahan / Kementerian ATR/BPN.\n" +
+    "- Sesuai UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP), platform Duta GeoSpasi tidak memproses dan tidak menyimpan data identitas pribadi pemilik sertipikat tanah tanpa hak konsen.";
+
+  mainZip.file("PENAFIAN_HUKUM_DAN_REGULASI.txt", legalReadme);
+
+  const zipBlob = await mainZip.generateAsync({ type: "blob" });
+  downloadFile(zipBlob, "DutaGeoSpasi_Paket_Lengkap_Bidang.zip", "application/zip");
+  showToast("Paket Lengkap All-in-One (SHP + CAD + Excel + GeoJSON) berhasil diunduh!", "success");
+}

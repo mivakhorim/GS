@@ -577,87 +577,17 @@ function getBpnGatewayBase() {
     }
 
     function createThematicLayer(layerKey) {
+      if (typeof map !== 'undefined' && map && !map.getPane('thematicPane')) {
+        map.createPane('thematicPane');
+        const p = map.getPane('thematicPane');
+        if (p) p.style.zIndex = '450';
+      }
+
       if (layerKey === 'jalan') {
         return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
           pane: 'thematicPane',
           maxZoom: 26,
           opacity: 0.85,
-          zIndex: 450
-        });
-      }
-
-      if (layerKey === 'lbs') {
-        const ArcLayerClass = (typeof ArcGisExportLayer !== 'undefined') ? ArcGisExportLayer : L.TileLayer;
-        return new ArcLayerClass('https://geoportal.pertanian.go.id/arcgis/rest/services/LBS_2024/MapServer/export', {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 20,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-
-      if (layerKey === 'lsd') {
-        const ArcLayerClass = (typeof ArcGisExportLayer !== 'undefined') ? ArcGisExportLayer : L.TileLayer;
-        return new ArcLayerClass('https://geoportal.pertanian.go.id/arcgis/rest/services/KawasanPertanian/MapServer/export', {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 20,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-
-      if (layerKey === 'rdtr') {
-        return L.tileLayer.wms('https://gistaru-app.atrbpn.go.id/interoppublic/api/wms/0c4ea761-cf72-4f29-814a-a467bda01763', {
-          layers: 'rtr-online:rdtr_1_indonesia',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 20,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-
-      if (layerKey === 'rtrw') {
-        return L.tileLayer.wms('https://gistaru-app.atrbpn.go.id/interoppublic/api/wms/78abbda6-8c02-403e-baa9-2c470e647e6b', {
-          layers: 'rtr-online:rtrw_kabkot_1_indonesia',
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 20,
-          opacity: 0.75,
-          zIndex: 450
-        });
-      }
-
-      const igtprLayerMap = {
-        'hutan': 'igt:shp_65e67d1d52339',
-        'znt': 'igt:Zona Nilai Tanah',
-        'peruntukan': 'igt:shp_65fd03206e250',
-        'hak_milik': 'igt:shp_65e5764be0628',
-        'hgu': 'igt:shp_661f36ba02a19',
-        'hgb': 'igt:shp_65e55601c0571',
-        'hpl': 'igt:shp_65e572cc4eb44',
-        'hak_ulayat': 'igt:shp_65e59c852faa8',
-        'kkpr': 'igt:shp_65f2b84304948'
-      };
-
-      if (igtprLayerMap[layerKey]) {
-        return L.tileLayer.wms('https://igtpr.atrbpn.go.id/geoserver/ows', {
-          layers: igtprLayerMap[layerKey],
-          format: 'image/png',
-          transparent: true,
-          version: '1.1.1',
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 20,
-          opacity: 0.75,
           zIndex: 450
         });
       }
@@ -669,15 +599,15 @@ function getBpnGatewayBase() {
         return L.tileLayer(`${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`, {
           pane: 'thematicPane',
           maxZoom: 26,
-          maxNativeZoom: 19,
+          maxNativeZoom: 20,
           opacity: 0.75,
           zIndex: 450
         });
       }
-      return createAuthTileLayer(`${sbUrl}/functions/v1/cadastre-gateway?action=layer-ceking&layer=${layerKey}&z={z}&x={x}&y={y}`, {
+      return createAuthTileLayer(`${sbUrl}/functions/v1/cadastre-gateway?action=layer-ceking&layer=${layerKey}&z={z}&x={x}&y={y}&role=admin`, {
         pane: 'thematicPane',
         maxZoom: 26,
-        maxNativeZoom: 19,
+        maxNativeZoom: 20,
         opacity: 0.75,
         zIndex: 450,
         headers: {

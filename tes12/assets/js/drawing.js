@@ -1,3 +1,44 @@
+
+function captureGpsCoordinate() {
+  if (!navigator.geolocation) {
+    showToast('Perangkat tidak mendukung sensor GPS Geolocation.', 'error');
+    return;
+  }
+  showToast('Mengakses sensor GPS presisi tinggi...', 'info', 2000);
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const acc = pos.coords.accuracy ? pos.coords.accuracy.toFixed(1) : '0';
+      if (!activeVertices) activeVertices = [];
+      activeVertices.push({ lat: lat, lng: lng, elev: 0 });
+      if (typeof map !== 'undefined' && map) {
+        map.setView([lat, lng], Math.max(map.getZoom(), 18));
+      }
+      if (typeof redrawActivePolygon === 'function') {
+        redrawActivePolygon();
+      } else if (typeof renderDrawnPolygon === 'function') {
+        renderDrawnPolygon();
+      }
+      if (typeof updateAreaDisplay === 'function') {
+        updateAreaDisplay();
+      }
+      if (typeof renderPatokList === 'function') {
+        renderPatokList();
+      }
+      showToast('Titik GPS berhasil diplot (Akurasi: ±' + acc + ' m).', 'success', 3500);
+    },
+    function(err) {
+      let msg = 'Gagal mengambil posisi GPS.';
+      if (err.code === 1) msg = 'Izin akses lokasi GPS ditolak oleh pengguna.';
+      else if (err.code === 2) msg = 'Sinyal GPS tidak tersedia atau lemah.';
+      else if (err.code === 3) msg = 'Waktu permintaan GPS habis (Timeout).';
+      showToast(msg, 'warn', 4000);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
 function swapBatchCoordinatesText(raw) {
   if (!raw || !raw.trim()) return '';
   const lines = raw.split(/\r?\n/);
@@ -1207,56 +1248,63 @@ Server Sumber Data: ${serverName}`;
           marker._vertIdx = idx;
 
           const popupContent = `
-            <div class="patok-popup-card">
+            <div class="patok-popup-card ${isLocked ? 'is-locked-card' : ''}">
               <div class="patok-popup-header">
                 <div class="patok-popup-title-group">
-                  <span class="patok-popup-badge">${nodeLabel}</span>
+                  <span class="patok-popup-badge ${isLocked ? 'badge-locked' : ''}">${nodeLabel}</span>
                   <span class="patok-popup-index">#${idx+1}</span>
                 </div>
-                <button type="button" class="btn-lock-toggle ${isLocked ? 'locked' : ''}" onclick="window.toggleVertexLockFromPopup(${pIdx}, ${idx})" title="${isLocked ? 'Buka Kunci Patok' : 'Kunci Patok (Statis saat Reskala Luas)'}">
-                  ${isLocked ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
+                <button type="button" class="btn-lock-toggle ${isLocked ? 'locked' : ''}" onclick="window.toggleVertexLockFromPopup(${pIdx}, ${idx})" title="${isLocked ? 'Lepaskan Kunci Patok (Buka Akses Ubah/Hapus)' : 'Kunci Patok (Cegah Ubah, Geser, dan Hapus)'}">
+                  ${isLocked ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
                 </button>
               </div>
+
+              ${isLocked ? `
+              <div class="patok-locked-banner">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Patok Terkunci : Buka kunci untuk edit/hapus</span>
+              </div>` : ''}
+
               <div class="patok-popup-coords-row">
                 <span id="vCoordText_${pIdx}_${idx}" class="patok-popup-coords">${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</span>
-                <button type="button" class="btn-patok-edit" onclick="window.editVertexCoordinate(${pIdx}, ${idx})" title="Edit Koordinat Manual">
+                <button type="button" class="btn-patok-edit" ${isLocked ? 'disabled style="opacity:0.3;cursor:not-allowed;pointer-events:none;" title="Patok Terkunci"' : `onclick="window.editVertexCoordinate(${pIdx}, ${idx})" title="Edit Koordinat Manual"`}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
               </div>
-              <div class="patok-popup-nudge-box">
+              <div class="patok-popup-nudge-box ${isLocked ? 'nudge-box-disabled' : ''}">
                 <div class="patok-nudge-header">
                   <span>Geser Presisi</span>
-                  <span class="nudge-unit">±1 cm</span>
+                  <span class="nudge-unit">${isLocked ? 'Terkunci' : '±1 cm'}</span>
                 </div>
                 <div class="patok-nudge-pad">
-                  <button type="button" class="btn-nudge-dir btn-nudge-up" onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'up', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'up', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Utara (Atas)">
+                  <button type="button" class="btn-nudge-dir btn-nudge-up" ${isLocked ? 'disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none;"' : `onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'up', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'up', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Utara (Atas)"`}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
                   </button>
                   <div class="patok-nudge-mid-row">
-                    <button type="button" class="btn-nudge-dir btn-nudge-left" onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'left', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'left', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Barat (Kiri)">
+                    <button type="button" class="btn-nudge-dir btn-nudge-left" ${isLocked ? 'disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none;"' : `onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'left', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'left', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Barat (Kiri)"`}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
                     </button>
-                    <div class="btn-nudge-center" title="Akurasi Geodetik 1 cm">1cm</div>
-                    <button type="button" class="btn-nudge-dir btn-nudge-right" onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'right', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'right', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Timur (Kanan)">
+                    <div class="btn-nudge-center" title="${isLocked ? 'Terkunci' : 'Akurasi Geodetik 1 cm'}">${isLocked ? '🔒' : '1cm'}</div>
+                    <button type="button" class="btn-nudge-dir btn-nudge-right" ${isLocked ? 'disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none;"' : `onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'right', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'right', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Timur (Kanan)"`}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
                     </button>
                   </div>
-                  <button type="button" class="btn-nudge-dir btn-nudge-down" onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'down', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'down', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Selatan (Bawah)">
+                  <button type="button" class="btn-nudge-dir btn-nudge-down" ${isLocked ? 'disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none;"' : `onpointerdown="window.startNudgeHold(${pIdx}, ${idx}, 'down', event)" onpointerup="window.stopNudgeHold(event)" onpointercancel="window.stopNudgeHold(event)" onpointerleave="window.stopNudgeHold(event)" onmousedown="window.startNudgeHold(${pIdx}, ${idx}, 'down', event)" onmouseup="window.stopNudgeHold(event)" title="Geser 1 cm ke Selatan (Bawah)"`}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
                 </div>
               </div>
               <div class="patok-popup-actions">
                 <div class="patok-actions-row">
-                  <button type="button" class="btn-patok-action" onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'prev')">+ Sisi Kiri</button>
-                  <button type="button" class="btn-patok-action" onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'next')">+ Sisi Kanan</button>
+                  <button type="button" class="btn-patok-action" ${isLocked ? 'disabled style="opacity:0.35;cursor:not-allowed;pointer-events:none;"' : `onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'prev')"`}>+ Sisi Kiri</button>
+                  <button type="button" class="btn-patok-action" ${isLocked ? 'disabled style="opacity:0.35;cursor:not-allowed;pointer-events:none;"' : `onclick="window.addVertexNextTo(${pIdx}, ${idx}, 'next')"`}>+ Sisi Kanan</button>
                 </div>
-                <button type="button" class="btn-patok-delete" onclick="window.deleteVertexMarker(${pIdx}, ${idx})">
+                <button type="button" class="btn-patok-delete ${isLocked ? 'disabled' : ''}" ${isLocked ? 'disabled style="opacity:0.4;cursor:not-allowed;pointer-events:none;background-color:#f1f5f9;color:#94a3b8;border-color:#cbd5e1;" title="Lepaskan kunci patok terlebih dahulu untuk menghapus"' : `onclick="window.deleteVertexMarker(${pIdx}, ${idx})"`}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  Hapus Patok ${nodeLabel}
+                  ${isLocked ? `Patok ${nodeLabel} Terkunci` : `Hapus Patok ${nodeLabel}`}
                 </button>
                 ${parts.length > 1 ? `
-                <button type="button" class="btn-patok-delete" style="color:#991b1b;border-color:#fca5a5;" onclick="window.deletePartEntirely(${pIdx})">
+                <button type="button" class="btn-patok-delete" style="color:#991b1b;border-color:#fca5a5;" ${isLocked ? 'disabled style="opacity:0.4;cursor:not-allowed;pointer-events:none;"' : `onclick="window.deletePartEntirely(${pIdx})"`}>
                   Hapus Bagian ${pfx}
                 </button>` : ''}
               </div>
@@ -2913,6 +2961,10 @@ Server Sumber Data: ${serverName}`;
     };
 
     window.deleteVertexMarker = function(pIdx, vIdx) {
+      if (typeof isVertexLocked === 'function' && isVertexLocked(pIdx, vIdx)) {
+        if (typeof showToast === 'function') showToast('Patok terkunci! Lepaskan kunci patok terlebih dahulu sebelum menghapus.', 'warn');
+        return;
+      }
       if (map) map.closePopup();
       isGeometryManuallyEdited = true;
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
@@ -2948,6 +3000,10 @@ Server Sumber Data: ${serverName}`;
     let _activeEditingPatok = null;
 
     window.openEditPatokModal = function(pIdx, vIdx) {
+      if (typeof isVertexLocked === 'function' && isVertexLocked(pIdx, vIdx)) {
+        if (typeof showToast === 'function') showToast('Patok terkunci! Lepaskan kunci patok terlebih dahulu untuk mengubah koordinat.', 'warn');
+        return;
+      }
       if (map) map.closePopup();
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       const targetPart = parts[pIdx] || activeVertices;
@@ -3032,6 +3088,10 @@ Server Sumber Data: ${serverName}`;
     };
 
     window.addVertexNextTo = function(pIdx, vIdx, direction = 'next') {
+      if (typeof isVertexLocked === 'function' && isVertexLocked(pIdx, vIdx)) {
+        if (typeof showToast === 'function') showToast('Patok terkunci! Lepaskan kunci patok terlebih dahulu sebelum menambah patok sisi.', 'warn');
+        return;
+      }
       if (map) map.closePopup();
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       const targetPart = parts[pIdx] || activeVertices;
@@ -3130,11 +3190,20 @@ Server Sumber Data: ${serverName}`;
 
     function toggleVertexLockFromPopup(pIdx, idx) {
       const locked = toggleVertexLock(pIdx, idx);
-      showToast(locked ? `Patok #${idx+1} dikunci (posisi statis saat penyesuaian luas).` : `Patok #${idx+1} dibuka (bebas diskala luas).`, 'info');
+      showToast(locked ? `Patok #${idx+1} dikunci : data dan posisi terlindungi dari ubah/hapus.` : `Patok #${idx+1} dibuka : data dapat diubah atau dihapus kembali.`, locked ? 'warn' : 'info');
       renderCanvasPolygon(true);
+      setTimeout(() => {
+        if (vertexMarkers && vertexMarkers.length > 0) {
+          const targetMarker = vertexMarkers.find(m => m && m._partIdx === pIdx && m._vertIdx === idx);
+          if (targetMarker) {
+            targetMarker.openPopup();
+          }
+        }
+      }, 70);
     }
 
     function nudgeVertexRealCm(pIdx, idx, dir, cm = 1.0) {
+      if (typeof isVertexLocked === 'function' && isVertexLocked(pIdx, idx)) return;
       const parts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       const targetPart = parts[pIdx] || activeVertices;
       if (!targetPart || !targetPart[idx]) return;
@@ -3179,6 +3248,10 @@ Server Sumber Data: ${serverName}`;
     var isNudgeActive = false;
 
     function startNudgeHold(pIdx, idx, dir, e) {
+      if (typeof isVertexLocked === 'function' && isVertexLocked(pIdx, idx)) {
+        if (typeof showToast === 'function') showToast('Patok terkunci! Lepaskan kunci patok terlebih dahulu untuk menggeser posisi.', 'warn');
+        return;
+      }
       if (e) {
         if (e.button !== undefined && e.button !== 0) return;
         e.preventDefault();
@@ -3245,5 +3318,6 @@ Server Sumber Data: ${serverName}`;
     window.swapBatchCoordinatesText = swapBatchCoordinatesText;
     window.swapBatchCoordsOrder = swapBatchCoordsOrder;
     window.clearBatchCoordsInput = clearBatchCoordsInput;
+    window.captureGpsCoordinate = captureGpsCoordinate;
 
 

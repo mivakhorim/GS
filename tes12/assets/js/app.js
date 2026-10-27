@@ -45,6 +45,7 @@ function toggleMobileSidebar(forceClose = false) {
         'tab-layers': 'btnTabLayers',
         'tab-search': 'btnTabSearch',
         'tab-digitasi': 'btnTabDigitasi',
+        'tab-ekspor': 'btnTabEkspor',
         'tab-info': 'btnTabInfo'
       };
 
