@@ -7,12 +7,15 @@
   const FOLDER_ROOT_NAME = 'Duta Digital Agensi';
   const FOLDER_APP_NAME = 'Duta GeoSpasi';
   const FOLDER_PARCELS_NAME = 'bidang';
+  const FOLDER_GPS_NAME = 'gps_tracking';
   const MASTER_CATALOG_NAME = 'database_katalog_bidang.json';
+  const GPS_STORAGE_PREFIX = 'duta_geospasi_gps_track_';
 
   let cachedFolderIds = {
     rootFolderId: null,
     appFolderId: null,
     parcelsFolderId: null,
+    gpsFolderId: null,
     masterCatalogFileId: null
   };
 
@@ -90,15 +93,17 @@
   }
 
   async function ensureFolderStructure() {
-    if (cachedFolderIds.appFolderId && cachedFolderIds.parcelsFolderId) {
+    if (cachedFolderIds.appFolderId && cachedFolderIds.parcelsFolderId && cachedFolderIds.gpsFolderId) {
       return cachedFolderIds;
     }
     const rootId = await findOrCreateFolder(FOLDER_ROOT_NAME, null);
     const appId = await findOrCreateFolder(FOLDER_APP_NAME, rootId);
     const parcelsId = await findOrCreateFolder(FOLDER_PARCELS_NAME, appId);
+    const gpsId = await findOrCreateFolder(FOLDER_GPS_NAME, appId);
     cachedFolderIds.rootFolderId = rootId;
     cachedFolderIds.appFolderId = appId;
     cachedFolderIds.parcelsFolderId = parcelsId;
+    cachedFolderIds.gpsFolderId = gpsId;
     return cachedFolderIds;
   }
 
@@ -211,6 +216,28 @@
     return getLocalCatalog();
   }
 
+  function generateSequentialParcelId(catalog = null) {
+    if (!catalog) catalog = getLocalCatalog();
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const datePrefix = `BIDANG-${y}${m}${d}-`;
+    let maxSeq = 0;
+    if (catalog && Array.isArray(catalog.features)) {
+      catalog.features.forEach(f => {
+        const fid = String(f.id || (f.properties && f.properties.id) || '');
+        if (fid.startsWith(datePrefix)) {
+          const numPart = parseInt(fid.slice(datePrefix.length), 10);
+          if (!isNaN(numPart) && numPart > maxSeq) {
+            maxSeq = numPart;
+          }
+        }
+      });
+    }
+    return `${datePrefix}${String(maxSeq + 1).padStart(3, '0')}`;
+  }
+
   function collectCurrentActiveParcelGeoJSON() {
     let coords = [];
     if (typeof activePolygon !== 'undefined' && activePolygon && typeof activePolygon.getLatLngs === 'function') {
@@ -256,15 +283,16 @@
       lat: c[1]
     }));
 
+    const autoId = generateSequentialParcelId();
     return {
       type: 'Feature',
-      id: 'BID-' + Date.now().toString(36).toUpperCase(),
+      id: autoId,
       geometry: {
         type: 'Polygon',
         coordinates: [coords]
       },
       properties: {
-        id: 'BID-' + Date.now().toString(36).toUpperCase(),
+        id: autoId,
         nib: document.getElementById('pinNibText') ? document.getElementById('pinNibText').textContent.trim() : '',
         pemilik: '',
         status_hak: 'Sertipikat Hak Milik (SHM)',
@@ -597,6 +625,106 @@
     URL.revokeObjectURL(url);
   }
 
+  function recordGpsSurveyorPoint(lat, lng, accuracy, surveyorName = 'Duta Digital Agensi') {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const storageKey = GPS_STORAGE_PREFIX + todayStr;
+    let trackData = null;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) trackData = JSON.parse(raw);
+    } catch (_) {}
+    if (!trackData || !Array.isArray(trackData.features)) {
+      trackData = {
+        type: 'FeatureCollection',
+        name: `Track_Lapangan_${todayStr}`,
+        crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' } },
+        features: []
+      };
+    }
+
+    const pointCount = trackData.features.filter(f => f.geometry && f.geometry.type === 'Point').length;
+    const ptNum = pointCount + 1;
+    const timeIso = new Date().toISOString();
+    const newPoint = {
+      type: 'Feature',
+      id: `GPS-${todayStr.replace(/-/g, '')}-${String(ptNum).padStart(3, '0')}`,
+      geometry: {
+        type: 'Point',
+        coordinates: [parseFloat(lng.toFixed(7)), parseFloat(lat.toFixed(7))]
+      },
+      properties: {
+        nomor_titik: `GPS-${ptNum}`,
+        waktu: timeIso,
+        lat: parseFloat(lat.toFixed(7)),
+        lng: parseFloat(lng.toFixed(7)),
+        akurasi_m: parseFloat(accuracy) || 0,
+        surveyor: surveyorName,
+        keterangan: 'Titik Patok Lapangan Surveyor'
+      }
+    };
+    trackData.features.push(newPoint);
+
+    const allPts = trackData.features
+      .filter(f => f.geometry && f.geometry.type === 'Point')
+      .map(f => f.geometry.coordinates);
+
+    const lineIdx = trackData.features.findIndex(f => f.geometry && f.geometry.type === 'LineString');
+    if (allPts.length >= 2) {
+      const lineFeature = {
+        type: 'Feature',
+        id: `TRACK-LINE-${todayStr.replace(/-/g, '')}`,
+        geometry: {
+          type: 'LineString',
+          coordinates: allPts
+        },
+        properties: {
+          nama: `Jalur Pengukuran ${todayStr}`,
+          total_titik: allPts.length,
+          tanggal: todayStr
+        }
+      };
+      if (lineIdx >= 0) {
+        trackData.features[lineIdx] = lineFeature;
+      } else {
+        trackData.features.unshift(lineFeature);
+      }
+    }
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(trackData));
+    } catch (_) {}
+
+    syncGpsTrackToGoogleDrive(todayStr, trackData).catch(() => {});
+    return newPoint;
+  }
+
+  async function syncGpsTrackToGoogleDrive(todayStr = null, trackData = null) {
+    if (!todayStr) todayStr = new Date().toISOString().split('T')[0];
+    if (!trackData) {
+      const raw = localStorage.getItem(GPS_STORAGE_PREFIX + todayStr);
+      if (raw) trackData = JSON.parse(raw);
+    }
+    if (!trackData) return;
+
+    const token = getAccessToken();
+    if (!token) return;
+
+    try {
+      const folders = await ensureFolderStructure();
+      const fileName = `track_lapangan_${todayStr}.geojson`;
+      const q = `name = '${fileName}' and '${folders.gpsFolderId}' in parents and trashed = false`;
+      const searchResp = await driveApiFetch(`${DRIVE_BASE_URL}?q=${encodeURIComponent(q)}&fields=files(id)&spaces=drive`);
+      let existingId = null;
+      if (searchResp.ok) {
+        const found = await searchResp.json();
+        if (found.files && found.files.length > 0) existingId = found.files[0].id;
+      }
+      await uploadOrUpdateFile(fileName, trackData, folders.gpsFolderId, existingId);
+    } catch (e) {
+      console.warn('GPS sync error:', e);
+    }
+  }
+
   window.DutaDriveSync = {
     getLocalCatalog,
     saveLocalCatalog,
@@ -609,7 +737,10 @@
     loadParcelToMap,
     renderCatalogUI,
     exportSingleParcelGeoJSON,
-    exportAllCatalogGeoJSON
+    exportAllCatalogGeoJSON,
+    generateSequentialParcelId,
+    recordGpsSurveyorPoint,
+    syncGpsTrackToGoogleDrive
   };
 
   document.addEventListener('DOMContentLoaded', function() {

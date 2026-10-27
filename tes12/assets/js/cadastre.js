@@ -15,7 +15,10 @@ function getBpnGatewayBase() {
           return 'http://127.0.0.1:8085';
         }
       }
-      return '';
+      const defaultCloudGateway = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL)
+        ? `${SUPABASE_PROJECT_URL}/functions/v1/cadastre-gateway`
+        : 'https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway';
+      return defaultCloudGateway;
     }
 
     function saveBpnGatewayUrlFromInput() {
@@ -76,31 +79,41 @@ function getBpnGatewayBase() {
           const tileUrl = this.getTileUrl(coords);
           const headers = this.options.headers || {};
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), 9000);
-          fetch(tileUrl, { headers: headers, mode: 'cors', signal: controller.signal })
-            .then(res => {
-              clearTimeout(tid);
-              if (!res.ok) throw new Error('Status ' + res.status);
-              return res.blob();
-            })
-            .then(blob => {
-              const objUrl = URL.createObjectURL(blob);
-              tile.onload = () => {
-                setTimeout(() => {
+          const tid = setTimeout(() => controller.abort(), 20000);
+
+          function fetchWithRetry(retriesLeft) {
+            fetch(tileUrl, { headers: headers, mode: 'cors', signal: controller.signal })
+              .then(res => {
+                clearTimeout(tid);
+                if (!res.ok) throw new Error('Status ' + res.status);
+                return res.blob();
+              })
+              .then(blob => {
+                const objUrl = URL.createObjectURL(blob);
+                tile.onload = () => {
+                  setTimeout(() => {
+                    try { URL.revokeObjectURL(objUrl); } catch (_) {}
+                  }, 15000);
+                  done(null, tile);
+                };
+                tile.onerror = () => {
                   try { URL.revokeObjectURL(objUrl); } catch (_) {}
-                }, 15000);
-                done(null, tile);
-              };
-              tile.onerror = () => {
-                try { URL.revokeObjectURL(objUrl); } catch (_) {}
-                done(null, tile);
-              };
-              tile.src = objUrl;
-            })
-            .catch(err => {
-              clearTimeout(tid);
-              done(null, tile);
-            });
+                  done(null, tile);
+                };
+                tile.src = objUrl;
+              })
+              .catch(err => {
+                if (retriesLeft > 0 && err.name !== 'AbortError') {
+                  setTimeout(() => fetchWithRetry(retriesLeft - 1), 500);
+                } else {
+                  clearTimeout(tid);
+                  tile.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                  done(null, tile);
+                }
+              });
+          }
+
+          fetchWithRetry(1);
           return tile;
         }
       });
@@ -111,6 +124,7 @@ function getBpnGatewayBase() {
     var cadastreVectorParcelCache = new Map();
     var isViewportVectorLoading = false;
     var cadastreVectorLayer = null;
+    var viewportFetchController = null;
 
     function setupCadastreVectorLayer() {
       if (!map) return;
@@ -135,14 +149,14 @@ function getBpnGatewayBase() {
       let debounceTimer = null;
       const onMapChange = () => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(loadViewportCadastreSvgParcels, 300);
+        debounceTimer = setTimeout(loadViewportCadastreSvgParcels, 180);
       };
       map.on('moveend zoomend', onMapChange);
-      setTimeout(loadViewportCadastreSvgParcels, 350);
+      setTimeout(loadViewportCadastreSvgParcels, 250);
     }
 
     async function loadViewportCadastreSvgParcels() {
-      if (!map || isViewportVectorLoading) return;
+      if (!map) return;
       const zoom = map.getZoom();
       if (zoom < 14) {
         if (cadastreVectorLayer) {
@@ -158,6 +172,11 @@ function getBpnGatewayBase() {
         cadastreVectorParcelCache.clear();
         return;
       }
+
+      if (viewportFetchController) {
+        try { viewportFetchController.abort(); } catch (_) {}
+      }
+      viewportFetchController = new AbortController();
 
       const bounds = map.getBounds();
       const minLat = bounds.getSouth();
@@ -196,8 +215,8 @@ function getBpnGatewayBase() {
       isViewportVectorLoading = true;
       try {
         const fetchOpts = isCloud
-          ? { headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }, mode: 'cors' }
-          : { mode: 'cors' };
+          ? { headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }, mode: 'cors', signal: viewportFetchController.signal }
+          : { mode: 'cors', signal: viewportFetchController.signal };
         const res = await fetch(url, fetchOpts);
         if (res.ok) {
           const data = await res.json();
@@ -520,23 +539,26 @@ function getBpnGatewayBase() {
         map.removeLayer(persilLayer);
       }
 
+      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+
       if (persilBase) {
-        persilLayer = L.tileLayer(`${persilBase}/persil/{z}/{x}/{y}.webp?live=1`, {
+        const tileUrl = persilBase.includes('supabase.co')
+          ? `${persilBase}?action=tile&z={z}&x={x}&y={y}&role=admin`
+          : `${persilBase}/persil/{z}/{x}/{y}.webp?live=1`;
+
+        persilLayer = createAuthTileLayer(tileUrl, {
           pane: 'persilPane',
           minZoom: 14,
           maxZoom: 26,
           maxNativeZoom: 19,
+          keepBuffer: 6,
+          updateWhenZooming: true,
+          updateWhenIdle: false,
           opacity: currentOpacity,
           zIndex: 360,
-          updateWhenZooming: false,
-          updateInterval: 100
-        });
-        persilLayer.on('tileerror', function() {
-          if (!persilLayer._fallbackActive) {
-            persilLayer._fallbackActive = true;
-            if (map.hasLayer(persilLayer)) map.removeLayer(persilLayer);
-            persilLayer = createCadastreProxyLayer();
-            map.addLayer(persilLayer);
+          headers: {
+            'apikey': sbKey,
+            'Authorization': 'Bearer ' + sbKey
           }
         });
       } else {
@@ -601,6 +623,10 @@ function getBpnGatewayBase() {
         return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
           pane: 'thematicPane',
           maxZoom: 26,
+          maxNativeZoom: 19,
+          keepBuffer: 6,
+          updateWhenZooming: true,
+          updateWhenIdle: false,
           opacity: 0.85,
           zIndex: 450
         });
@@ -609,11 +635,14 @@ function getBpnGatewayBase() {
       const persilBase = getBpnGatewayBase();
       const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
       const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
-      if (persilBase) {
+      if (persilBase && !persilBase.includes('supabase.co')) {
         return L.tileLayer(`${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`, {
           pane: 'thematicPane',
           maxZoom: 26,
-          maxNativeZoom: 20,
+          maxNativeZoom: 19,
+          keepBuffer: 6,
+          updateWhenZooming: true,
+          updateWhenIdle: false,
           opacity: 0.75,
           zIndex: 450
         });
@@ -621,7 +650,10 @@ function getBpnGatewayBase() {
       return createAuthTileLayer(`${sbUrl}/functions/v1/cadastre-gateway?action=layer-ceking&layer=${layerKey}&z={z}&x={x}&y={y}&role=admin`, {
         pane: 'thematicPane',
         maxZoom: 26,
-        maxNativeZoom: 20,
+        maxNativeZoom: 19,
+        keepBuffer: 6,
+        updateWhenZooming: true,
+        updateWhenIdle: false,
         opacity: 0.75,
         zIndex: 450,
         headers: {

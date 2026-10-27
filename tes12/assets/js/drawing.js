@@ -26,7 +26,10 @@ function captureGpsCoordinate() {
       if (typeof renderPatokList === 'function') {
         renderPatokList();
       }
-      showToast('Titik GPS berhasil diplot (Akurasi: ±' + acc + ' m).', 'success', 3500);
+      if (typeof DutaDriveSync !== 'undefined' && typeof DutaDriveSync.recordGpsSurveyorPoint === 'function') {
+        DutaDriveSync.recordGpsSurveyorPoint(lat, lng, acc);
+      }
+      showToast('Titik GPS berhasil diplot (Akurasi: ±' + acc + ' m) & tersimpan ke rekaman surveyor.', 'success', 3500);
     },
     function(err) {
       let msg = 'Gagal mengambil posisi GPS.';
