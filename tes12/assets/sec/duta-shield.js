@@ -124,10 +124,13 @@
   }
 
   async function bootFallback() {
+    const vTag = '?v=0.114_' + Date.now();
     for (let i = 0; i < FALLBACK_SCRIPTS.length; i++) {
       try {
-        await loadScriptDirect(FALLBACK_SCRIPTS[i]);
-      } catch (e) {}
+        await loadScriptDirect(FALLBACK_SCRIPTS[i] + vTag);
+      } catch (e) {
+        console.error('Gagal memuat modul:', FALLBACK_SCRIPTS[i], e);
+      }
     }
     if (nativeDomFired || document.readyState === 'interactive' || document.readyState === 'complete') {
       window.dispatchEvent(new Event('DOMContentLoaded'));
@@ -135,25 +138,12 @@
   }
 
   async function bootKernel() {
-    if (window.location.protocol === 'file:') {
-      await bootFallback();
-      return;
-    }
     let waitAttempts = 0;
     while (typeof window.L === 'undefined' && waitAttempts < 100) {
       await new Promise(r => setTimeout(r, 50));
       waitAttempts++;
     }
-    try {
-      for (let i = 0; i < DATA_PAYLOADS.length; i++) {
-        await loadPayload(DATA_PAYLOADS[i]);
-      }
-      if (nativeDomFired || document.readyState === 'interactive' || document.readyState === 'complete') {
-        window.dispatchEvent(new Event('DOMContentLoaded'));
-      }
-    } catch (err) {
-      await bootFallback();
-    }
+    await bootFallback();
   }
 
   bootKernel();
