@@ -6,13 +6,51 @@ function toggleMobileSidebar(forceClose = false) {
       if (forceClose || sb.classList.contains('mobile-open')) {
         sb.classList.remove('mobile-open');
         ov.classList.remove('active');
-        if (fab) fab.style.display = 'flex';
+        if (fab) fab.style.display = window.innerWidth <= 768 ? 'none' : 'flex';
+        document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+        const mapNav = document.querySelector('.mobile-nav-item[data-tab="tab-map"]');
+        if (mapNav) mapNav.classList.add('active');
       } else {
         sb.classList.add('mobile-open');
         ov.classList.add('active');
         if (fab) fab.style.display = 'none';
       }
       setTimeout(() => map && map.invalidateSize(), 300);
+    }
+
+    function handleMobileNavClick(tabId) {
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('mobileOverlay');
+
+      if (tabId === 'tab-map') {
+        toggleMobileSidebar(true);
+        document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+        const mapItem = document.querySelector('.mobile-nav-item[data-tab="tab-map"]');
+        if (mapItem) mapItem.classList.add('active');
+        return;
+      }
+
+      const isAlreadyOpenAndActive = sb && sb.classList.contains('mobile-open') && document.getElementById(tabId)?.classList.contains('active');
+      if (isAlreadyOpenAndActive) {
+        toggleMobileSidebar(true);
+        document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+        const mapItem = document.querySelector('.mobile-nav-item[data-tab="tab-map"]');
+        if (mapItem) mapItem.classList.add('active');
+        return;
+      }
+
+      switchTab(tabId);
+      if (sb && !sb.classList.contains('mobile-open')) {
+        sb.classList.add('mobile-open');
+        if (ov) ov.classList.add('active');
+        const fab = document.getElementById('mapSidebarFab');
+        if (fab) fab.style.display = 'none';
+        setTimeout(() => map && map.invalidateSize(), 300);
+      }
+
+      document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+      const activeItem = document.querySelector(`.mobile-nav-item[data-tab="${tabId}"]`);
+      if (activeItem) activeItem.classList.add('active');
     }
 
     function toggleContentBox(headerEl) {
@@ -49,7 +87,8 @@ function toggleMobileSidebar(forceClose = false) {
         'tab-search': 'btnTabSearch',
         'tab-digitasi': 'btnTabDigitasi',
         'tab-ekspor': 'btnTabEkspor',
-        'tab-info': 'btnTabInfo'
+        'tab-info': 'btnTabInfo',
+        'tab-katalog': 'btnTabKatalog'
       };
 
       const btn = document.getElementById(btnMap[tabId]);
@@ -57,6 +96,12 @@ function toggleMobileSidebar(forceClose = false) {
 
       const panel = document.getElementById(tabId);
       if (panel) panel.classList.add('active');
+
+      document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+      const activeNav = document.querySelector(`.mobile-nav-item[data-tab="${tabId}"]`);
+      if (activeNav) {
+        activeNav.classList.add('active');
+      }
 
       if (tabId === 'tab-katalog' && typeof DutaDriveSync !== 'undefined' && typeof DutaDriveSync.renderCatalogUI === 'function') {
         DutaDriveSync.renderCatalogUI();
@@ -196,8 +241,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const fileBanner = document.getElementById('fileProtocolBanner');
         if (fileBanner) fileBanner.style.display = 'flex';
       }
+      window.handleMobileNavClick = handleMobileNavClick;
       if (window.innerWidth <= 768) {
         const fab = document.getElementById('mapSidebarFab');
-        if (fab) fab.style.display = 'flex';
+        if (fab) fab.style.display = 'none';
       }
     });

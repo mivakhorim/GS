@@ -1248,14 +1248,14 @@
         position: fixed;
         left: 0;
         top: var(--header-h);
-        bottom: 0;
-        height: calc(100dvh - var(--header-h));
-        height: calc(100% - var(--header-h));
-        width: 88%;
-        max-width: 360px;
+        bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+        height: calc(100dvh - var(--header-h) - 56px - env(safe-area-inset-bottom, 0px)) !important;
+        width: 100% !important;
+        max-width: 440px !important;
         transform: translateX(-100%);
         box-shadow: none;
-        z-index: 1100;
+        z-index: 1250 !important;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .sidebar-panel.mobile-open {
         transform: translateX(0);
@@ -1271,7 +1271,7 @@
       }
       .bottom-hud {
         position: fixed;
-        bottom: 0;
+        bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
         left: 0;
         right: 0;
         transform: none;
@@ -1429,7 +1429,10 @@
     @media (max-width: 768px) {
       .map-floating-quick-controls {
         right: 0.75rem;
-        bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(4.2rem + env(safe-area-inset-bottom, 0px));
+      }
+      .leaflet-bottom {
+        bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
       }
       .smart-draw-toolbar {
         top: calc(0.5rem + env(safe-area-inset-top, 0px));
