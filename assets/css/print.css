@@ -1250,12 +1250,15 @@
         top: var(--header-h);
         bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
         height: calc(100dvh - var(--header-h) - 56px - env(safe-area-inset-bottom, 0px)) !important;
-        width: 100% !important;
-        max-width: 440px !important;
+        width: 70% !important;
+        max-width: 70% !important;
         transform: translateX(-100%);
         box-shadow: none;
         z-index: 1250 !important;
         transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .sidebar-scroll {
+        padding: 0.4rem 0.55rem 1.5rem 0.55rem !important;
       }
       .sidebar-panel.mobile-open {
         transform: translateX(0);
@@ -1433,6 +1436,17 @@
       }
       .leaflet-bottom {
         bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+      .floating-map-legend {
+        bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+        left: 0.5rem !important;
+        max-width: calc(100vw - 1rem) !important;
+        z-index: 1100 !important;
+      }
+      .legend-body {
+        max-height: 200px !important;
+        width: 100% !important;
+        max-width: 250px !important;
       }
       .smart-draw-toolbar {
         top: calc(0.5rem + env(safe-area-inset-top, 0px));

@@ -8,7 +8,7 @@ function toggleMobileSidebar(forceClose = false) {
         ov.classList.remove('active');
         if (fab) fab.style.display = window.innerWidth <= 768 ? 'none' : 'flex';
         document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
-        const mapNav = document.querySelector('.mobile-nav-item[data-tab="tab-map"]');
+        const mapNav = document.querySelector('.mobile-nav-item[data-nav="tab-map"]');
         if (mapNav) mapNav.classList.add('active');
       } else {
         sb.classList.add('mobile-open');
@@ -18,28 +18,53 @@ function toggleMobileSidebar(forceClose = false) {
       setTimeout(() => map && map.invalidateSize(), 300);
     }
 
-    function handleMobileNavClick(tabId) {
+    function handleMobileNavClick(action) {
       const sb = document.getElementById('sidebar');
       const ov = document.getElementById('mobileOverlay');
 
-      if (tabId === 'tab-map') {
+      if (action === 'tab-map') {
         toggleMobileSidebar(true);
         document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
-        const mapItem = document.querySelector('.mobile-nav-item[data-tab="tab-map"]');
+        const mapItem = document.querySelector('.mobile-nav-item[data-nav="tab-map"]');
         if (mapItem) mapItem.classList.add('active');
         return;
       }
 
-      const isAlreadyOpenAndActive = sb && sb.classList.contains('mobile-open') && document.getElementById(tabId)?.classList.contains('active');
+      if (action === 'action-geojson') {
+        if (typeof exportGeoJSON === 'function') {
+          exportGeoJSON();
+        } else if (typeof DutaDriveSync !== 'undefined' && typeof DutaDriveSync.exportAllCatalogGeoJSON === 'function') {
+          DutaDriveSync.exportAllCatalogGeoJSON();
+        } else {
+          showToast('Fungsi ekspor GeoJSON sedang dipersiapkan.', 'info');
+        }
+        return;
+      }
+
+      if (action === 'action-print') {
+        if (typeof openPrintModal === 'function') {
+          openPrintModal();
+        }
+        return;
+      }
+
+      if (action === 'action-account') {
+        if (typeof openMemberModal === 'function') {
+          openMemberModal();
+        }
+        return;
+      }
+
+      const isAlreadyOpenAndActive = sb && sb.classList.contains('mobile-open') && document.getElementById(action)?.classList.contains('active');
       if (isAlreadyOpenAndActive) {
         toggleMobileSidebar(true);
         document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
-        const mapItem = document.querySelector('.mobile-nav-item[data-tab="tab-map"]');
+        const mapItem = document.querySelector('.mobile-nav-item[data-nav="tab-map"]');
         if (mapItem) mapItem.classList.add('active');
         return;
       }
 
-      switchTab(tabId);
+      switchTab(action);
       if (sb && !sb.classList.contains('mobile-open')) {
         sb.classList.add('mobile-open');
         if (ov) ov.classList.add('active');
@@ -49,7 +74,7 @@ function toggleMobileSidebar(forceClose = false) {
       }
 
       document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
-      const activeItem = document.querySelector(`.mobile-nav-item[data-tab="${tabId}"]`);
+      const activeItem = document.querySelector(`.mobile-nav-item[data-nav="${action}"]`);
       if (activeItem) activeItem.classList.add('active');
     }
 
@@ -98,7 +123,7 @@ function toggleMobileSidebar(forceClose = false) {
       if (panel) panel.classList.add('active');
 
       document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
-      const activeNav = document.querySelector(`.mobile-nav-item[data-tab="${tabId}"]`);
+      const activeNav = document.querySelector(`.mobile-nav-item[data-nav="${tabId}"]`);
       if (activeNav) {
         activeNav.classList.add('active');
       }

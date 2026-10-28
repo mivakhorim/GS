@@ -500,11 +500,11 @@
         <section id="tab-ekspor" class="tab-view">
           <div class="content-box" id="boxEkspor">
             <div class="box-header" style="margin-bottom: 0.4rem;">
-              <div class="box-title">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                <span>Pusat Ekspor &amp; Format Resmi</span>
+              <div class="box-title" style="min-width: 0; display: flex; align-items: center; gap: 5px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span style="white-space: nowrap; font-size: 0.76rem; font-weight: 700;">Pusat Ekspor Resmi</span>
               </div>
-              <span id="attrModeBadge" style="font-size: 0.72rem; font-weight: 600; color: var(--text-sub);">Free User Max 150 M2</span>
+              <span id="attrModeBadge" style="font-size: 0.65rem; font-weight: 600; color: var(--text-sub); white-space: nowrap; flex-shrink: 0;">Free: Max 150 m²</span>
             </div>
 
             <div style="display: flex; border-bottom: 1px solid var(--border-light); margin-bottom: 0.65rem;">
@@ -2657,42 +2657,42 @@
   </div>
 
   <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Navigasi Aplikasi Mobile">
-    <button type="button" class="mobile-nav-item active" data-tab="tab-map" onclick="handleMobileNavClick('tab-map')" aria-label="Tampilan Peta">
-      <svg class="mobile-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button type="button" class="mobile-nav-item active" data-nav="tab-map" onclick="handleMobileNavClick('tab-map')" aria-label="Tampilan Peta Penuh">
+      <svg class="mobile-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
         <line x1="8" y1="2" x2="8" y2="18"/>
         <line x1="16" y1="6" x2="16" y2="22"/>
       </svg>
       <span class="mobile-nav-label">Peta</span>
     </button>
-    <button type="button" class="mobile-nav-item" data-tab="tab-digitasi" onclick="handleMobileNavClick('tab-digitasi')" aria-label="Alat Gambar dan Bidang">
-      <svg class="mobile-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button type="button" class="mobile-nav-item" data-nav="tab-digitasi" onclick="handleMobileNavClick('tab-digitasi')" aria-label="Alat Gambar dan Bidang">
+      <svg class="mobile-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
         <path d="m15 5 4 4"/>
       </svg>
-      <span class="mobile-nav-label">Gambar</span>
+      <span class="mobile-nav-label">Bidang</span>
     </button>
-    <button type="button" class="mobile-nav-item" data-tab="tab-katalog" onclick="handleMobileNavClick('tab-katalog')" aria-label="Katalog Bidang Google Drive">
-      <svg class="mobile-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    <button type="button" class="mobile-nav-item" data-nav="action-geojson" onclick="handleMobileNavClick('action-geojson')" aria-label="Ekspor Berkas GeoJSON">
+      <svg class="mobile-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="16 18 22 12 16 6"/>
+        <polyline points="8 6 2 12 8 18"/>
       </svg>
-      <span class="mobile-nav-label">Katalog</span>
+      <span class="mobile-nav-label">GeoJSON</span>
     </button>
-    <button type="button" class="mobile-nav-item" data-tab="tab-layers" onclick="handleMobileNavClick('tab-layers')" aria-label="Lapisan Peta dan Citra">
-      <svg class="mobile-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-        <polyline points="2 17 12 22 22 17"/>
-        <polyline points="2 12 12 17 22 12"/>
+    <button type="button" class="mobile-nav-item" data-nav="action-print" onclick="handleMobileNavClick('action-print')" aria-label="Cetak Layout Peta PDF">
+      <svg class="mobile-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9"/>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
       </svg>
-      <span class="mobile-nav-label">Lapisan</span>
+      <span class="mobile-nav-label">Cetak</span>
     </button>
-    <button type="button" class="mobile-nav-item" data-tab="tab-ekspor" onclick="handleMobileNavClick('tab-ekspor')" aria-label="Ekspor Berkas SHP CAD">
-      <svg class="mobile-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
+    <button type="button" class="mobile-nav-item" data-nav="action-account" onclick="handleMobileNavClick('action-account')" aria-label="Akun Pengguna dan Profil">
+      <svg class="mobile-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
       </svg>
-      <span class="mobile-nav-label">Ekspor</span>
+      <span class="mobile-nav-label">Akun</span>
     </button>
   </nav>
 </body>
