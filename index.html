@@ -732,170 +732,309 @@
             </div>
           </div>
 
-          <div class="content-box">
+                    <div class="content-box">
             <div class="box-header">
               <div class="box-title">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Peta Tematik &amp; Batas Kawasan
+                Peta Tematik &amp; Meja Kerja BHUMI ATR/BPN
               </div>
+              <span class="badge-pill green" style="font-size: 0.65rem;">16 Layer</span>
             </div>
             <div style="font-size: 0.72rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 0.5rem;">
-              Lapisan tematik resmi nasional untuk ceking batas bidang tanah terhadap tata ruang, kawasan lindung, perizinan, dan batas administrasi:
+              Katalog resmi 16 layer Meja Kerja BHUMI ATR/BPN (Update Terkini 2026), streaming format WebP/SVG melalui Zero-Leak Air-Gap Proxy:
             </div>
             <div class="ceking-flat-list">
-
+              <div style="font-size: 0.7rem; font-weight: 700; color: #0a2e5c; padding: 6px 4px 3px; border-bottom: 1px solid var(--border-light); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Dataset Utama Pertanahan & Pangan</div>
               <div class="ceking-row">
                 <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingHutan" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingHutan" onchange="toggleCekingLayer('hutan', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L7 10h3v4H7l-4 7h18l-4-7h-3v-4h3z"/><line x1="12" y1="18" x2="12" y2="22"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Kawasan Hutan Lindung (KLHK 2026)</span>
-                      <span class="ceking-source">Geoportal Planologi Kehutanan KLHK</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingHutan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hutan', this.value)" class="range-input">
-                  <span id="opacityLabelHutan" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingLsd" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingLsd" onchange="toggleCekingLayer('lsd', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Lahan Sawah Dilindungi (LSD Terkini)</span>
-                      <span class="ceking-source">Basis Data Peta Tematik LSD Nasional</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingLsd" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lsd', this.value)" class="range-input">
-                  <span id="opacityLabelLsd" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingLbs" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingLbs" onchange="toggleCekingLayer('lbs', this.checked)" class="flat-checkbox">
+                  <label class="ceking-label-group" for="chkCekingLppb" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingLppb" onchange="toggleCekingLayer('lppb', this.checked)" class="flat-checkbox">
                     <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>
                     <div class="ceking-text-col">
-                      <span class="ceking-title">Lahan Baku Sawah (LBS Nasional)</span>
-                      <span class="ceking-source">Basis Data Pertanian &amp; Pangan Nasional</span>
+                      <span class="ceking-title">Lahan Pertanian Pangan Berkelanjutan (LPPB)</span>
+                      <span class="ceking-source">rtr-online:lp2b_lp2b_10112026 - Update: 12-11-2026</span>
                     </div>
                   </label>
-                  <span id="badgeCekingLbs" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                  <span id="badgeCekingLppb" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
                 <div class="transparency-control-bar">
                   <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lbs', this.value)" class="range-input">
-                  <span id="opacityLabelLbs" class="transparency-value-pill">75%</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lppb', this.value)" class="range-input">
+                  <span id="opacityLabelLppb" class="transparency-value-pill">75%</span>
                 </div>
               </div>
-
               <div class="ceking-row">
                 <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingPeruntukan" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingPeruntukan" onchange="toggleCekingLayer('peruntukan', this.checked)" class="flat-checkbox">
+                  <label class="ceking-label-group" for="chkCekingLsd8Provinsi" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingLsd8Provinsi" onchange="toggleCekingLayer('lsd_8_provinsi', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Lahan Sawah Dilindungi 8 Provinsi</span>
+                      <span class="ceking-source">umum:lsd_merge_8_provinsi - Update: 30-09-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingLsd8Provinsi" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lsd_8_provinsi', this.value)" class="range-input">
+                  <span id="opacityLabelLsd8Provinsi" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingLsd12Provinsi" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingLsd12Provinsi" onchange="toggleCekingLayer('lsd_12_provinsi', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Lahan Sawah Dilindungi 12 Provinsi</span>
+                      <span class="ceking-source">umum:lsd_merge - Update: 25-09-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingLsd12Provinsi" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lsd_12_provinsi', this.value)" class="range-input">
+                  <span id="opacityLabelLsd12Provinsi" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingLahanBakuSawah2024" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingLahanBakuSawah2024" onchange="toggleCekingLayer('lahan_baku_sawah_2024', this.checked)" class="flat-checkbox">
                     <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
                     <div class="ceking-text-col">
-                      <span class="ceking-title">Peta Peruntukan Ruang (RTRWN)</span>
-                      <span class="ceking-source">Rencana Tata Ruang Wilayah Nasional</span>
+                      <span class="ceking-title">Lahan Baku Sawah 2024</span>
+                      <span class="ceking-source">umum:lahanbakusawah_new - Update: 25-09-2026</span>
                     </div>
                   </label>
-                  <span id="badgeCekingPeruntukan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                  <span id="badgeCekingLahanBakuSawah2024" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
                 <div class="transparency-control-bar">
                   <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('peruntukan', this.value)" class="range-input">
-                  <span id="opacityLabelPeruntukan" class="transparency-value-pill">75%</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lahan_baku_sawah_2024', this.value)" class="range-input">
+                  <span id="opacityLabelLahanBakuSawah2024" class="transparency-value-pill">75%</span>
                 </div>
               </div>
-
               <div class="ceking-row">
                 <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingRtrw" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingRtrw" onchange="toggleCekingLayer('rtrw', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
+                  <label class="ceking-label-group" for="chkCekingTanahUlayat" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingTanahUlayat" onchange="toggleCekingLayer('tanah_ulayat', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                     <div class="ceking-text-col">
-                      <span class="ceking-title">Rencana Pola Ruang (RTRW Kab/Kot)</span>
-                      <span class="ceking-source">Sistem Rencana Tata Ruang Daerah</span>
+                      <span class="ceking-title">Tanah Ulayat</span>
+                      <span class="ceking-source">umum:tanahulayatnew - Update: 24-09-2026</span>
                     </div>
                   </label>
-                  <span id="badgeCekingRtrw" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                  <span id="badgeCekingTanahUlayat" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
                 <div class="transparency-control-bar">
                   <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rtrw', this.value)" class="range-input">
-                  <span id="opacityLabelRtrw" class="transparency-value-pill">75%</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('tanah_ulayat', this.value)" class="range-input">
+                  <span id="opacityLabelTanahUlayat" class="transparency-value-pill">75%</span>
                 </div>
               </div>
-
               <div class="ceking-row">
                 <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingRdtr" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingRdtr" onchange="toggleCekingLayer('rdtr', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 12h16"/><path d="M12 4v16"/></svg></span>
+                  <label class="ceking-label-group" for="chkCekingAreaPenggunaanLain" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingAreaPenggunaanLain" onchange="toggleCekingLayer('area_penggunaan_lain', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></span>
                     <div class="ceking-text-col">
-                      <span class="ceking-title">Rencana Detail Tata Ruang (RDTR)</span>
-                      <span class="ceking-source">Sistem Zonasi Detail Interop ATR/BPN</span>
+                      <span class="ceking-title">Area Penggunaan Lain (APL)</span>
+                      <span class="ceking-source">umum:area_penggunaan_lain - Update: 14-07-2026</span>
                     </div>
                   </label>
-                  <span id="badgeCekingRdtr" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                  <span id="badgeCekingAreaPenggunaanLain" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
                 <div class="transparency-control-bar">
                   <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rdtr', this.value)" class="range-input">
-                  <span id="opacityLabelRdtr" class="transparency-value-pill">75%</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('area_penggunaan_lain', this.value)" class="range-input">
+                  <span id="opacityLabelAreaPenggunaanLain" class="transparency-value-pill">75%</span>
                 </div>
               </div>
-
               <div class="ceking-row">
                 <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingZnt" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingZnt" onchange="toggleCekingLayer('znt', this.checked)" class="flat-checkbox">
+                  <label class="ceking-label-group" for="chkCekingKawasanHutan" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingKawasanHutan" onchange="toggleCekingLayer('kawasan_hutan', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L7 10h3v4H7l-4 7h18l-4-7h-3v-4h3z"/><line x1="12" y1="18" x2="12" y2="22"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Kawasan Hutan</span>
+                      <span class="ceking-source">umum:penunjukan_kawasan_hutan - Update: 06-07-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingKawasanHutan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('kawasan_hutan', this.value)" class="range-input">
+                  <span id="opacityLabelKawasanHutan" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingPippib2025" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingPippib2025" onchange="toggleCekingLayer('pippib_2025', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Peta PIPPIB 2025 (Hutan Primer & Gambut)</span>
+                      <span class="ceking-source">umum:pippib_2025 - Update: 19-06-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingPippib2025" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('pippib_2025', this.value)" class="range-input">
+                  <span id="opacityLabelPippib2025" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingPenggunaanTanah" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingPenggunaanTanah" onchange="toggleCekingLayer('penggunaan_tanah', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Penggunaan Tanah</span>
+                      <span class="ceking-source">umum:PenggunaanTanah - Update: 19-06-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingPenggunaanTanah" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('penggunaan_tanah', this.value)" class="range-input">
+                  <span id="opacityLabelPenggunaanTanah" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingNilaiBidangTanah" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingNilaiBidangTanah" onchange="toggleCekingLayer('nilai_bidang_tanah', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8 11h8"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Peta Nilai Bidang Tanah</span>
+                      <span class="ceking-source">umum:nbt3 - Update: 19-06-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingNilaiBidangTanah" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('nilai_bidang_tanah', this.value)" class="range-input">
+                  <span id="opacityLabelNilaiBidangTanah" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingZonaNilaiTanah" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingZonaNilaiTanah" onchange="toggleCekingLayer('zona_nilai_tanah', this.checked)" class="flat-checkbox">
                     <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6v12M8 10h8M8 14h6"/></svg></span>
                     <div class="ceking-text-col">
-                      <span class="ceking-title">Zona Nilai Tanah (ZNT Pasar)</span>
-                      <span class="ceking-source">Peta Nilai Zona Indikatif ATR/BPN</span>
+                      <span class="ceking-title">Zona Nilai Tanah (ZNT)</span>
+                      <span class="ceking-source">umum:ZNTRANGE - Update: 19-06-2026</span>
                     </div>
                   </label>
-                  <span id="badgeCekingZnt" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                  <span id="badgeCekingZonaNilaiTanah" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
                 <div class="transparency-control-bar">
                   <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('znt', this.value)" class="range-input">
-                  <span id="opacityLabelZnt" class="transparency-value-pill">75%</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('zona_nilai_tanah', this.value)" class="range-input">
+                  <span id="opacityLabelZonaNilaiTanah" class="transparency-value-pill">75%</span>
                 </div>
               </div>
-
               <div class="ceking-row">
                 <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingJalan" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingJalan" onchange="toggleCekingLayer('jalan', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M12 12h8"/><path d="M4 12h8"/></svg></span>
+                  <label class="ceking-label-group" for="chkCekingToponim" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingToponim" onchange="toggleCekingLayer('toponim', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span>
                     <div class="ceking-text-col">
-                      <span class="ceking-title">Jaringan Ruas Jalan &amp; Akses</span>
-                      <span class="ceking-source">Sistem Transportasi Geospasial</span>
+                      <span class="ceking-title">Toponim Geospasial</span>
+                      <span class="ceking-source">umum:toponimi - Update: 19-06-2026</span>
                     </div>
                   </label>
-                  <span id="badgeCekingJalan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                  <span id="badgeCekingToponim" class="badge-pill" style="font-size: 0.64rem;">Off</span>
                 </div>
                 <div class="transparency-control-bar">
                   <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="85" oninput="changeCekingOpacity('jalan', this.value)" class="range-input">
-                  <span id="opacityLabelJalan" class="transparency-value-pill">85%</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('toponim', this.value)" class="range-input">
+                  <span id="opacityLabelToponim" class="transparency-value-pill">75%</span>
                 </div>
               </div>
-
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingIndexPetaDasar" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingIndexPetaDasar" onchange="toggleCekingLayer('index_peta_dasar', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 3l18 18M21 3L3 21"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Index Peta Dasar</span>
+                      <span class="ceking-source">Index (Tile XYZ) - Update: 19-06-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingIndexPetaDasar" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('index_peta_dasar', this.value)" class="range-input">
+                  <span id="opacityLabelIndexPetaDasar" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div style="font-size: 0.7rem; font-weight: 700; color: #0a2e5c; padding: 6px 4px 3px; border-bottom: 1px solid var(--border-light); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Rencana Tata Ruang (RTRW)</div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingRtrwKabkot" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingRtrwKabkot" onchange="toggleCekingLayer('rtrw_kabkot', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">RTRW Kab/Kota (Rencana Tata Ruang Wilayah)</span>
+                      <span class="ceking-source">rtr-online:rtrw_kabkot_1_indonesia - Update: 06-10-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingRtrwKabkot" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rtrw_kabkot', this.value)" class="range-input">
+                  <span id="opacityLabelRtrwKabkot" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingRtrwProvinsi" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingRtrwProvinsi" onchange="toggleCekingLayer('rtrw_provinsi', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 12h16"/><path d="M12 4v16"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">RTRW Provinsi (Rencana Tata Ruang Wilayah)</span>
+                      <span class="ceking-source">rtr-online:rtrw_provinsi_1_indonesia - Update: 06-10-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingRtrwProvinsi" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rtrw_provinsi', this.value)" class="range-input">
+                  <span id="opacityLabelRtrwProvinsi" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
+              <div style="font-size: 0.7rem; font-weight: 700; color: #0a2e5c; padding: 6px 4px 3px; border-bottom: 1px solid var(--border-light); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Dataset Turunan Geoportal</div>
+              <div class="ceking-row">
+                <div class="ceking-header">
+                  <label class="ceking-label-group" for="chkCekingPtpr" style="cursor: pointer;">
+                    <input type="checkbox" id="chkCekingPtpr" onchange="toggleCekingLayer('ptpr', this.checked)" class="flat-checkbox">
+                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+                    <div class="ceking-text-col">
+                      <span class="ceking-title">Peta Tematik Pertanahan dan Ruang (PTPR)</span>
+                      <span class="ceking-source">geoportal:PTPRPublish - Update: 19-06-2026</span>
+                    </div>
+                  </label>
+                  <span id="badgeCekingPtpr" class="badge-pill" style="font-size: 0.64rem;">Off</span>
+                </div>
+                <div class="transparency-control-bar">
+                  <span class="transparency-label">Transparansi</span>
+                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('ptpr', this.value)" class="range-input">
+                  <span id="opacityLabelPtpr" class="transparency-value-pill">75%</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -903,126 +1042,25 @@
             <div class="box-header">
               <div class="box-title">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span>Meja Kerja Kadaster ATR/BPN (Admin)</span>
+                <span>Status Zero-Leak Proxy &amp; Sesi ATR/BPN</span>
               </div>
               <span class="badge-pill">Admin</span>
             </div>
             <div style="font-size: 0.72rem; color: var(--text-sub); margin-bottom: 0.6rem; line-height: 1.4;">
-              Akses instrumen hak tanah, perizinan tata ruang KKPR, dan informasi geospasial tematik resmi server ATR/BPN.
+              Pemantauan koneksi reverse proxy privat dan rotasi sesi token WAF pemerintah secara realtime.
             </div>
-            <div class="ceking-flat-list">
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingHakMilik" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingHakMilik" onchange="toggleCekingLayer('hak_milik', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Hak Milik Terdaftar (BPN)</span>
-                      <span class="ceking-source">IGT Hak Milik Perorangan &amp; Badan</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingHakMilik" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hak_milik', this.value)" class="range-input">
-                  <span id="opacityLabelHakMilik" class="transparency-value-pill">75%</span>
-                </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 0.72rem; line-height: 1.5; color: #475569;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span>Endpoint Proxy Lokal:</span>
+                <strong style="color: #0a2e5c;">http://localhost:3000/proxy-wms</strong>
               </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingHgu" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingHgu" onchange="toggleCekingLayer('hgu', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Hak Guna Usaha (HGU)</span>
-                      <span class="ceking-source">Sebaran Perkebunan &amp; Agrobisnis</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingHgu" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hgu', this.value)" class="range-input">
-                  <span id="opacityLabelHgu" class="transparency-value-pill">75%</span>
-                </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span>Protokol Proteksi:</span>
+                <span class="badge-pill green" style="font-size: 0.62rem;">Zero-Leak Air-Gap</span>
               </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingHgb" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingHgb" onchange="toggleCekingLayer('hgb', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="2"/><line x1="15" y1="22" x2="15" y2="2"/><line x1="4" y1="12" x2="20" y2="12"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Hak Guna Bangunan (HGB)</span>
-                      <span class="ceking-source">Komersial, Industri &amp; Pengembang</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingHgb" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hgb', this.value)" class="range-input">
-                  <span id="opacityLabelHgb" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingHpl" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingHpl" onchange="toggleCekingLayer('hpl', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Hak Pengelolaan (HPL)</span>
-                      <span class="ceking-source">Aset Pemerintah &amp; Badan Otorita</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingHpl" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hpl', this.value)" class="range-input">
-                  <span id="opacityLabelHpl" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingHakUlayat" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingHakUlayat" onchange="toggleCekingLayer('hak_ulayat', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Tanah Ulayat Adat</span>
-                      <span class="ceking-source">Masyarakat Hukum Adat Terdaftar</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingHakUlayat" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('hak_ulayat', this.value)" class="range-input">
-                  <span id="opacityLabelHakUlayat" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingKkpr" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingKkpr" onchange="toggleCekingLayer('kkpr', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Kesesuaian Ruang (KKPR)</span>
-                      <span class="ceking-source">Izin Lokasi &amp; Pemanfaatan Ruang</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingKkpr" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('kkpr', this.value)" class="range-input">
-                  <span id="opacityLabelKkpr" class="transparency-value-pill">75%</span>
-                </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Format Streaming:</span>
+                <span style="font-weight: 700; color: #0284c7;">Vector SVG &amp; WebP Tiles</span>
               </div>
             </div>
           </div>

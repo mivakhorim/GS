@@ -83,7 +83,24 @@
     var currentAttrTab = 'oss';
     var lastHoverCoords = { lat: -6.1884, lng: 106.8320 };
     var headerCopyFlip = false;
-    var cekingLayers = { hutan: null, lsd: null, lbs: null, peruntukan: null, rtrw: null, rdtr: null, znt: null, jalan: null, hak_milik: null, hgu: null, hgb: null, hpl: null, hak_ulayat: null, kkpr: null };
+    var cekingLayers = {
+      lppb: null,
+      rtrw_kabkot: null,
+      rtrw_provinsi: null,
+      lsd_8_provinsi: null,
+      lsd_12_provinsi: null,
+      lahan_baku_sawah_2024: null,
+      tanah_ulayat: null,
+      area_penggunaan_lain: null,
+      kawasan_hutan: null,
+      pippib_2025: null,
+      penggunaan_tanah: null,
+      nilai_bidang_tanah: null,
+      zona_nilai_tanah: null,
+      toponim: null,
+      index_peta_dasar: null,
+      ptpr: null
+    };
     var IGTPR_GEOSERVER_URL = 'https://igtpr.atrbpn.go.id/geoserver/ows';
     var ArcGisExportLayer = null;
     var SUPABASE_PROJECT_URL = 'https://vezruyffzmabhtylxigc.supabase.co';

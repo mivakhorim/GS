@@ -56,9 +56,11 @@ function getBpnGatewayBase() {
     function createCadastreProxyLayer() {
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
-      return new CadastreWmsLayer('https://bhumi.atrbpn.go.id/mprx/service', {
-        layers: 'bhumi_persil',
-        format: 'image/png',
+      const persilBase = getBpnGatewayBase();
+      const proxyBase = persilBase ? persilBase : 'http://127.0.0.1:3000';
+      return L.tileLayer.wms(`${proxyBase}/proxy-wms`, {
+        layers: 'umum:Persil',
+        format: 'image/webp',
         transparent: true,
         version: '1.3.0',
         crs: L.CRS.EPSG3857,
@@ -68,7 +70,8 @@ function getBpnGatewayBase() {
         opacity: currentOpacity,
         zIndex: 360,
         updateWhenZooming: false,
-        updateInterval: 100
+        updateInterval: 100,
+        attribution: 'Kementerian ATR/BPN'
       });
     }
 
@@ -592,20 +595,185 @@ function getBpnGatewayBase() {
     }
 
     var cekingLayers = {
-      hutan: null,
-      lsd: null,
-      lbs: null,
-      peruntukan: null,
-      rtrw: null,
-      rdtr: null,
-      znt: null,
-      jalan: null,
-      hak_milik: null,
-      hgu: null,
-      hgb: null,
-      hpl: null,
-      hak_ulayat: null,
-      kkpr: null
+      lppb: null,
+      rtrw_kabkot: null,
+      rtrw_provinsi: null,
+      lsd_8_provinsi: null,
+      lsd_12_provinsi: null,
+      lahan_baku_sawah_2024: null,
+      tanah_ulayat: null,
+      area_penggunaan_lain: null,
+      kawasan_hutan: null,
+      pippib_2025: null,
+      penggunaan_tanah: null,
+      nilai_bidang_tanah: null,
+      zona_nilai_tanah: null,
+      toponim: null,
+      index_peta_dasar: null,
+      ptpr: null
+    };
+
+    const BHUMI_RED_BOX_LAYERS = {
+      lppb: {
+        id: 'layer_lppb',
+        name: 'Lahan Pertanian Pangan Berkelanjutan (LPPB)',
+        category: 'Dataset Utama Pertanahan',
+        update: '12-11-2026',
+        wmsLayer: 'rtr-online:lp2b_lp2b_10112026',
+        endpoint: 'https://gistaru-app.atrbpn.go.id/interoppublic/api/wms/7d3b3f29-baec-4bda-aee0-e408bd2537fb',
+        type: 'wms',
+        color: '#16a34a'
+      },
+      rtrw_kabkot: {
+        id: 'layer_rtrw_kabkot',
+        name: 'RTRW Kab/Kota (Rencana Tata Ruang Wilayah)',
+        category: 'Rencana Tata Ruang',
+        update: '06-10-2026',
+        wmsLayer: 'rtr-online:rtrw_kabkot_1_indonesia',
+        endpoint: 'https://gistaru-app.atrbpn.go.id/interoppublic/api/wms/78abbda6-8c02-403e-baa9-2c470e647e6b',
+        type: 'wms',
+        color: '#f97316'
+      },
+      rtrw_provinsi: {
+        id: 'layer_rtrw_provinsi',
+        name: 'RTRW Provinsi (Rencana Tata Ruang Wilayah)',
+        category: 'Rencana Tata Ruang',
+        update: '06-10-2026',
+        wmsLayer: 'rtr-online:rtrw_provinsi_1_indonesia',
+        endpoint: 'https://gistaru-app.atrbpn.go.id/interoppublic/api/wms/ed3223bb-7a26-408f-9b55-3fd39c1b901f',
+        type: 'wms',
+        color: '#ea580c'
+      },
+      lsd_8_provinsi: {
+        id: 'layer_lsd_8_provinsi',
+        name: 'Lahan Sawah Dilindungi 8 Provinsi',
+        category: 'Dataset Utama Pertanahan',
+        update: '30-09-2026',
+        wmsLayer: 'umum:lsd_merge_8_provinsi',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#10b981'
+      },
+      lsd_12_provinsi: {
+        id: 'layer_lsd_12_provinsi',
+        name: 'Lahan Sawah Dilindungi 12 Provinsi',
+        category: 'Dataset Utama Pertanahan',
+        update: '25-09-2026',
+        wmsLayer: 'umum:lsd_merge',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#059669'
+      },
+      lahan_baku_sawah_2024: {
+        id: 'layer_lahan_baku_sawah_2024',
+        name: 'Lahan Baku Sawah 2024',
+        category: 'Dataset Utama Pertanahan',
+        update: '25-09-2026',
+        wmsLayer: 'umum:lahanbakusawah_new',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#84cc16'
+      },
+      tanah_ulayat: {
+        id: 'layer_tanah_ulayat',
+        name: 'Tanah Ulayat',
+        category: 'Dataset Utama Pertanahan',
+        update: '24-09-2026',
+        wmsLayer: 'umum:tanahulayatnew',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#a855f7'
+      },
+      area_penggunaan_lain: {
+        id: 'layer_area_penggunaan_lain',
+        name: 'Area Penggunaan Lain (APL)',
+        category: 'Dataset Utama Pertanahan',
+        update: '14-07-2026',
+        wmsLayer: 'umum:area_penggunaan_lain',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#06b6d4'
+      },
+      kawasan_hutan: {
+        id: 'layer_kawasan_hutan',
+        name: 'Kawasan Hutan',
+        category: 'Dataset Utama Pertanahan',
+        update: '06-07-2026',
+        wmsLayer: 'umum:penunjukan_kawasan_hutan',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#15803d'
+      },
+      pippib_2025: {
+        id: 'layer_pippib_2025',
+        name: 'Peta PIPPIB Tahun 2025 (Hutan Primer & Gambut)',
+        category: 'Dataset Utama Pertanahan',
+        update: '19-06-2026',
+        wmsLayer: 'umum:pippib_2025',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#047857'
+      },
+      penggunaan_tanah: {
+        id: 'layer_penggunaan_tanah',
+        name: 'Penggunaan Tanah',
+        category: 'Dataset Utama Pertanahan',
+        update: '19-06-2026',
+        wmsLayer: 'umum:PenggunaanTanah',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#3b82f6'
+      },
+      nilai_bidang_tanah: {
+        id: 'layer_nilai_bidang_tanah',
+        name: 'Peta Nilai Bidang Tanah',
+        category: 'Dataset Utama Pertanahan',
+        update: '19-06-2026',
+        wmsLayer: 'umum:nbt3',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#eab308'
+      },
+      zona_nilai_tanah: {
+        id: 'layer_zona_nilai_tanah',
+        name: 'Zona Nilai Tanah (ZNT)',
+        category: 'Dataset Utama Pertanahan',
+        update: '19-06-2026',
+        wmsLayer: 'umum:ZNTRANGE',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#ef4444'
+      },
+      toponim: {
+        id: 'layer_toponim',
+        name: 'Toponim Geospasial',
+        category: 'Dataset Utama Pertanahan',
+        update: '19-06-2026',
+        wmsLayer: 'umum:toponimi',
+        endpoint: 'https://bhumi.atrbpn.go.id/bhumigs/umum',
+        type: 'wms',
+        color: '#64748b'
+      },
+      index_peta_dasar: {
+        id: 'layer_index_peta_dasar',
+        name: 'Index Peta Dasar',
+        category: 'Dataset Utama Pertanahan',
+        update: '19-06-2026',
+        wmsLayer: 'Index',
+        endpoint: 'https://bhumi.atrbpn.go.id/petadasartmi/{x}/{y}/{z}',
+        type: 'xyz',
+        color: '#0284c7'
+      },
+      ptpr: {
+        id: 'layer_ptpr',
+        name: 'Peta Tematik Pertanahan dan Ruang (PTPR)',
+        category: 'Dataset Turunan',
+        update: '19-06-2026',
+        wmsLayer: 'geoportal:PTPRPublish',
+        endpoint: 'https://geoportaltematik.atrbpn.go.id/geoserver/geoportal',
+        type: 'wms',
+        color: '#6366f1'
+      }
     };
 
     function getLayerCapKey(layerKey) {
@@ -619,47 +787,43 @@ function getBpnGatewayBase() {
         if (p) p.style.zIndex = '450';
       }
 
-      if (layerKey === 'jalan') {
-        return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+      const def = BHUMI_RED_BOX_LAYERS[layerKey];
+      if (!def) return null;
+
+      const persilBase = getBpnGatewayBase();
+      const proxyBase = persilBase ? persilBase : 'http://127.0.0.1:3000';
+
+      if (def.type === 'xyz') {
+        const tileUrl = `${proxyBase}/proxy-tile/{z}/{x}/{y}?upstream=${encodeURIComponent('https://bhumi.atrbpn.go.id/petadasartmi')}`;
+        return L.tileLayer(tileUrl, {
           pane: 'thematicPane',
           maxZoom: 26,
           maxNativeZoom: 19,
-          keepBuffer: 6,
-          updateWhenZooming: true,
-          updateWhenIdle: false,
-          opacity: 0.85,
-          zIndex: 450
+          opacity: 0.75,
+          zIndex: 450,
+          attribution: 'Kementerian ATR/BPN'
         });
       }
 
-      const persilBase = getBpnGatewayBase();
-      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
-      if (persilBase && !persilBase.includes('supabase.co')) {
-        return L.tileLayer(`${persilBase}/api/layer-ceking/${layerKey}/{z}/{x}/{y}.webp`, {
-          pane: 'thematicPane',
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          keepBuffer: 6,
-          updateWhenZooming: true,
-          updateWhenIdle: false,
-          opacity: 0.75,
-          zIndex: 450
-        });
+      let wmsUrl = `${proxyBase}/proxy-wms`;
+      if (def.endpoint && def.endpoint !== 'https://bhumi.atrbpn.go.id/bhumigs/umum') {
+        wmsUrl += `?upstream=${encodeURIComponent(def.endpoint)}`;
       }
-      return createAuthTileLayer(`${sbUrl}/functions/v1/cadastre-gateway?action=layer-ceking&layer=${layerKey}&z={z}&x={x}&y={y}&role=admin`, {
+
+      return L.tileLayer.wms(wmsUrl, {
+        layers: def.wmsLayer,
+        format: 'image/webp',
+        transparent: true,
+        version: '1.3.0',
+        crs: L.CRS.EPSG3857,
         pane: 'thematicPane',
+        minZoom: 10,
         maxZoom: 26,
-        maxNativeZoom: 19,
-        keepBuffer: 6,
-        updateWhenZooming: true,
-        updateWhenIdle: false,
         opacity: 0.75,
         zIndex: 450,
-        headers: {
-          'apikey': sbKey,
-          'Authorization': 'Bearer ' + sbKey
-        }
+        keepBuffer: 4,
+        updateWhenZooming: false,
+        attribution: 'Kementerian ATR/BPN'
       });
     }
 
@@ -668,104 +832,33 @@ function getBpnGatewayBase() {
       if (!body) return;
 
       const isPersilActive = !document.getElementById('chkPersil') || !!document.getElementById('chkPersil')?.checked;
-      const isLsdActive = !!document.getElementById('chkCekingLsd')?.checked;
-      const isLbsActive = !!document.getElementById('chkCekingLbs')?.checked;
-      const isHutanActive = !!document.getElementById('chkCekingHutan')?.checked;
-      const isPeruntukanActive = !!document.getElementById('chkCekingPeruntukan')?.checked;
-      const isRtrwActive = !!document.getElementById('chkCekingRtrw')?.checked;
-      const isRdtrActive = !!document.getElementById('chkCekingRdtr')?.checked;
-      const isZntActive = !!document.getElementById('chkCekingZnt')?.checked;
-      const isJalanActive = !!document.getElementById('chkCekingJalan')?.checked;
-
-      const isHakMilikActive = !!document.getElementById('chkCekingHakMilik')?.checked;
-      const isHguActive = !!document.getElementById('chkCekingHgu')?.checked;
-      const isHgbActive = !!document.getElementById('chkCekingHgb')?.checked;
-      const isHplActive = !!document.getElementById('chkCekingHpl')?.checked;
-      const isKkprActive = !!document.getElementById('chkCekingKkpr')?.checked;
-
       let html = '';
 
       if (isPersilActive) {
-        html += '<div class="legend-category-title">Batas &amp; Patok Kadastral</div>';
+        html += '<div class="legend-category-title">Batas &amp; Patok Kadastral (Dataset Utama)</div>';
         html += '<div class="legend-item"><span class="legend-swatch polygon-active"></span><span>Bidang Terpilih (Aktif Presisi)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch polygon-bpn"></span><span>Batas Bidang Kadastral Resmi (Garis Oranye)</span></div>';
+        html += '<div class="legend-item"><span class="legend-swatch polygon-bpn"></span><span>Batas Bidang Kadastral Resmi umum:Persil (Oranye)</span></div>';
         html += '<div class="legend-item"><span class="legend-swatch node-patok"></span><span>Titik Patok Batas (Sudut Koordinat)</span></div>';
         html += '<div class="legend-item"><span class="legend-swatch dist-label">12m</span><span>Dimensi Jarak Batas (Meter)</span></div>';
       }
 
       let hasThematic = false;
+      const keys = Object.keys(cekingLayers);
 
-      if (isLsdActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Lahan Sawah Dilindungi (LSD Nasional)</div>';
-        html += '<div class="legend-item"><span class="legend-swatch lsd-pertahankan"></span><span>LSD Dipertahankan (Ketahanan Pangan)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch lsd-penyesuaian"></span><span>LSD Usulan Penyesuaian RTRW</span></div>';
-      }
-
-      if (isLbsActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Lahan Baku Sawah (LBS Kementan 2024)</div>';
-        html += '<div class="legend-item"><span class="legend-swatch lbs-aktif"></span><span>Sawah Baku Aktif Irigasi &amp; Tadah Hujan</span></div>';
-      }
-
-      if (isHutanActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Kawasan Hutan Lindung (KLHK 2026)</div>';
-        html += '<div class="legend-item"><span class="legend-swatch hl-lindung"></span><span>Hutan Lindung (HL)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch hl-konservasi"></span><span>Hutan Konservasi &amp; Suaka Alam (HK/KSA)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch hl-produksi-terbatas"></span><span>Hutan Produksi Terbatas (HPT)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch hl-produksi-tetap"></span><span>Hutan Produksi Tetap (HP)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch hl-produksi-konversi"></span><span>Hutan Produksi Konversi (HPK)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch hl-apl"></span><span>Areal Penggunaan Lain (APL Legal)</span></div>';
-      }
-
-      if (isPeruntukanActive || isRtrwActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Pola Ruang Peruntukan &amp; RTRW</div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-industri"></span><span>Zona Kawasan Industri &amp; Pergudangan</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-pertanian"></span><span>Zona Pertanian Tanaman Pangan</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-permukiman"></span><span>Zona Permukiman &amp; Perumahan</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-lindung"></span><span>Zona Kawasan Lindung Nasional</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-komersial"></span><span>Zona Perdagangan &amp; Jasa</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-perkebunan"></span><span>Zona Perkebunan Rakyat / Tahunan</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-perikanan"></span><span>Zona Perikanan &amp; Tubuh Air</span></div>';
-      }
-
-      if (isRdtrActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Rencana Detail Tata Ruang (RDTR)</div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-industri"></span><span>Zona Sub-Pola Ruang Presisi BPN</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch rtrw-permukiman"></span><span>Zona Budidaya Perkotaan</span></div>';
-      }
-
-      if (isZntActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Zona Nilai Tanah (ZNT ATR/BPN)</div>';
-        html += '<div class="legend-item"><span class="legend-swatch znt-tinggi"></span><span>ZNT Nilai Tinggi (Zona Merah)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch znt-sedang"></span><span>ZNT Nilai Sedang (Zona Kuning)</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch znt-rendah"></span><span>ZNT Nilai Rendah (Zona Hijau)</span></div>';
-      }
-
-      if (isJalanActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Jaringan Ruas Jalan</div>';
-        html += '<div class="legend-item"><span class="legend-swatch jalan-arteri"></span><span>Arteri Primer / Tol / Jalan Nasional</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch jalan-kolektor"></span><span>Kolektor / Jalan Provinsi &amp; Kabupaten</span></div>';
-        html += '<div class="legend-item"><span class="legend-swatch jalan-lokal"></span><span>Jalan Lokal Lingkungan &amp; Desa</span></div>';
-      }
-
-      if (isHakMilikActive || isHguActive || isHgbActive || isHplActive || isKkprActive) {
-        hasThematic = true;
-        html += '<div class="legend-category-title">Meja Kerja Kadaster ATR/BPN</div>';
-        if (isHakMilikActive) html += '<div class="legend-item"><span class="legend-swatch hak-milik"></span><span>Hak Milik Terdaftar (BPN)</span></div>';
-        if (isHguActive) html += '<div class="legend-item"><span class="legend-swatch hak-hgu"></span><span>Hak Guna Usaha (HGU Perkebunan)</span></div>';
-        if (isHgbActive) html += '<div class="legend-item"><span class="legend-swatch hak-hgb"></span><span>Hak Guna Bangunan (HGB)</span></div>';
-        if (isHplActive) html += '<div class="legend-item"><span class="legend-swatch hak-hpl"></span><span>Hak Pengelolaan (HPL)</span></div>';
-        if (isKkprActive) html += '<div class="legend-item"><span class="legend-swatch hak-kkpr"></span><span>Kesesuaian Tata Ruang (KKPR)</span></div>';
-      }
+      keys.forEach(k => {
+        const capKey = getLayerCapKey(k);
+        const cb = document.getElementById('chkCeking' + capKey) || document.getElementById('ceking' + capKey);
+        const isChecked = cb && cb.checked;
+        const def = BHUMI_RED_BOX_LAYERS[k];
+        if (isChecked && def) {
+          hasThematic = true;
+          html += `<div class="legend-category-title">${def.category}: ${def.name}</div>`;
+          html += `<div class="legend-item"><span class="legend-swatch" style="background-color:${def.color};border:1px solid ${def.color};"></span><span>Layer: ${def.wmsLayer} (Update: ${def.update})</span></div>`;
+        }
+      });
 
       if (!hasThematic) {
-        html += '<div style="font-size: 0.67rem; color: var(--text-muted); padding: 5px 8px; background-color: var(--bg-subtle); border-radius: 4px; border: 1px dashed var(--border-light); margin-top: 6px; line-height: 1.35;">Aktifkan lapisan tematik di sidebar untuk melihat klasifikasi warna objek pada peta.</div>';
+        html += '<div style="font-size: 0.67rem; color: var(--text-muted); padding: 5px 8px; background-color: var(--bg-subtle); border-radius: 4px; border: 1px dashed var(--border-light); margin-top: 6px; line-height: 1.35;">Aktifkan lapisan tematik resmi BHUMI di sidebar untuk melihat klasifikasi warna objek pada peta.</div>';
       }
 
       body.innerHTML = html;
@@ -791,7 +884,7 @@ function getBpnGatewayBase() {
             showToast('Akses lapisan ' + String(layerKey).toUpperCase() + ' dibatasi oleh Administrator untuk role akun Anda.', 'warn');
           }
           const capKey = getLayerCapKey(layerKey);
-          const cb = document.getElementById(`ceking${capKey}`);
+          const cb = document.getElementById(`chkCeking${capKey}`) || document.getElementById(`ceking${capKey}`);
           if (cb) cb.checked = false;
           return;
         }

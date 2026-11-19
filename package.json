@@ -1,0 +1,13 @@
+{
+  "name": "duta-geospasi-zero-leak-proxy",
+  "version": "1.0.0",
+  "description": "Zero-Leak Reverse Proxy & Auto Session Rotator BHUMI ATR/BPN",
+  "main": "server-proxy.js",
+  "scripts": {
+    "start": "node server-proxy.js"
+  },
+  "dependencies": {
+    "axios": "^1.21.1",
+    "express": "^5.3.0"
+  }
+}

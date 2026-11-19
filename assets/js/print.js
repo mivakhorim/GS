@@ -654,207 +654,21 @@ function togglePrintDimensions(show) {
       }
 
       if (typeof cekingLayers !== 'undefined' && cekingLayers) {
-        if (cekingLayers.lsd && map && map.hasLayer(cekingLayers.lsd)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #059669; border: 1px solid #047857;"></div>
-              </div>
-              <span>LSD Dipertahankan (Pangan)</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #65a30d; border: 1px solid #4d7c0f;"></div>
-              </div>
-              <span>LSD Penyesuaian RTRW</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.lbs && map && map.hasLayer(cekingLayers.lbs)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
-              </div>
-              <span>Lahan Baku Sawah (LBS)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.hutan && map && map.hasLayer(cekingLayers.hutan)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #14532d; border: 1px solid #052e16;"></div>
-              </div>
-              <span>Kawasan Hutan Lindung (HL)</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #ca8a04; border: 1px solid #a16207;"></div>
-              </div>
-              <span>Hutan Produksi (HP/HPT)</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #94a3b8; border: 1px solid #64748b;"></div>
-              </div>
-              <span>Areal Penggunaan Lain (APL)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.peruntukan && map && map.hasLayer(cekingLayers.peruntukan)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #d97706; border: 1px solid #b45309;"></div>
-              </div>
-              <span>Zona Pola Ruang Permukiman</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #b91c1c; border: 1px solid #991b1b;"></div>
-              </div>
-              <span>Zona Perdagangan &amp; Jasa</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #334155; border: 1px solid #1e293b;"></div>
-              </div>
-              <span>Zona Industri &amp; Pergudangan</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #15803d; border: 1px solid #166534;"></div>
-              </div>
-              <span>Zona Pertanian Tanaman Pangan</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.rtrw && map && map.hasLayer(cekingLayers.rtrw)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #78350f; border: 1px solid #451a03;"></div>
-              </div>
-              <span>RTRW Perkebunan / Non-Pangan</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #0284c7; border: 1px solid #0369a1;"></div>
-              </div>
-              <span>RTRW Perikanan / Tubuh Air</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.jalan && map && map.hasLayer(cekingLayers.jalan)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-line" style="background-color: #ea580c; height: 2.5px;"></div>
-              </div>
-              <span>Jalan Arteri / Nasional</span>
-            </div>
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-line" style="background-color: #eab308; height: 2px;"></div>
-              </div>
-              <span>Jalan Kolektor &amp; Lokal</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.rdtr && map && map.hasLayer(cekingLayers.rdtr)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #ec4899; border: 1px solid #be185d;"></div>
-              </div>
-              <span>Rencana Detail Tata Ruang (RDTR)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.znt && map && map.hasLayer(cekingLayers.znt)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #8b5cf6; border: 1px solid #6d28d9;"></div>
-              </div>
-              <span>Zona Nilai Tanah (ZNT Pasar)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.hak_milik && map && map.hasLayer(cekingLayers.hak_milik)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #10b981; border: 1px solid #059669;"></div>
-              </div>
-              <span>Hak Milik Tanah (BPN)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.hgu && map && map.hasLayer(cekingLayers.hgu)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #f59e0b; border: 1px solid #d97706;"></div>
-              </div>
-              <span>Hak Guna Usaha (HGU)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.hgb && map && map.hasLayer(cekingLayers.hgb)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #3b82f6; border: 1px solid #1d4ed8;"></div>
-              </div>
-              <span>Hak Guna Bangunan (HGB)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.hpl && map && map.hasLayer(cekingLayers.hpl)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #06b6d4; border: 1px solid #0891b2;"></div>
-              </div>
-              <span>Hak Pengelolaan (HPL)</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.hak_ulayat && map && map.hasLayer(cekingLayers.hak_ulayat)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #a855f7; border: 1px solid #7e22ce;"></div>
-              </div>
-              <span>Tanah Ulayat Adat</span>
-            </div>
-          `);
-        }
-
-        if (cekingLayers.kkpr && map && map.hasLayer(cekingLayers.kkpr)) {
-          items.push(`
-            <div class="print-legend-item">
-              <div class="print-legend-symbol">
-                <div class="print-legend-swatch" style="background-color: #ef4444; border: 1px solid #b91c1c;"></div>
-              </div>
-              <span>Kesesuaian Ruang (KKPR)</span>
-            </div>
-          `);
-        }
+        Object.keys(cekingLayers).forEach(k => {
+          if (cekingLayers[k] && map && map.hasLayer(cekingLayers[k])) {
+            const def = (typeof BHUMI_RED_BOX_LAYERS !== 'undefined' && BHUMI_RED_BOX_LAYERS[k]) ? BHUMI_RED_BOX_LAYERS[k] : null;
+            if (def) {
+              items.push(`
+                <div class="print-legend-item">
+                  <div class="print-legend-symbol">
+                    <div class="print-legend-swatch" style="background-color: ${def.color}; border: 1px solid ${def.color};"></div>
+                  </div>
+                  <span>${def.name} (${def.wmsLayer})</span>
+                </div>
+              `);
+            }
+          }
+        });
       }
 
       if (typeof kelurahanHighlightLayer !== 'undefined' && kelurahanHighlightLayer && map && map.hasLayer(kelurahanHighlightLayer)) {
@@ -1091,21 +905,11 @@ function togglePrintDimensions(show) {
       }
 
       if (typeof persilLayer !== 'undefined' && persilLayer && map && map.hasLayer(persilLayer)) {
-        const persilBase = (typeof getBpnGatewayBase === 'function') ? getBpnGatewayBase() : '';
-        const pOpacity = (typeof persilLayer.options?.opacity !== 'undefined') ? persilLayer.options.opacity : 0.9;
-        const tileUrl = persilBase
-          ? `${persilBase}/persil/{z}/{x}/{y}.webp`
-          : `/persil/{z}/{x}/{y}.webp`;
-        const tl = L.tileLayer(tileUrl, {
-          pane: 'persilPane',
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          opacity: pOpacity,
-          zIndex: 360,
-          crossOrigin: 'anonymous',
-          errorTileUrl: transparent1x1
-        }).addTo(printMapInstance);
-        attachTileClean(tl);
+        if (typeof createCadastreProxyLayer === 'function') {
+          const tl = createCadastreProxyLayer();
+          tl.addTo(printMapInstance);
+          attachTileClean(tl);
+        }
       }
 
       if (typeof kelurahanHighlightLayer !== 'undefined' && kelurahanHighlightLayer && map && map.hasLayer(kelurahanHighlightLayer)) {
