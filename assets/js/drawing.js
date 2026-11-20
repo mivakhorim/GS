@@ -1123,11 +1123,11 @@ Server Sumber Data: ${serverName}`;
       ensureBidangHatchPattern(map);
       if (!activePolygonLayer) {
         activePolygonLayer = L.polygon(latlngs, {
-          color: '#ea580c',
-          weight: 3.5,
+          color: '#0284c7',
+          weight: 2.8,
           opacity: 1,
-          fillColor: '#ffffff',
-          fillOpacity: 0.82,
+          fillColor: '#38bdf8',
+          fillOpacity: 0.28,
           className: 'active-cadastre-polygon',
           interactive: true
         }).addTo(map);
@@ -1135,11 +1135,11 @@ Server Sumber Data: ${serverName}`;
       } else {
         activePolygonLayer.setLatLngs(latlngs);
         activePolygonLayer.setStyle({
-          color: '#ea580c',
-          weight: 3.5,
+          color: '#0284c7',
+          weight: 2.8,
           opacity: 1,
-          fillColor: '#ffffff',
-          fillOpacity: 0.82,
+          fillColor: '#38bdf8',
+          fillOpacity: 0.28,
           className: 'active-cadastre-polygon'
         });
       }

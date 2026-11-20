@@ -1169,12 +1169,13 @@ async function triggerD1Failover() {
         const miny = cy - span;
         const maxy = cy + span;
         const bbox = `${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}`;
-        const cleanUrl = `bhumi.atrbpn.go.id/mprx/service?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=bhumi_persil&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
-        const tileUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(cleanUrl);
+        const persilBase = getBpnGatewayBase();
+        const streamBase = (persilBase && (persilBase.startsWith('http://') || persilBase.startsWith('https://'))) ? persilBase : DEFAULT_CLOUD_STREAM_GATEWAY;
+        const tileUrl = `${streamBase}/proxy-wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=bhumi_persil&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
 
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        const timer = setTimeout(() => resolve(null), 5000);
+        const timer = setTimeout(() => resolve(null), 7000);
 
         img.onload = function() {
           clearTimeout(timer);
@@ -1196,18 +1197,8 @@ async function triggerD1Failover() {
               const rowOffset = y * w * 4;
               for (let x = 0; x < w; x++) {
                 const a = data[rowOffset + x * 4 + 3];
-                if (a >= 180 || a < 50) {
-                  for (let dy = -1; dy <= 1; dy++) {
-                    const ny = y + dy;
-                    if (ny < 0 || ny >= h) continue;
-                    const nRow = ny * w;
-                    for (let dx = -1; dx <= 1; dx++) {
-                      const nx = x + dx;
-                      if (nx >= 0 && nx < w) {
-                        isWall[nRow + nx] = 1;
-                      }
-                    }
-                  }
+                if (a >= 210 || a < 50) {
+                  isWall[y * w + x] = 1;
                 }
               }
             }
@@ -1216,7 +1207,7 @@ async function triggerD1Failover() {
             let startY = 256;
             if (isWall[startY * w + startX] === 1) {
               let foundFree = false;
-              for (let rad = 1; rad <= 14; rad++) {
+              for (let rad = 1; rad <= 20; rad++) {
                 for (let dy = -rad; dy <= rad; dy++) {
                   const ny = startY + dy;
                   if (ny < 0 || ny >= h) continue;
@@ -1274,12 +1265,12 @@ async function triggerD1Failover() {
             }
 
             const totalPixels = tail;
-            if (totalPixels < 150) {
+            if (totalPixels < 60) {
               resolve(null);
               return;
             }
-            if (totalPixels > (w * h * 0.95)) {
-              if (span < 120.0) {
+            if (totalPixels > (w * h * 0.92)) {
+              if (span < 140.0) {
                 traceParcelFromWmsTile(lat, lng, span * 2.0).then(resolve);
                 return;
               }
@@ -1329,7 +1320,7 @@ async function triggerD1Failover() {
               if (!foundNext || (currX === firstX && currY === firstY)) break;
             }
 
-            if (contour.length < 8) { resolve(null); return; }
+            if (contour.length < 6) { resolve(null); return; }
 
             function distToSegment(pt, a, b) {
               const dx = b.x - a.x;
@@ -1358,7 +1349,7 @@ async function triggerD1Failover() {
               return [pts[0], pts[last]];
             }
 
-            const simplified = simplifyRdp(contour, 3.5);
+            const simplified = simplifyRdp(contour, 2.5);
             if (simplified.length < 3) { resolve(null); return; }
 
             const polyCoords = [];
@@ -1380,18 +1371,19 @@ async function triggerD1Failover() {
             const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(polyCoords) : 0;
             if (exactArea < 5.0) { resolve(null); return; }
 
+            const parcelFid = 'PERSIL-' + Math.floor(100000 + Math.random() * 900000);
             resolve({
               found: true,
               is_official_cadastre: true,
               is_auto_traced: true,
-              fid: 'PERSIL-' + Math.floor(10000 + Math.random() * 90000),
+              fid: parcelFid,
               nib: '-',
               tipe_hak: 'TERDAFTAR ATR/BPN',
               luas_m2: Math.round(exactArea),
               luas_terdaftar_m2: Math.round(exactArea),
               polygon_coords: polyCoords,
-              status_validasi: 'Kadaster Resmi Presisi',
-              source: 'VEKTOR PERSIL GEODETIK ATR/BPN'
+              status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
+              source: 'VEKTOR PERSIL SVG PRESISI'
             });
           } catch (err) {
             resolve(null);
@@ -1402,6 +1394,7 @@ async function triggerD1Failover() {
           clearTimeout(timer);
           resolve(null);
         };
+        img.src = tileUrl;
       });
     }
 
@@ -1413,6 +1406,32 @@ async function triggerD1Failover() {
       }
 
       const vectorHit = findCachedVectorParcelAt(lat, lng);
+      if (vectorHit) {
+        const vCoords = vectorHit.polygon_coords || vectorHit.coordinates;
+        if (vCoords && vCoords.length >= 3 && vCoords.length <= 200) {
+          const assembled = {
+            found: true,
+            nib: vectorHit.nib || '-',
+            tipe_hak: vectorHit.tipe_hak || 'TERDAFTAR ATR/BPN',
+            luas_m2: vectorHit.luas_m2 || 0,
+            fid: vectorHit.fid || vectorHit.persilpasifid || 'BIDANG-TERDAFTAR',
+            polygon_coords: vCoords,
+            is_bbox: false,
+            patok_count: vCoords.length,
+            status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
+            source: 'VEKTOR PERSIL SVG PRESISI'
+          };
+          persilClientCache.set(cacheKey, { data: assembled, time: Date.now() });
+          return assembled;
+        }
+      }
+
+      const traced = await traceParcelFromWmsTile(lat, lng);
+      if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
+        persilClientCache.set(cacheKey, { data: traced, time: Date.now() });
+        return traced;
+      }
+
       const mode = getCadastreServerMode();
       const endpointsToTry = [];
       const persilApiBase = getBpnGatewayBase();
@@ -1424,33 +1443,31 @@ async function triggerD1Failover() {
           endpointsToTry.push({
             url: `${persilApiBase}?action=get-persil&lat=${lat.toFixed(7)}&lng=${lng.toFixed(7)}&zoom=${zoom}&server=${mode}`,
             headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-            timeout: 6000
+            timeout: 3000
           });
         } else {
           endpointsToTry.push({
             url: `${persilApiBase}/api/persil-info?lat=${lat.toFixed(7)}&lng=${lng.toFixed(7)}&zoom=${zoom}&server=${mode}`,
-            timeout: 6000
+            timeout: 3000
           });
         }
       } else if (typeof window !== 'undefined' && window.location && window.location.protocol === 'http:') {
         endpointsToTry.push({
           url: `/api/persil-info?lat=${lat.toFixed(7)}&lng=${lng.toFixed(7)}&zoom=${zoom}&server=${mode}`,
-          timeout: 2500
+          timeout: 2000
         });
       }
 
       endpointsToTry.push({
         url: `${sbUrl}/functions/v1/cadastre-gateway?action=get-persil&lat=${lat.toFixed(7)}&lng=${lng.toFixed(7)}&zoom=${zoom}&server=${mode}`,
         headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey },
-        timeout: 4000
+        timeout: 3000
       });
-
-      let bboxMetadataFallback = null;
 
       for (const item of endpointsToTry) {
         try {
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), item.timeout || 10000);
+          const tid = setTimeout(() => controller.abort(), item.timeout || 4000);
           const reqOpt = { signal: controller.signal, mode: 'cors' };
           if (item.headers) reqOpt.headers = item.headers;
           const res = await fetch(item.url, reqOpt);
@@ -1458,15 +1475,6 @@ async function triggerD1Failover() {
           if (res.ok) {
             const data = await res.json();
             if (data && data.found && Array.isArray(data.polygon_coords) && data.polygon_coords.length >= 3) {
-              if (data.polygon_coords.length === 4) {
-                try {
-                  const traced = await traceParcelFromWmsTile(lat, lng);
-                  if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
-                    data.polygon_coords = traced.polygon_coords;
-                    data.source = 'VEKTOR PERSIL GEODETIK ATR/BPN';
-                  }
-                } catch (e) {}
-              }
               if (data.polygon_coords.length <= 200) {
                 persilClientCache.set(cacheKey, { data, time: Date.now() });
                 return data;
@@ -1481,33 +1489,6 @@ async function triggerD1Failover() {
             }
           }
         } catch (e) {}
-      }
-
-      const vCoords = vectorHit ? (vectorHit.polygon_coords || vectorHit.coordinates) : null;
-      if (vectorHit && vCoords && vCoords.length >= 3 && vCoords.length <= 200) {
-        const assembled = bboxMetadataFallback || {
-          found: true,
-          nib: vectorHit.nib || '-',
-          tipe_hak: vectorHit.tipe_hak || 'TERDAFTAR ATR/BPN',
-          luas_m2: vectorHit.luas_m2 || 0,
-          fid: vectorHit.fid || vectorHit.persilpasifid || 'BIDANG-TERDAFTAR'
-        };
-        assembled.polygon_coords = vCoords;
-        assembled.is_bbox = false;
-        assembled.patok_count = vCoords.length;
-        persilClientCache.set(cacheKey, { data: assembled, time: Date.now() });
-        return assembled;
-      }
-
-      if (bboxMetadataFallback) {
-        persilClientCache.set(cacheKey, { data: bboxMetadataFallback, time: Date.now() });
-        return bboxMetadataFallback;
-      }
-
-      const traced = await traceParcelFromWmsTile(lat, lng);
-      if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
-        persilClientCache.set(cacheKey, { data: traced, time: Date.now() });
-        return traced;
       }
 
       return {
@@ -2006,6 +1987,7 @@ async function triggerD1Failover() {
           }
 
           rawInitialBboxCoords = effectivePersil.polygon_coords;
+          renderCadastreVectorParcels([effectivePersil]);
           initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
           if (typeof updateAdminPolygonCoordsUI === 'function') {
             updateAdminPolygonCoordsUI(effectivePersil.polygon_coords);
@@ -2639,148 +2621,37 @@ async function triggerD1Failover() {
 
     async function vectorizePersilFromWmsRaster(lat, lng, persilObj) {
       const activeObj = persilObj || activePinData;
-      if (!activeObj || !map) return false;
-      const z = Math.max(map.getZoom() || 18, 17);
-      const targetArea = (activeObj.luas_m2 && Number(activeObj.luas_m2) > 0) ? Number(activeObj.luas_m2) : 100;
-      
-      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
-      const sbUrl = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL) ? SUPABASE_PROJECT_URL : 'https://vezruyffzmabhtylxigc.supabase.co';
+      if (!map) return false;
+      const targetArea = (activeObj && activeObj.luas_m2 && Number(activeObj.luas_m2) > 0) ? Number(activeObj.luas_m2) : 100;
 
-      const n = Math.pow(2, z);
-      const tx = Math.floor((lng + 180) / 360 * n);
-      const latRad = lat * Math.PI / 180;
-      const ty = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-
-      const tileLon1 = tx / n * 360 - 180;
-      const tileLon2 = (tx + 1) / n * 360 - 180;
-      const tileLat1 = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
-      const tileLat2 = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / n))) * 180 / Math.PI;
-
-      const tileMinLng = Math.min(tileLon1, tileLon2);
-      const tileMaxLng = Math.max(tileLon1, tileLon2);
-      const tileMinLat = Math.min(tileLat1, tileLat2);
-      const tileMaxLat = Math.max(tileLat1, tileLat2);
-
-      const tileUrl = `${sbUrl}/functions/v1/cadastre-gateway?action=tile&z=${z}&x=${tx}&y=${ty}`;
-
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function() {
-          try {
-            const canvas = document.createElement('canvas');
-            const w = img.naturalWidth || 512;
-            const h = img.naturalHeight || 512;
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            const imgData = ctx.getImageData(0, 0, w, h);
-            const data = imgData.data;
-
-            const clickPxX = Math.round(((lng - tileMinLng) / (tileMaxLng - tileMinLng)) * w);
-            const clickPxY = Math.round(((tileMaxLat - lat) / (tileMaxLat - tileMinLat)) * h);
-
-            let bboxRadius = 45;
-            if (activeObj.polygon_coords && activeObj.polygon_coords.length >= 3) {
-              const lats = activeObj.polygon_coords.map(p => p.lat);
-              const lngs = activeObj.polygon_coords.map(p => p.lng);
-              const minBLa = Math.min(...lats), maxBLa = Math.max(...lats);
-              const minBLn = Math.min(...lngs), maxBLn = Math.max(...lngs);
-              const pxSpanX = Math.abs(((maxBLn - minBLn) / (tileMaxLng - tileMinLng)) * w);
-              const pxSpanY = Math.abs(((maxBLa - minBLa) / (tileMaxLat - tileMinLat)) * h);
-              bboxRadius = Math.max(Math.max(pxSpanX, pxSpanY) * 0.75, 25);
-            }
-
-            const totalRays = 72;
-            const angleStep = (Math.PI * 2) / totalRays;
-            const hits = [];
-
-            for (let a = 0; a < totalRays; a++) {
-              const ang = a * angleStep;
-              const cosA = Math.cos(ang);
-              const sinA = Math.sin(ang);
-              let rayHit = null;
-
-              for (let r = 3; r <= bboxRadius * 1.4; r += 1.5) {
-                const px = Math.round(clickPxX + r * cosA);
-                const py = Math.round(clickPxY + r * sinA);
-                if (px < 0 || px >= w || py < 0 || py >= h) break;
-                const idx = (py * w + px) * 4;
-                const alpha = data[idx + 3];
-                if (alpha > 30) {
-                  rayHit = { x: px, y: py };
-                  break;
-                }
-              }
-              if (rayHit) {
-                hits.push(rayHit);
-              }
-            }
-
-            let finalCoords = null;
-            if (hits.length >= 10) {
-              const simplified = rdpSimplifyPoints(hits, 4.5);
-              if (simplified && simplified.length >= 3) {
-                finalCoords = simplified.map(pt => {
-                  const pLng = tileMinLng + (pt.x / w) * (tileMaxLng - tileMinLng);
-                  const pWorldY = ty + (pt.y / h);
-                  const pLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * pWorldY / n)));
-                  const pLat = pLatRad * 180 / Math.PI;
-                  return { lat: Number(pLat.toFixed(7)), lng: Number(pLng.toFixed(7)) };
-                });
-              }
-            }
-
-            if (!finalCoords || finalCoords.length < 3) {
-              if (activeObj.polygon_coords && activeObj.polygon_coords.length >= 3) {
-                finalCoords = activeObj.polygon_coords.map(p => ({ lat: Number(p.lat.toFixed(7)), lng: Number(p.lng.toFixed(7)) }));
-              }
-            }
-
-            if (finalCoords && finalCoords.length >= 3) {
-              if (typeof calculatePolygonArea === 'function') {
-                const currentArea = calculatePolygonArea(finalCoords);
-                if (currentArea > 0 && targetArea > 0 && Math.abs(currentArea - targetArea) > 3) {
-                  const scale = Math.sqrt(targetArea / currentArea);
-                  const cLat = finalCoords.reduce((s, p) => s + p.lat, 0) / finalCoords.length;
-                  const cLng = finalCoords.reduce((s, p) => s + p.lng, 0) / finalCoords.length;
-                  finalCoords = finalCoords.map(p => ({
-                    lat: Number((cLat + (p.lat - cLat) * scale).toFixed(7)),
-                    lng: Number((cLng + (p.lng - cLng) * scale).toFixed(7))
-                  }));
-                }
-              }
-
-              activeObj.polygon_coords = finalCoords;
-              activeObj.is_bbox = false;
-              activeObj.patok_count = finalCoords.length;
-              activeObj.source = 'VEKTOR WMS RASTER PRESISI BPN';
-              activeObj.status_validasi = 'Poligon Geometri Vektor WMS Presisi';
-
-              if (typeof initCanvasRebuilder === 'function') {
-                initCanvasRebuilder(lat, lng, targetArea, finalCoords);
-              }
-              if (typeof updateAdminPolygonCoordsUI === 'function') {
-                updateAdminPolygonCoordsUI(finalCoords);
-              }
-              const badge = document.getElementById('badgeRebuildStatus');
-              if (badge) {
-                badge.className = 'badge-pill green';
-                badge.innerText = `Geometri Presisi (${finalCoords.length} Patok WMS)`;
-              }
-              showToast(`Poligon Geometri (is_bbox: false) aktif: ${finalCoords.length} patok sudut presisi terbentuk dari garis Raster 1 WMS.`, 'success');
-              resolve(true);
-              return;
-            }
-            resolve(false);
-          } catch (e) {
-            resolve(false);
+      const traced = await traceParcelFromWmsTile(lat, lng);
+      if (traced && traced.found && Array.isArray(traced.polygon_coords) && traced.polygon_coords.length >= 3) {
+        if (activeObj) {
+          activeObj.polygon_coords = traced.polygon_coords;
+          activeObj.is_bbox = false;
+          activeObj.patok_count = traced.polygon_coords.length;
+          activeObj.source = 'VEKTOR PERSIL SVG PRESISI';
+          activeObj.status_validasi = 'Batas Bidang Kadaster Terdeteksi (SVG)';
+          if (!activeObj.luas_m2 || activeObj.luas_m2 <= 0) {
+            activeObj.luas_m2 = traced.luas_m2;
           }
-        };
-        img.onerror = () => resolve(false);
-        img.src = tileUrl;
-      });
+        }
+        renderCadastreVectorParcels([traced]);
+        if (typeof initCanvasRebuilder === 'function') {
+          initCanvasRebuilder(lat, lng, (activeObj && activeObj.luas_m2) || traced.luas_m2, traced.polygon_coords);
+        }
+        if (typeof updateAdminPolygonCoordsUI === 'function') {
+          updateAdminPolygonCoordsUI(traced.polygon_coords);
+        }
+        const badge = document.getElementById('badgeRebuildStatus');
+        if (badge) {
+          badge.className = 'badge-pill green';
+          badge.innerText = `Batas Bidang SVG (${traced.polygon_coords.length} Patok)`;
+        }
+        showToast(`Poligon Geometri SVG aktif: ${traced.polygon_coords.length} patok sudut presisi terbentuk dari garis batas persil BPN.`, 'success');
+        return true;
+      }
+      return false;
     }
 
     async function generatePreciseWmsVectorPolygon() {

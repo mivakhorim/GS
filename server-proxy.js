@@ -196,7 +196,7 @@ app.get('/api/persil-info', async (req, res) => {
 
   const delta = 0.0004;
   const bbox = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
-  const gfiUrl = `https://bhumi.atrbpn.go.id/bhumigs/umum?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&FORMAT=image/png&TRANSPARENT=true&QUERY_LAYERS=umum:Persil&LAYERS=umum:Persil&INFO_FORMAT=application/json&I=50&X=50&J=50&Y=50&SRS=EPSG:4326&WIDTH=101&HEIGHT=101&BBOX=${bbox}`;
+  const gfiUrl = `https://bhumi.atrbpn.go.id/mprx/service?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&FORMAT=image/png&TRANSPARENT=true&QUERY_LAYERS=bhumi_persil&LAYERS=bhumi_persil&INFO_FORMAT=application/json&I=50&J=50&CRS=EPSG:4326&WIDTH=101&HEIGHT=101&BBOX=${bbox}`;
 
   try {
     const upstream = await axios.get(gfiUrl, {
@@ -207,14 +207,14 @@ app.get('/api/persil-info', async (req, res) => {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Cookie': activeSessionCookie
       },
-      timeout: 8000
+      timeout: 4000
     });
 
     res.json(upstream.data);
   } catch (err) {
-    res.status(502).json({
+    res.json({
       found: false,
-      message: 'Gagal menghubungi server BPN',
+      message: 'Feature info tidak tersedia secara tabular, gunakan vektor raster WMS',
       error: err.message
     });
   }
