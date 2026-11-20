@@ -245,44 +245,15 @@ async function triggerD1Failover() {
     }
 
     function setupViewportCadastreListener() {
-      if (!map || map._viewportCadastreBound) return;
-      map._viewportCadastreBound = true;
-      let debounceTimer = null;
-      const onMapChange = () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(loadViewportCadastreSvgParcels, 180);
-      };
-      map.on('moveend zoomend', onMapChange);
-      setTimeout(loadViewportCadastreSvgParcels, 250);
     }
 
     var vectorizedViewportSet = new Set();
     var isViewportVectorizing = false;
 
     async function loadViewportCadastreSvgParcels() {
-      if (!map) return;
-      const zoom = map.getZoom();
-      if (zoom < 16) {
-        if (cadastreVectorLayer) {
-          cadastreVectorLayer.clearLayers();
-        }
-        cadastreVectorParcelCache.clear();
-        vectorizedViewportSet.clear();
-        return;
-      }
-
-      const chk = document.getElementById('chkPersil');
-      if (chk && !chk.checked) {
-        if (cadastreVectorLayer) cadastreVectorLayer.clearLayers();
-        cadastreVectorParcelCache.clear();
-        vectorizedViewportSet.clear();
-        return;
-      }
-
-      vectorizeViewportParcelsToSvg();
     }
 
-    function removeCollinearVertices(coords, minDeflectionDeg = 6.0) {
+    function removeCollinearVertices(coords, minDeflectionDeg = 10.0) {
       if (!coords || coords.length <= 3) return coords;
       let current = coords.slice();
       let changed = true;
@@ -1963,8 +1934,8 @@ async function triggerD1Failover() {
               }
             }
 
-            const p1 = simplifyRdp(rotated.slice(0, oppCornerIdx + 1), 1.2);
-            const p2 = simplifyRdp(rotated.slice(oppCornerIdx), 1.2);
+            const p1 = simplifyRdp(rotated.slice(0, oppCornerIdx + 1), 1.6);
+            const p2 = simplifyRdp(rotated.slice(oppCornerIdx), 1.6);
             const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
 
             if (simplified.length < 3) { resolve(null); return; }
@@ -1983,13 +1954,14 @@ async function triggerD1Failover() {
               });
             }
 
-            const cleanPolyCoords = removeCollinearVertices(polyCoords, 6.0);
+            let cleanPolyCoords = removeCollinearVertices(polyCoords, 10.0);
+            if (cleanPolyCoords.length < 3) { resolve(null); return; }
+            if (typeof cleanAndDeduplicateVertices === 'function') {
+              cleanPolyCoords = cleanAndDeduplicateVertices(cleanPolyCoords, 1.20, 10.0);
+            }
             if (cleanPolyCoords.length < 3) { resolve(null); return; }
 
-            const finalPolyCoords = snapParcelToCachedVectorParcels(cleanPolyCoords, 2.2);
-            if (finalPolyCoords.length < 3) { resolve(null); return; }
-
-            const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(finalPolyCoords) : 0;
+            const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(cleanPolyCoords) : 0;
             if (exactArea < 5.0) { resolve(null); return; }
 
             const parcelFid = 'PERSIL-' + Math.floor(100000 + Math.random() * 900000);
@@ -2002,7 +1974,7 @@ async function triggerD1Failover() {
               tipe_hak: 'TERDAFTAR ATR/BPN',
               luas_m2: Math.round(exactArea),
               luas_terdaftar_m2: Math.round(exactArea),
-              polygon_coords: finalPolyCoords,
+              polygon_coords: cleanPolyCoords,
               status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
               source: 'VEKTOR PERSIL SVG PRESISI'
             });
@@ -2024,27 +1996,6 @@ async function triggerD1Failover() {
       const cached = persilClientCache.get(cacheKey);
       if (cached && cached.data && cached.data.found && !cached.data.is_bbox && (Date.now() - cached.time < 600000)) {
         return cached.data;
-      }
-
-      const vectorHit = findCachedVectorParcelAt(lat, lng);
-      if (vectorHit) {
-        const vCoords = vectorHit.polygon_coords || vectorHit.coordinates;
-        if (vCoords && vCoords.length >= 3 && vCoords.length <= 200) {
-          const assembled = {
-            found: true,
-            nib: vectorHit.nib || '-',
-            tipe_hak: vectorHit.tipe_hak || 'TERDAFTAR ATR/BPN',
-            luas_m2: vectorHit.luas_m2 || 0,
-            fid: vectorHit.fid || vectorHit.persilpasifid || 'BIDANG-TERDAFTAR',
-            polygon_coords: vCoords,
-            is_bbox: false,
-            patok_count: vCoords.length,
-            status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
-            source: 'VEKTOR PERSIL SVG PRESISI'
-          };
-          persilClientCache.set(cacheKey, { data: assembled, time: Date.now() });
-          return assembled;
-        }
       }
 
       const traced = await traceParcelFromWmsTile(lat, lng);
@@ -2395,12 +2346,6 @@ async function triggerD1Failover() {
         return;
       }
 
-      let hitParcel = findCachedVectorParcelAt(lat, lng);
-      if (hitParcel) {
-        selectCadastreVectorParcel(hitParcel, { lat, lng });
-        return;
-      }
-
       isParcelLocked = false;
       if (typeof clearCanvasRebuilderLayers === 'function') {
         clearCanvasRebuilderLayers();
@@ -2485,6 +2430,10 @@ async function triggerD1Failover() {
               }, lat, lng, geoData)
             : null;
 
+          const exactAreaM2 = (typeof calculatePolygonArea === 'function' && effectivePersil.polygon_coords)
+            ? calculatePolygonArea(effectivePersil.polygon_coords)
+            : (effectivePersil.luas_m2 || 0);
+
           activePinData = {
             lat: lat,
             lng: lng,
@@ -2496,7 +2445,8 @@ async function triggerD1Failover() {
             nomor_hak_raw: decoded ? decoded.nomor_hak_raw : (effectivePersil.nomor_hak_raw || '-'),
             nosu: decoded ? decoded.nosu : (effectivePersil.nosu || '-'),
             tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '-'),
-            luas_m2: effectivePersil.luas_m2 || 0,
+            luas_m2: Math.round(exactAreaM2),
+            luas_terdaftar_m2: Math.round(exactAreaM2),
             desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
             kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
             kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
@@ -2878,7 +2828,7 @@ async function triggerD1Failover() {
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
-    function cleanAndDeduplicateVertices(coords, minMeters = 0.05, maxDeg = 0.5) {
+    function cleanAndDeduplicateVertices(coords, minMeters = 1.20, maxDeg = 10.0) {
       if (!coords || coords.length < 3) return coords;
       let pts = coords.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
@@ -2937,7 +2887,7 @@ async function triggerD1Failover() {
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.15, 1.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.20, 10.0);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
@@ -3255,9 +3205,8 @@ async function triggerD1Failover() {
           activeObj.patok_count = traced.polygon_coords.length;
           activeObj.source = 'VEKTOR PERSIL SVG PRESISI';
           activeObj.status_validasi = 'Batas Bidang Kadaster Terdeteksi (SVG)';
-          if (!activeObj.luas_m2 || activeObj.luas_m2 <= 0) {
-            activeObj.luas_m2 = traced.luas_m2;
-          }
+          activeObj.luas_m2 = traced.luas_m2;
+          activeObj.luas_terdaftar_m2 = traced.luas_m2;
         }
         if (typeof initCanvasRebuilder === 'function') {
           initCanvasRebuilder(lat, lng, (activeObj && activeObj.luas_m2) || traced.luas_m2, traced.polygon_coords);
