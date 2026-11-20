@@ -282,7 +282,7 @@ async function triggerD1Failover() {
       vectorizeViewportParcelsToSvg();
     }
 
-    function removeCollinearVertices(coords, minDeflectionDeg = 18.0) {
+    function removeCollinearVertices(coords, minDeflectionDeg = 6.0) {
       if (!coords || coords.length <= 3) return coords;
       let current = coords.slice();
       let changed = true;
@@ -339,7 +339,7 @@ async function triggerD1Failover() {
 
       const bounds = map.getBounds();
       const distM = map.distance(bounds.getNorthEast(), center);
-      const span = Math.min(450.0, Math.max(120.0, distM * 1.30));
+      const span = Math.min(140.0, Math.max(45.0, distM * 0.90));
 
       const r = 6378137.0;
       const cx = r * (center.lng * Math.PI / 180.0);
@@ -351,7 +351,7 @@ async function triggerD1Failover() {
       const persilBase = getBpnGatewayBase();
       const streamBase = (persilBase && (persilBase.startsWith('http://') || persilBase.startsWith('https://'))) ? persilBase : DEFAULT_CLOUD_STREAM_GATEWAY;
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
-      const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
+      const layerName = (mode === 'server2') ? 'bhumi_persil' : 'umum:Persil';
       const tileUrl = `${streamBase}/proxy-wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=${layerName}&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
 
       isViewportVectorizing = true;
@@ -403,8 +403,28 @@ async function triggerD1Failover() {
         for (let y = 0; y < h; y++) {
           const rowOffset = y * w * 4;
           for (let x = 0; x < w; x++) {
-            const a = data[rowOffset + x * 4 + 3];
-            if (a >= 180 || a < 70) isWall[y * w + x] = 1;
+            const px = rowOffset + x * 4;
+            const a = data[px + 3];
+            const r = data[px], g = data[px + 1], b = data[px + 2];
+            if (a < 60 || a >= 165) {
+              isWall[y * w + x] = 1;
+            } else {
+              const isOrange = Math.hypot(r - 255, g - 170, b - 0) < 26;
+              const isGreen = Math.hypot(r - 75, g - 183, b - 72) < 26;
+              if (!isOrange && !isGreen) isWall[y * w + x] = 1;
+            }
+          }
+        }
+        for (let y = 1; y < h - 1; y++) {
+          const row = y * w;
+          for (let x = 1; x < w - 1; x++) {
+            const idx = row + x;
+            if (isWall[idx] === 0) {
+              if ((isWall[idx - 1] === 1 && isWall[idx + 1] === 1) ||
+                  (isWall[idx - w] === 1 && isWall[idx + w] === 1)) {
+                isWall[idx] = 1;
+              }
+            }
           }
         }
 
@@ -500,15 +520,36 @@ async function triggerD1Failover() {
 
             if (contour.length < 8) continue;
 
-            let maxContourDist = 0;
-            let splitIdx = Math.floor(contour.length / 2);
-            for (let i = 1; i < contour.length; i++) {
-              const d = Math.hypot(contour[i].x - contour[0].x, contour[i].y - contour[0].y);
-              if (d > maxContourDist) { maxContourDist = d; splitIdx = i; }
+            const nContour = contour.length;
+            const kWin = Math.min(5, Math.floor(nContour / 4));
+            const curvatures = new Float32Array(nContour);
+            for (let i = 0; i < nContour; i++) {
+              const prev = contour[(i - kWin + nContour) % nContour];
+              const curr = contour[i];
+              const next = contour[(i + kWin) % nContour];
+              const ax = curr.x - prev.x, ay = curr.y - prev.y;
+              const bx = next.x - curr.x, by = next.y - curr.y;
+              const lenA = Math.hypot(ax, ay), lenB = Math.hypot(bx, by);
+              if (lenA > 0 && lenB > 0) {
+                const dot = (ax * bx + ay * by) / (lenA * lenB);
+                curvatures[i] = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
+              }
             }
 
-            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.5);
-            const p2 = simplifyRdp(contour.slice(splitIdx), 2.5);
+            let maxAngle = 0, bestCornerIdx = 0;
+            for (let i = 0; i < nContour; i++) {
+              if (curvatures[i] > maxAngle) { maxAngle = curvatures[i]; bestCornerIdx = i; }
+            }
+
+            const rotated = contour.slice(bestCornerIdx).concat(contour.slice(0, bestCornerIdx));
+            let maxOppDist = 0, oppCornerIdx = Math.floor(nContour / 2);
+            for (let i = Math.floor(nContour / 4); i < Math.floor(3 * nContour / 4); i++) {
+              const d = Math.hypot(rotated[i].x - rotated[0].x, rotated[i].y - rotated[0].y);
+              if (d > maxOppDist) { maxOppDist = d; oppCornerIdx = i; }
+            }
+
+            const p1 = simplifyRdp(rotated.slice(0, oppCornerIdx + 1), 1.2);
+            const p2 = simplifyRdp(rotated.slice(oppCornerIdx), 1.2);
             const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
             if (simplified.length < 3) continue;
 
@@ -520,7 +561,7 @@ async function triggerD1Failover() {
               return { lat: Number(pLat.toFixed(7)), lng: Number(pLng.toFixed(7)) };
             });
 
-            const polyCoords = removeCollinearVertices(rawPolyCoords, 18.0);
+            const polyCoords = removeCollinearVertices(rawPolyCoords, 6.0);
             if (polyCoords.length < 3) continue;
 
             let area = 0;
@@ -1429,9 +1470,9 @@ async function triggerD1Failover() {
       return hit;
     }
 
-    function traceParcelFromWmsTile(lat, lng, spanMeters = 120.0) {
+    function traceParcelFromWmsTile(lat, lng, spanMeters = 45.0) {
       return new Promise((resolve) => {
-        const span = Number(spanMeters) || 120.0;
+        const span = Number(spanMeters) || 45.0;
         const r = 6378137.0;
         const cx = r * (lng * Math.PI / 180.0);
         const cy = r * Math.log(Math.tan(Math.PI / 4.0 + (lat * Math.PI / 180.0) / 2.0));
@@ -1442,7 +1483,9 @@ async function triggerD1Failover() {
         const bbox = `${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}`;
         const persilBase = getBpnGatewayBase();
         const streamBase = (persilBase && (persilBase.startsWith('http://') || persilBase.startsWith('https://'))) ? persilBase : DEFAULT_CLOUD_STREAM_GATEWAY;
-        const tileUrl = `${streamBase}/proxy-wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=bhumi_persil&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
+        const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
+        const layerName = (mode === 'server2') ? 'bhumi_persil' : 'umum:Persil';
+        const tileUrl = `${streamBase}/proxy-wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=${layerName}&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
 
         const img = new Image();
         img.crossOrigin = 'anonymous';
@@ -1470,7 +1513,7 @@ async function triggerD1Failover() {
             let seedB = data[seedIdx + 2];
             let seedA = data[seedIdx + 3];
 
-            if (seedA >= 168 || seedA < 60) {
+            if (seedA >= 165 || seedA < 60) {
               for (let rad = 1; rad <= 25; rad++) {
                 for (let dy = -rad; dy <= rad; dy++) {
                   for (let dx = -rad; dx <= rad; dx++) {
@@ -1478,7 +1521,7 @@ async function triggerD1Failover() {
                     const ny = startY + dy;
                     if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
                       const a = data[(ny * w + nx) * 4 + 3];
-                      if (a >= 120 && a <= 165) {
+                      if (a >= 100 && a <= 165) {
                         startX = nx;
                         startY = ny;
                         seedIdx = (ny * w + nx) * 4;
@@ -1490,9 +1533,9 @@ async function triggerD1Failover() {
                       }
                     }
                   }
-                  if (seedA >= 120 && seedA <= 165) break;
+                  if (seedA >= 100 && seedA <= 165) break;
                 }
-                if (seedA >= 120 && seedA <= 165) break;
+                if (seedA >= 100 && seedA <= 165) break;
               }
             }
 
@@ -1507,8 +1550,25 @@ async function triggerD1Failover() {
               for (let x = 0; x < w; x++) {
                 const pxIdx = rowOffset + x * 4;
                 const a = data[pxIdx + 3];
-                if (a >= 180 || a < 70) {
+                const r = data[pxIdx], g = data[pxIdx + 1], b = data[pxIdx + 2];
+                if (a < 60 || a >= 165) {
                   isWall[y * w + x] = 1;
+                } else {
+                  const isOrange = Math.hypot(r - 255, g - 170, b - 0) < 26;
+                  const isGreen = Math.hypot(r - 75, g - 183, b - 72) < 26;
+                  if (!isOrange && !isGreen) isWall[y * w + x] = 1;
+                }
+              }
+            }
+            for (let y = 1; y < h - 1; y++) {
+              const row = y * w;
+              for (let x = 1; x < w - 1; x++) {
+                const idx = row + x;
+                if (isWall[idx] === 0) {
+                  if ((isWall[idx - 1] === 1 && isWall[idx + 1] === 1) ||
+                      (isWall[idx - w] === 1 && isWall[idx + w] === 1)) {
+                    isWall[idx] = 1;
+                  }
                 }
               }
             }
@@ -1561,7 +1621,7 @@ async function triggerD1Failover() {
               return;
             }
             const touchesTileEdge = (minTracePx <= 4 || maxTracePx >= w - 5 || minTracePy <= 4 || maxTracePy >= h - 5);
-            if ((touchesTileEdge || totalPixels > (w * h * 0.90)) && span < 320.0) {
+            if ((touchesTileEdge || totalPixels > (w * h * 0.85)) && span < 240.0) {
               traceParcelFromWmsTile(lat, lng, span * 1.8).then(resolve);
               return;
             }
@@ -1641,18 +1701,39 @@ async function triggerD1Failover() {
               return [pts[0], pts[last]];
             }
 
-            let maxContourDist = 0;
-            let splitIdx = Math.floor(contour.length / 2);
-            for (let i = 1; i < contour.length; i++) {
-              const d = Math.hypot(contour[i].x - contour[0].x, contour[i].y - contour[0].y);
-              if (d > maxContourDist) {
-                maxContourDist = d;
-                splitIdx = i;
+            const nContour = contour.length;
+            const kWin = Math.min(5, Math.floor(nContour / 4));
+            const curvatures = new Float32Array(nContour);
+            for (let i = 0; i < nContour; i++) {
+              const prev = contour[(i - kWin + nContour) % nContour];
+              const curr = contour[i];
+              const next = contour[(i + kWin) % nContour];
+              const ax = curr.x - prev.x, ay = curr.y - prev.y;
+              const bx = next.x - curr.x, by = next.y - curr.y;
+              const lenA = Math.hypot(ax, ay), lenB = Math.hypot(bx, by);
+              if (lenA > 0 && lenB > 0) {
+                const dot = (ax * bx + ay * by) / (lenA * lenB);
+                curvatures[i] = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
               }
             }
 
-            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.5);
-            const p2 = simplifyRdp(contour.slice(splitIdx), 2.5);
+            let maxAngle = 0, bestCornerIdx = 0;
+            for (let i = 0; i < nContour; i++) {
+              if (curvatures[i] > maxAngle) { maxAngle = curvatures[i]; bestCornerIdx = i; }
+            }
+
+            const rotated = contour.slice(bestCornerIdx).concat(contour.slice(0, bestCornerIdx));
+            let maxOppDist = 0, oppCornerIdx = Math.floor(nContour / 2);
+            for (let i = Math.floor(nContour / 4); i < Math.floor(3 * nContour / 4); i++) {
+              const d = Math.hypot(rotated[i].x - rotated[0].x, rotated[i].y - rotated[0].y);
+              if (d > maxOppDist) {
+                maxOppDist = d;
+                oppCornerIdx = i;
+              }
+            }
+
+            const p1 = simplifyRdp(rotated.slice(0, oppCornerIdx + 1), 1.2);
+            const p2 = simplifyRdp(rotated.slice(oppCornerIdx), 1.2);
             const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
 
             if (simplified.length < 3) { resolve(null); return; }
@@ -1671,7 +1752,7 @@ async function triggerD1Failover() {
               });
             }
 
-            const cleanPolyCoords = removeCollinearVertices(polyCoords, 18.0);
+            const cleanPolyCoords = removeCollinearVertices(polyCoords, 6.0);
             if (cleanPolyCoords.length < 3) { resolve(null); return; }
 
             const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(cleanPolyCoords) : 0;
