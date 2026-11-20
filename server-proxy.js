@@ -70,16 +70,36 @@ app.use('/proxy-wms', async (req, res) => {
     await refreshBhumiSession();
   }
 
-  let upstreamBase = 'https://bhumi.atrbpn.go.id/bhumigs/umum';
   const queryParams = { ...req.query };
+  const rawLayers = String(queryParams.LAYERS || queryParams.layers || '');
+  const layersLower = rawLayers.toLowerCase();
 
+  let upstreamBase = 'https://bhumi.atrbpn.go.id/mprx/service';
   if (queryParams.upstream) {
     upstreamBase = queryParams.upstream;
     delete queryParams.upstream;
+  } else if (layersLower.includes('umum:') || layersLower === 'persil') {
+    upstreamBase = 'https://bhumi.atrbpn.go.id/expapi/bhumigeos/umum/wms';
+  } else if (layersLower.includes('bhumi_persil')) {
+    upstreamBase = 'https://bhumi.atrbpn.go.id/mprx/service';
   }
 
   const qs = new URLSearchParams(queryParams).toString();
   const targetUrl = upstreamBase + (upstreamBase.includes('?') ? '&' : '?') + qs;
+
+  const chromeHeaders = {
+    'Referer': 'https://bhumi.atrbpn.go.id/',
+    'Origin': 'https://bhumi.atrbpn.go.id',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+    'sec-ch-ua': '"Chromium";v="133", "Not(A:Brand";v="99", "Google Chrome";v="133"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-fetch-dest': 'image',
+    'sec-fetch-mode': 'no-cors',
+    'sec-fetch-site': 'same-origin',
+    'Cookie': activeSessionCookie
+  };
 
   try {
     const upstream = await axios({
@@ -87,12 +107,7 @@ app.use('/proxy-wms', async (req, res) => {
       url: targetUrl,
       httpsAgent,
       responseType: 'stream',
-      headers: {
-        'Referer': 'https://bhumi.atrbpn.go.id/',
-        'Origin': 'https://bhumi.atrbpn.go.id',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Cookie': activeSessionCookie
-      },
+      headers: chromeHeaders,
       timeout: 12000
     });
 
@@ -101,6 +116,27 @@ app.use('/proxy-wms', async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     upstream.data.pipe(res);
   } catch (err) {
+    if (!queryParams.upstream && layersLower.includes('bhumi_persil')) {
+      const fallbackParams = new URLSearchParams(queryParams);
+      fallbackParams.set('LAYERS', 'umum:Persil');
+      fallbackParams.delete('layers');
+      const fallbackUrl = 'https://bhumi.atrbpn.go.id/expapi/bhumigeos/umum/wms?' + fallbackParams.toString();
+      try {
+        const fallbackRes = await axios({
+          method: 'GET',
+          url: fallbackUrl,
+          httpsAgent,
+          responseType: 'stream',
+          headers: chromeHeaders,
+          timeout: 12000
+        });
+        const contentType = fallbackRes.headers['content-type'] || 'image/webp';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return fallbackRes.data.pipe(res);
+      } catch (e2) {}
+    }
+
     res.status(502).json({
       error: 'Gagal memuat tile peta upstream',
       target: upstreamBase,
