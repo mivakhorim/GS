@@ -14,9 +14,8 @@ function getBpnGatewayBase() {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
           return 'http://127.0.0.1:3000';
         }
-        return 'https://bpn-proxy.mivakhorim.workers.dev';
       }
-      return 'https://bpn-proxy.mivakhorim.workers.dev';
+      return null;
     }
 
     function saveBpnGatewayUrlFromInput() {
@@ -54,10 +53,10 @@ function getBpnGatewayBase() {
     function createCadastreProxyLayer() {
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
-      const persilBase = getBpnGatewayBase() || 'https://bpn-proxy.mivakhorim.workers.dev';
+      const persilBase = getBpnGatewayBase();
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
       const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
-      const wmsBase = `${persilBase}/proxy-wms`;
+      const wmsBase = persilBase ? `${persilBase}/proxy-wms` : 'https://bhumi.atrbpn.go.id/mprx/service';
       return L.tileLayer.wms(wmsBase, {
         layers: layerName,
         format: 'image/png',
@@ -2327,8 +2326,7 @@ function getBpnGatewayBase() {
               badge.style.color = '#ffffff';
             }
             if (text) {
-              const isCloud = persilBase.includes('workers.dev') || persilBase.includes('dutamik.id');
-              text.innerText = isCloud ? 'Gateway Cloud: Aktif (Cloudflare Edge)' : 'Gateway Proxy: Aktif';
+              text.innerText = 'Air-Gap Proxy: Aktif (Zero-Leak)';
             }
             return;
           }
