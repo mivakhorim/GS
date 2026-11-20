@@ -8,17 +8,14 @@ function getBpnGatewayBase() {
       }
       if (typeof window !== 'undefined' && window.location) {
         const port = String(window.location.port || '');
-        if (port === '8085' || port === '8089') {
+        if (port === '3000' || port === '8085' || port === '8089') {
           return window.location.origin;
         }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
-          return 'http://127.0.0.1:8085';
+          return 'http://127.0.0.1:3000';
         }
       }
-      const defaultCloudGateway = (typeof SUPABASE_PROJECT_URL !== 'undefined' && SUPABASE_PROJECT_URL)
-        ? `${SUPABASE_PROJECT_URL}/functions/v1/cadastre-gateway`
-        : 'https://vezruyffzmabhtylxigc.supabase.co/functions/v1/cadastre-gateway';
-      return defaultCloudGateway;
+      return null;
     }
 
     function saveBpnGatewayUrlFromInput() {
@@ -57,10 +54,11 @@ function getBpnGatewayBase() {
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
       const persilBase = getBpnGatewayBase();
-      const proxyBase = persilBase ? persilBase : 'http://127.0.0.1:3000';
-      return L.tileLayer.wms(`${proxyBase}/proxy-wms`, {
+      const hasProxy = isProxyActive && persilBase;
+      const wmsBase = hasProxy ? `${persilBase}/proxy-wms` : 'https://bhumi.atrbpn.go.id/bhumigs/umum';
+      return L.tileLayer.wms(wmsBase, {
         layers: 'umum:Persil',
-        format: 'image/webp',
+        format: 'image/png',
         transparent: true,
         version: '1.3.0',
         crs: L.CRS.EPSG3857,
@@ -191,7 +189,7 @@ function getBpnGatewayBase() {
       const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
 
-      if (!persilBase) {
+      if (!persilBase || !isProxyActive) {
         const center = map.getCenter();
         const centerKey = `${center.lat.toFixed(5)},${center.lng.toFixed(5)}`;
         if (!cadastreVectorParcelCache.has(centerKey)) {
@@ -544,29 +542,7 @@ function getBpnGatewayBase() {
 
       const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
 
-      if (persilBase) {
-        const tileUrl = persilBase.includes('supabase.co')
-          ? `${persilBase}?action=tile&z={z}&x={x}&y={y}&role=admin`
-          : `${persilBase}/persil/{z}/{x}/{y}.webp?live=1`;
-
-        persilLayer = createAuthTileLayer(tileUrl, {
-          pane: 'persilPane',
-          minZoom: 14,
-          maxZoom: 26,
-          maxNativeZoom: 19,
-          keepBuffer: 6,
-          updateWhenZooming: true,
-          updateWhenIdle: false,
-          opacity: currentOpacity,
-          zIndex: 360,
-          headers: {
-            'apikey': sbKey,
-            'Authorization': 'Bearer ' + sbKey
-          }
-        });
-      } else {
-        persilLayer = createCadastreProxyLayer();
-      }
+      persilLayer = createCadastreProxyLayer();
 
       const chk = document.getElementById('chkPersil');
       if (!chk || chk.checked) {
@@ -791,10 +767,12 @@ function getBpnGatewayBase() {
       if (!def) return null;
 
       const persilBase = getBpnGatewayBase();
-      const proxyBase = persilBase ? persilBase : 'http://127.0.0.1:3000';
+      const hasProxy = isProxyActive && persilBase;
 
       if (def.type === 'xyz') {
-        const tileUrl = `${proxyBase}/proxy-tile/{z}/{x}/{y}?upstream=${encodeURIComponent('https://bhumi.atrbpn.go.id/petadasartmi')}`;
+        const tileUrl = hasProxy
+          ? `${persilBase}/proxy-tile/{z}/{x}/{y}?upstream=${encodeURIComponent('https://bhumi.atrbpn.go.id/petadasartmi')}`
+          : 'https://bhumi.atrbpn.go.id/petadasartmi/{z}/{x}/{y}';
         return L.tileLayer(tileUrl, {
           pane: 'thematicPane',
           maxZoom: 26,
@@ -805,14 +783,17 @@ function getBpnGatewayBase() {
         });
       }
 
-      let wmsUrl = `${proxyBase}/proxy-wms`;
-      if (def.endpoint && def.endpoint !== 'https://bhumi.atrbpn.go.id/bhumigs/umum') {
-        wmsUrl += `?upstream=${encodeURIComponent(def.endpoint)}`;
+      let wmsUrl = def.endpoint;
+      if (hasProxy) {
+        wmsUrl = `${persilBase}/proxy-wms`;
+        if (def.endpoint && def.endpoint !== 'https://bhumi.atrbpn.go.id/bhumigs/umum') {
+          wmsUrl += `?upstream=${encodeURIComponent(def.endpoint)}`;
+        }
       }
 
       return L.tileLayer.wms(wmsUrl, {
         layers: def.wmsLayer,
-        format: 'image/webp',
+        format: 'image/png',
         transparent: true,
         version: '1.3.0',
         crs: L.CRS.EPSG3857,
@@ -2342,14 +2323,14 @@ function getBpnGatewayBase() {
         } catch (err) {}
       }
 
-      isProxyActive = true;
+      isProxyActive = false;
       if (badge) {
         badge.className = 'status-pill';
-        badge.style.backgroundColor = '#0284c7';
+        badge.style.backgroundColor = '#64748b';
         badge.style.color = '#ffffff';
       }
       if (text) {
-        text.innerText = 'Gateway Online: Aktif';
+        text.innerText = 'Peta Langsung (Standar)';
       }
     }
 

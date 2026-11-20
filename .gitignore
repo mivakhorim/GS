@@ -1,3 +1,8 @@
 
+node_modules/
+versions/
+01-Folder-Versi/
 09-Arsip-Gambar-Asli-Non-Upload/
 *.db
+.DS_Store
+Thumbs.db

@@ -1,8 +1,11 @@
 const express = require('express');
 const axios = require('axios');
+const https = require('https');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 let activeSessionCookie = '';
 let lastHarvestTime = 0;
@@ -17,9 +20,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.static(__dirname));
+
 async function refreshBhumiSession() {
   try {
     const res = await axios.get('https://bhumi.atrbpn.go.id/', {
+      httpsAgent,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       },
@@ -79,6 +85,7 @@ app.use('/proxy-wms', async (req, res) => {
     const upstream = await axios({
       method: 'GET',
       url: targetUrl,
+      httpsAgent,
       responseType: 'stream',
       headers: {
         'Referer': 'https://bhumi.atrbpn.go.id/',
@@ -115,6 +122,7 @@ app.use('/proxy-tile/:z/:x/:y', async (req, res) => {
     const upstream = await axios({
       method: 'GET',
       url: targetUrl,
+      httpsAgent,
       responseType: 'stream',
       headers: {
         'Referer': 'https://bhumi.atrbpn.go.id/',
