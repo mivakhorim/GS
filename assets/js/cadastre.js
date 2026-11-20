@@ -98,7 +98,7 @@ async function triggerD1Failover() {
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
       const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
       const wmsBase = persilBase ? `${persilBase}/proxy-wms` : 'https://stream.dutamik.id/proxy-wms';
-      const lyr = L.tileLayer.wms(wmsBase, {
+      return L.tileLayer.wms(wmsBase, {
         layers: layerName,
         format: 'image/png',
         transparent: true,
@@ -109,14 +109,12 @@ async function triggerD1Failover() {
         maxZoom: 26,
         opacity: currentOpacity,
         zIndex: 360,
+        keepBuffer: 8,
         updateWhenZooming: false,
-        updateInterval: 100,
+        updateWhenIdle: true,
+        updateInterval: 200,
         attribution: 'Kementerian ATR/BPN'
       });
-      lyr.on('tileerror', function() {
-        triggerD1Failover();
-      });
-      return lyr;
     }
 
     function createAuthTileLayer(url, options) {

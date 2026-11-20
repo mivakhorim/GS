@@ -101,27 +101,17 @@ export default {
         const failedId = body.failed_id || 'active_tunnel';
 
         await env.DB.prepare(
-          "UPDATE gateway_links SET error_count = error_count + 1, status = CASE WHEN error_count >= 2 THEN 'standby' ELSE status END WHERE id = ?"
+          "UPDATE gateway_links SET error_count = error_count + 1 WHERE id = ?"
         ).bind(failedId).run();
 
         const currentActive = await env.DB.prepare(
-          "SELECT * FROM gateway_links WHERE status = 'active' ORDER BY priority ASC LIMIT 1"
-        ).first();
-
-        if (!currentActive) {
-          await env.DB.prepare(
-            "UPDATE gateway_links SET status = 'active', error_count = 0 WHERE id = 'primary_mprx' OR id = 'secondary_bhumigs' LIMIT 1"
-          ).run();
-        }
-
-        const newActive = await env.DB.prepare(
-          "SELECT * FROM gateway_links WHERE status = 'active' ORDER BY priority ASC LIMIT 1"
+          "SELECT * FROM gateway_links WHERE id = 'active_tunnel' LIMIT 1"
         ).first();
 
         return jsonResponse({
           status: 'success',
-          message: 'Failover berhasil dijalankan',
-          new_active: newActive
+          message: 'Status error tercatat',
+          new_active: currentActive
         });
       } catch (err) {
         return jsonResponse({ status: 'error', message: err.message }, 500);
