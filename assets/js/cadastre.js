@@ -299,7 +299,7 @@ async function triggerD1Failover() {
 
       const bounds = map.getBounds();
       const distM = map.distance(bounds.getNorthEast(), center);
-      const span = Math.min(180.0, Math.max(45.0, distM * 0.75));
+      const span = Math.min(120.0, Math.max(35.0, distM * 0.65));
 
       const r = 6378137.0;
       const cx = r * (center.lng * Math.PI / 180.0);
@@ -364,11 +364,12 @@ async function triggerD1Failover() {
           const rowOffset = y * w * 4;
           for (let x = 0; x < w; x++) {
             const a = data[rowOffset + x * 4 + 3];
-            if (a >= 168 || a < 60) isWall[y * w + x] = 1;
+            if (a >= 170 || a < 60) isWall[y * w + x] = 1;
           }
         }
 
-        const globalVisited = new Uint8Array(w * h);
+        const parcelMap = new Int16Array(w * h);
+        let parcelCount = 0;
         const parcels = [];
         const dirD = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
 
@@ -393,16 +394,19 @@ async function triggerD1Failover() {
           return [pts[0], pts[pts.length - 1]];
         }
 
-        for (let y = 12; y < h - 12; y += 12) {
-          for (let x = 12; x < w - 12; x += 12) {
+        for (let y = 10; y < h - 10; y += 8) {
+          for (let x = 10; x < w - 10; x += 8) {
             const idx = y * w + x;
-            if (isWall[idx] === 1 || globalVisited[idx] === 1) continue;
+            if (isWall[idx] === 1 || parcelMap[idx] > 0) continue;
+
+            parcelCount++;
+            const currentId = parcelCount;
 
             const queueX = new Int16Array(w * h);
             const queueY = new Int16Array(w * h);
             let head = 0, tail = 0;
 
-            globalVisited[idx] = 1;
+            parcelMap[idx] = currentId;
             queueX[tail] = x; queueY[tail] = y; tail++;
 
             const seedIdx = (y * w + x) * 4;
@@ -419,11 +423,11 @@ async function triggerD1Failover() {
                 const nx = nb[i][0], ny = nb[i][1];
                 if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
                   const nidx = ny * w + nx;
-                  if (globalVisited[nidx] === 0 && isWall[nidx] === 0) {
+                  if (parcelMap[nidx] === 0 && isWall[nidx] === 0) {
                     const npIdx = nidx * 4;
                     const cd = Math.hypot(data[npIdx] - seedR, data[npIdx + 1] - seedG, data[npIdx + 2] - seedB);
                     if (cd <= 45) {
-                      globalVisited[nidx] = 1;
+                      parcelMap[nidx] = currentId;
                       queueX[tail] = nx; queueY[tail] = ny; tail++;
                     }
                   }
@@ -431,12 +435,12 @@ async function triggerD1Failover() {
               }
             }
 
-            if (tail < 50 || tail > (w * h * 0.88)) continue;
+            if (tail < 70 || tail > (w * h * 0.85)) continue;
 
             let firstX = -1, firstY = -1;
             for (let py = minPy; py <= maxPy; py++) {
               for (let px = minPx; px <= maxPx; px++) {
-                if (globalVisited[py * w + px] === 1) {
+                if (parcelMap[py * w + px] === currentId) {
                   firstX = px; firstY = py; break;
                 }
               }
@@ -446,12 +450,12 @@ async function triggerD1Failover() {
 
             const contour = [{ x: firstX, y: firstY }];
             let currX = firstX, currY = firstY, backtrack = 6;
-            for (let step = 0; step < 2500; step++) {
+            for (let step = 0; step < 3000; step++) {
               let found = false;
               for (let i = 0; i < 8; i++) {
                 const cd = (backtrack + i) % 8;
                 const nx = currX + dirD[cd][0], ny = currY + dirD[cd][1];
-                if (nx >= minPx && nx <= maxPx && ny >= minPy && ny <= maxPy && globalVisited[ny * w + nx] === 1) {
+                if (nx >= minPx && nx <= maxPx && ny >= minPy && ny <= maxPy && parcelMap[ny * w + nx] === currentId) {
                   currX = nx; currY = ny; contour.push({ x: currX, y: currY });
                   backtrack = (cd + 5) % 8; found = true; break;
                 }
@@ -459,7 +463,7 @@ async function triggerD1Failover() {
               if (!found || (currX === firstX && currY === firstY)) break;
             }
 
-            if (contour.length < 6) continue;
+            if (contour.length < 8) continue;
 
             let maxContourDist = 0;
             let splitIdx = Math.floor(contour.length / 2);
@@ -468,8 +472,8 @@ async function triggerD1Failover() {
               if (d > maxContourDist) { maxContourDist = d; splitIdx = i; }
             }
 
-            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.0);
-            const p2 = simplifyRdp(contour.slice(splitIdx), 2.0);
+            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 1.0);
+            const p2 = simplifyRdp(contour.slice(splitIdx), 1.0);
             const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
             if (simplified.length < 3) continue;
 
@@ -527,11 +531,10 @@ async function triggerD1Failover() {
 
     function renderCadastreVectorParcels(parcelsList) {
       if (!map || !cadastreVectorLayer || !Array.isArray(parcelsList)) return;
-      const slider = document.getElementById('persilOpacity');
-      const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.85;
-
-      const strokeColor = '#0284c7';
-      const fillColor = '#38bdf8';
+      if (cadastreVectorLayer) {
+        cadastreVectorLayer.clearLayers();
+      }
+      cadastreVectorParcelCache.clear();
 
       parcelsList.forEach(parcel => {
         const coords = parcel.polygon_coords || parcel.coordinates;
@@ -542,11 +545,12 @@ async function triggerD1Failover() {
         const latlngs = coords.map(c => [c.lat, c.lng]);
         const polyLayer = L.polygon(latlngs, {
           renderer: cadastreSvgRenderer,
-          color: strokeColor,
-          weight: 1.5,
-          opacity: currentOpacity * 0.85,
-          fillColor: fillColor,
-          fillOpacity: currentOpacity * 0.10,
+          stroke: false,
+          color: 'transparent',
+          weight: 0,
+          opacity: 0,
+          fillColor: '#38bdf8',
+          fillOpacity: 0.001,
           pane: 'cadastreVectorPane',
           interactive: true
         });
@@ -562,10 +566,12 @@ async function triggerD1Failover() {
 
         polyLayer.on('mouseover', function() {
           this.setStyle({
-            color: '#0369a1',
-            weight: 2.4,
-            fillColor: '#0284c7',
-            fillOpacity: 0.25
+            stroke: true,
+            color: '#0284c7',
+            weight: 2.2,
+            opacity: 0.95,
+            fillColor: '#38bdf8',
+            fillOpacity: 0.18
           });
           if (map.getContainer()) {
             map.getContainer().style.cursor = 'pointer';
@@ -574,10 +580,12 @@ async function triggerD1Failover() {
 
         polyLayer.on('mouseout', function() {
           this.setStyle({
-            color: strokeColor,
-            weight: 1.5,
-            fillColor: fillColor,
-            fillOpacity: currentOpacity * 0.10
+            stroke: false,
+            color: 'transparent',
+            weight: 0,
+            opacity: 0,
+            fillColor: '#38bdf8',
+            fillOpacity: 0.001
           });
           if (map.getContainer()) {
             map.getContainer().style.cursor = '';
