@@ -14,8 +14,9 @@ function getBpnGatewayBase() {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
           return 'http://127.0.0.1:3000';
         }
+        return 'https://bpn-proxy.mivakhorim.workers.dev';
       }
-      return null;
+      return 'https://bpn-proxy.mivakhorim.workers.dev';
     }
 
     function saveBpnGatewayUrlFromInput() {
@@ -53,11 +54,12 @@ function getBpnGatewayBase() {
     function createCadastreProxyLayer() {
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
-      const persilBase = getBpnGatewayBase();
-      const hasProxy = isProxyActive && persilBase;
-      const wmsBase = hasProxy ? `${persilBase}/proxy-wms` : 'https://bhumi.atrbpn.go.id/bhumigs/umum';
+      const persilBase = getBpnGatewayBase() || 'https://bpn-proxy.mivakhorim.workers.dev';
+      const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
+      const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
+      const wmsBase = `${persilBase}/proxy-wms`;
       return L.tileLayer.wms(wmsBase, {
-        layers: 'umum:Persil',
+        layers: layerName,
         format: 'image/png',
         transparent: true,
         version: '1.3.0',
@@ -784,7 +786,8 @@ function getBpnGatewayBase() {
       }
 
       let wmsUrl = def.endpoint;
-      if (hasProxy) {
+      const isGistaru = def.endpoint && def.endpoint.includes('gistaru-app.atrbpn.go.id');
+      if (hasProxy && !isGistaru) {
         wmsUrl = `${persilBase}/proxy-wms`;
         if (def.endpoint && def.endpoint !== 'https://bhumi.atrbpn.go.id/bhumigs/umum') {
           wmsUrl += `?upstream=${encodeURIComponent(def.endpoint)}`;
@@ -984,7 +987,9 @@ function getBpnGatewayBase() {
       if (typeof persilClientCache !== 'undefined' && persilClientCache) {
         persilClientCache.clear();
       }
-      if (typeof persilLayer !== 'undefined' && persilLayer && typeof persilLayer.redraw === 'function') {
+      if (typeof setupPersilLayer === 'function') {
+        setupPersilLayer();
+      } else if (typeof persilLayer !== 'undefined' && persilLayer && typeof persilLayer.redraw === 'function') {
         persilLayer.redraw();
       }
       if (typeof loadViewportCadastreSvgParcels === 'function') {
@@ -2311,13 +2316,20 @@ function getBpnGatewayBase() {
       if (persilBase && (persilBase.startsWith('https://') || persilBase.startsWith('http://'))) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
           const res = await fetch(`${persilBase}/api/status`, { method: 'GET', mode: 'cors', signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
             isProxyActive = true;
-            if (badge) badge.className = 'status-pill';
-            if (text) text.innerText = 'Gateway Kustom: Aktif';
+            if (badge) {
+              badge.className = 'status-pill';
+              badge.style.backgroundColor = '#16a34a';
+              badge.style.color = '#ffffff';
+            }
+            if (text) {
+              const isCloud = persilBase.includes('workers.dev') || persilBase.includes('dutamik.id');
+              text.innerText = isCloud ? 'Gateway Cloud: Aktif (Cloudflare Edge)' : 'Gateway Proxy: Aktif';
+            }
             return;
           }
         } catch (err) {}
