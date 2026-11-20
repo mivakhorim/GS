@@ -322,6 +322,163 @@ async function triggerD1Failover() {
       return current;
     }
 
+    function harmonizeCadastralTopology(parcelList, snapTolMeters = 2.2) {
+      if (!Array.isArray(parcelList) || parcelList.length <= 1) return parcelList;
+      const r = 6378137.0;
+      function toM(lat, lng) {
+        const x = r * (lng * Math.PI / 180.0);
+        const y = r * Math.log(Math.tan(Math.PI / 4.0 + (lat * Math.PI / 180.0) / 2.0));
+        return { x, y };
+      }
+      function toLatLng(x, y) {
+        const lat = (2.0 * Math.atan(Math.exp(y / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
+        const lng = (x / r) * 180.0 / Math.PI;
+        return { lat: Number(lat.toFixed(7)), lng: Number(lng.toFixed(7)) };
+      }
+
+      const allNodes = [];
+      parcelList.forEach((poly, polyIdx) => {
+        const coords = poly.polygon_coords || poly.coords || poly.coordinates;
+        if (!coords || !Array.isArray(coords)) return;
+        coords.forEach((c, vIdx) => {
+          const m = toM(c.lat, c.lng);
+          allNodes.push({ polyIdx, vIdx, mx: m.x, my: m.y, lat: c.lat, lng: c.lng });
+        });
+      });
+
+      const visited = new Uint8Array(allNodes.length);
+      for (let i = 0; i < allNodes.length; i++) {
+        if (visited[i]) continue;
+        visited[i] = 1;
+        const group = [allNodes[i]];
+        for (let j = i + 1; j < allNodes.length; j++) {
+          if (visited[j]) continue;
+          if (allNodes[i].polyIdx === allNodes[j].polyIdx) continue;
+          const d = Math.hypot(allNodes[i].mx - allNodes[j].mx, allNodes[i].my - allNodes[j].my);
+          if (d <= snapTolMeters) {
+            visited[j] = 1;
+            group.push(allNodes[j]);
+          }
+        }
+        if (group.length > 1) {
+          const avgLat = group.reduce((s, n) => s + n.lat, 0) / group.length;
+          const avgLng = group.reduce((s, n) => s + n.lng, 0) / group.length;
+          const unified = { lat: Number(avgLat.toFixed(7)), lng: Number(avgLng.toFixed(7)) };
+          group.forEach(n => {
+            const poly = parcelList[n.polyIdx];
+            const coords = poly.polygon_coords || poly.coords || poly.coordinates;
+            coords[n.vIdx] = { ...unified };
+          });
+        }
+      }
+
+      parcelList.forEach((polyA, pIdxA) => {
+        const coordsA = polyA.polygon_coords || polyA.coords || polyA.coordinates;
+        if (!coordsA) return;
+        coordsA.forEach(ptA => {
+          const pAm = toM(ptA.lat, ptA.lng);
+          parcelList.forEach((polyB, pIdxB) => {
+            if (pIdxA === pIdxB) return;
+            const coordsB = polyB.polygon_coords || polyB.coords || polyB.coordinates;
+            if (!coordsB || coordsB.length < 3) return;
+            const nB = coordsB.length;
+            for (let i = 0; i < nB; i++) {
+              const b1 = coordsB[i];
+              const b2 = coordsB[(i + 1) % nB];
+              if ((ptA.lat === b1.lat && ptA.lng === b1.lng) || (ptA.lat === b2.lat && ptA.lng === b2.lng)) continue;
+              const b1m = toM(b1.lat, b1.lng);
+              const b2m = toM(b2.lat, b2.lng);
+              const dx = b2m.x - b1m.x, dy = b2m.y - b1m.y;
+              const l2 = dx * dx + dy * dy;
+              if (l2 === 0) continue;
+              let t = ((pAm.x - b1m.x) * dx + (pAm.y - b1m.y) * dy) / l2;
+              if (t > 0.08 && t < 0.92) {
+                const projX = b1m.x + t * dx, projY = b1m.y + t * dy;
+                const dist = Math.hypot(pAm.x - projX, pAm.y - projY);
+                if (dist <= snapTolMeters) {
+                  const snapped = toLatLng(projX, projY);
+                  ptA.lat = snapped.lat;
+                  ptA.lng = snapped.lng;
+                  coordsB.splice(i + 1, 0, snapped);
+                  break;
+                }
+              }
+            }
+          });
+        });
+      });
+
+      return parcelList;
+    }
+
+    function snapParcelToCachedVectorParcels(targetCoords, snapTolMeters = 2.2) {
+      if (!targetCoords || targetCoords.length < 3 || !cadastreVectorParcelCache || cadastreVectorParcelCache.size === 0) {
+        return targetCoords;
+      }
+      const r = 6378137.0;
+      function toM(lat, lng) {
+        const x = r * (lng * Math.PI / 180.0);
+        const y = r * Math.log(Math.tan(Math.PI / 4.0 + (lat * Math.PI / 180.0) / 2.0));
+        return { x, y };
+      }
+      function toLatLng(x, y) {
+        const lat = (2.0 * Math.atan(Math.exp(y / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
+        const lng = (x / r) * 180.0 / Math.PI;
+        return { lat: Number(lat.toFixed(7)), lng: Number(lng.toFixed(7)) };
+      }
+
+      const cachedPolys = [];
+      cadastreVectorParcelCache.forEach(layer => {
+        if (layer && layer._parcelData) {
+          const c = layer._parcelData.polygon_coords || layer._parcelData.coordinates;
+          if (c && c.length >= 3) cachedPolys.push(c);
+        }
+      });
+      if (cachedPolys.length === 0) return targetCoords;
+
+      targetCoords.forEach(pt => {
+        const ptm = toM(pt.lat, pt.lng);
+        let snapped = false;
+        for (const cPoly of cachedPolys) {
+          for (const cPt of cPoly) {
+            const cPtm = toM(cPt.lat, cPt.lng);
+            if (Math.hypot(ptm.x - cPtm.x, ptm.y - cPtm.y) <= snapTolMeters) {
+              pt.lat = cPt.lat;
+              pt.lng = cPt.lng;
+              snapped = true;
+              break;
+            }
+          }
+          if (snapped) break;
+        }
+        if (!snapped) {
+          for (const cPoly of cachedPolys) {
+            const nC = cPoly.length;
+            for (let i = 0; i < nC; i++) {
+              const b1 = cPoly[i], b2 = cPoly[(i + 1) % nC];
+              const b1m = toM(b1.lat, b1.lng), b2m = toM(b2.lat, b2.lng);
+              const dx = b2m.x - b1m.x, dy = b2m.y - b1m.y;
+              const l2 = dx * dx + dy * dy;
+              if (l2 === 0) continue;
+              let t = ((ptm.x - b1m.x) * dx + (ptm.y - b1m.y) * dy) / l2;
+              if (t > 0.08 && t < 0.92) {
+                const projX = b1m.x + t * dx, projY = b1m.y + t * dy;
+                if (Math.hypot(ptm.x - projX, ptm.y - projY) <= snapTolMeters) {
+                  const projected = toLatLng(projX, projY);
+                  pt.lat = projected.lat;
+                  pt.lng = projected.lng;
+                  snapped = true;
+                  break;
+                }
+              }
+            }
+            if (snapped) break;
+          }
+        }
+      });
+      return targetCoords;
+    }
+
     async function vectorizeViewportParcelsToSvg() {
       if (!map || isViewportVectorizing) return;
       const zoom = map.getZoom();
@@ -489,115 +646,156 @@ async function triggerD1Failover() {
               }
             }
 
-            if (tail < 120 || tail > (w * h * 0.85)) continue;
-            if (minPx <= 4 || maxPx >= w - 5 || minPy <= 4 || maxPy >= h - 5) continue;
-
-            let firstX = -1, firstY = -1;
-            for (let py = minPy; py <= maxPy; py++) {
-              for (let px = minPx; px <= maxPx; px++) {
-                if (parcelMap[py * w + px] === currentId) {
-                  firstX = px; firstY = py; break;
-                }
-              }
-              if (firstX !== -1) break;
-            }
-            if (firstX === -1) continue;
-
-            const contour = [{ x: firstX, y: firstY }];
-            let currX = firstX, currY = firstY, backtrack = 6;
-            for (let step = 0; step < 4000; step++) {
-              let found = false;
-              for (let i = 0; i < 8; i++) {
-                const cd = (backtrack + i) % 8;
-                const nx = currX + dirD[cd][0], ny = currY + dirD[cd][1];
-                if (nx >= minPx && nx <= maxPx && ny >= minPy && ny <= maxPy && parcelMap[ny * w + nx] === currentId) {
-                  currX = nx; currY = ny; contour.push({ x: currX, y: currY });
-                  backtrack = (cd + 5) % 8; found = true; break;
-                }
-              }
-              if (!found || (currX === firstX && currY === firstY && contour.length > 8)) break;
-            }
-
-            if (contour.length < 8) continue;
-
-            const nContour = contour.length;
-            const kWin = Math.min(5, Math.floor(nContour / 4));
-            const curvatures = new Float32Array(nContour);
-            for (let i = 0; i < nContour; i++) {
-              const prev = contour[(i - kWin + nContour) % nContour];
-              const curr = contour[i];
-              const next = contour[(i + kWin) % nContour];
-              const ax = curr.x - prev.x, ay = curr.y - prev.y;
-              const bx = next.x - curr.x, by = next.y - curr.y;
-              const lenA = Math.hypot(ax, ay), lenB = Math.hypot(bx, by);
-              if (lenA > 0 && lenB > 0) {
-                const dot = (ax * bx + ay * by) / (lenA * lenB);
-                curvatures[i] = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
-              }
-            }
-
-            let maxAngle = 0, bestCornerIdx = 0;
-            for (let i = 0; i < nContour; i++) {
-              if (curvatures[i] > maxAngle) { maxAngle = curvatures[i]; bestCornerIdx = i; }
-            }
-
-            const rotated = contour.slice(bestCornerIdx).concat(contour.slice(0, bestCornerIdx));
-            let maxOppDist = 0, oppCornerIdx = Math.floor(nContour / 2);
-            for (let i = Math.floor(nContour / 4); i < Math.floor(3 * nContour / 4); i++) {
-              const d = Math.hypot(rotated[i].x - rotated[0].x, rotated[i].y - rotated[0].y);
-              if (d > maxOppDist) { maxOppDist = d; oppCornerIdx = i; }
-            }
-
-            const p1 = simplifyRdp(rotated.slice(0, oppCornerIdx + 1), 1.2);
-            const p2 = simplifyRdp(rotated.slice(oppCornerIdx), 1.2);
-            const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
-            if (simplified.length < 3) continue;
-
-            const rawPolyCoords = simplified.map(pt => {
-              const mx = minx + ((pt.x + 0.5) / 512.0) * (maxx - minx);
-              const my = maxy - ((pt.y + 0.5) / 512.0) * (maxy - miny);
-              const pLat = (2.0 * Math.atan(Math.exp(my / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
-              const pLng = (mx / r) * 180.0 / Math.PI;
-              return { lat: Number(pLat.toFixed(7)), lng: Number(pLng.toFixed(7)) };
-            });
-
-            const polyCoords = removeCollinearVertices(rawPolyCoords, 6.0);
-            if (polyCoords.length < 3) continue;
-
-            let area = 0;
-            const n = polyCoords.length;
-            for (let i = 0; i < n; i++) {
-              const pa = polyCoords[i], pb = polyCoords[(i + 1) % n];
-              const x1 = pa.lng * (Math.PI / 180) * r * Math.cos(pa.lat * Math.PI / 180);
-              const y1 = pa.lat * (Math.PI / 180) * r;
-              const x2 = pb.lng * (Math.PI / 180) * r * Math.cos(pb.lat * Math.PI / 180);
-              const y2 = pb.lat * (Math.PI / 180) * r;
-              area += (x1 * y2 - x2 * y1);
-            }
-            area = Math.abs(area) * 0.5;
-
-            if (area >= 15) {
-              const cLat = polyCoords.reduce((s, c) => s + c.lat, 0) / polyCoords.length;
-              const cLng = polyCoords.reduce((s, c) => s + c.lng, 0) / polyCoords.length;
-              const fid = 'PERSIL-' + Math.round(cLat * 100000) + '-' + Math.round(cLng * 100000);
-              parcels.push({
-                found: true,
-                is_official_cadastre: true,
-                is_auto_traced: true,
-                fid: fid,
-                nib: '-',
-                tipe_hak: 'TERDAFTAR ATR/BPN',
-                luas_m2: Math.round(area),
-                luas_terdaftar_m2: Math.round(area),
-                polygon_coords: polyCoords,
-                status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
-                source: 'VEKTOR PERSIL SVG PRESISI'
-              });
+            if (tail < 120 || tail > (w * h * 0.85) || minPx <= 4 || maxPx >= w - 5 || minPy <= 4 || maxPy >= h - 5) {
+              for (let i = 0; i < tail; i++) parcelMap[queueY[i] * w + queueX[i]] = -1;
+              parcelCount--;
             }
           }
         }
 
+        const dilateQueue = [];
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            const id = parcelMap[y * w + x];
+            if (id > 0) {
+              const nbs = [y * w + x - 1, y * w + x + 1, (y - 1) * w + x, (y + 1) * w + x];
+              for (let nidx of nbs) {
+                if (isWall[nidx] === 1 && parcelMap[nidx] === 0) {
+                  parcelMap[nidx] = id;
+                  dilateQueue.push({ x: nidx % w, y: Math.floor(nidx / w), id, dist: 1 });
+                }
+              }
+            }
+          }
+        }
+        let dqHead = 0;
+        while (dqHead < dilateQueue.length) {
+          const item = dilateQueue[dqHead++];
+          if (item.dist >= 3) continue;
+          const { x: dx, y: dy, id: did, dist: ddist } = item;
+          const nbs = [[dx - 1, dy], [dx + 1, dy], [dx, dy - 1], [dx, dy + 1]];
+          for (let i = 0; i < 4; i++) {
+            const nx = nbs[i][0], ny = nbs[i][1];
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+              const nidx = ny * w + nx;
+              if (isWall[nidx] === 1 && parcelMap[nidx] === 0) {
+                parcelMap[nidx] = did;
+                dilateQueue.push({ x: nx, y: ny, id: did, dist: ddist + 1 });
+              }
+            }
+          }
+        }
+
+        for (let id = 1; id <= parcelCount; id++) {
+          let firstX = -1, firstY = -1;
+          let minPx = w, maxPx = 0, minPy = h, maxPy = 0;
+          for (let py = 0; py < h; py++) {
+            for (let px = 0; px < w; px++) {
+              if (parcelMap[py * w + px] === id) {
+                if (firstX === -1) { firstX = px; firstY = py; }
+                if (px < minPx) minPx = px; if (px > maxPx) maxPx = px;
+                if (py < minPy) minPy = py; if (py > maxPy) maxPy = py;
+              }
+            }
+          }
+          if (firstX === -1) continue;
+          if (minPx <= 4 || maxPx >= w - 5 || minPy <= 4 || maxPy >= h - 5) continue;
+
+          const contour = [{ x: firstX, y: firstY }];
+          let currX = firstX, currY = firstY, backtrack = 6;
+          for (let step = 0; step < 4000; step++) {
+            let found = false;
+            for (let i = 0; i < 8; i++) {
+              const cd = (backtrack + i) % 8;
+              const nx = currX + dirD[cd][0], ny = currY + dirD[cd][1];
+              if (nx >= minPx && nx <= maxPx && ny >= minPy && ny <= maxPy && parcelMap[ny * w + nx] === id) {
+                currX = nx; currY = ny; contour.push({ x: currX, y: currY });
+                backtrack = (cd + 5) % 8; found = true; break;
+              }
+            }
+            if (!found || (currX === firstX && currY === firstY && contour.length > 8)) break;
+          }
+
+          if (contour.length < 8) continue;
+
+          const nContour = contour.length;
+          const kWin = Math.min(5, Math.floor(nContour / 4));
+          const curvatures = new Float32Array(nContour);
+          for (let i = 0; i < nContour; i++) {
+            const prev = contour[(i - kWin + nContour) % nContour];
+            const curr = contour[i];
+            const next = contour[(i + kWin) % nContour];
+            const ax = curr.x - prev.x, ay = curr.y - prev.y;
+            const bx = next.x - curr.x, by = next.y - curr.y;
+            const lenA = Math.hypot(ax, ay), lenB = Math.hypot(bx, by);
+            if (lenA > 0 && lenB > 0) {
+              const dot = (ax * bx + ay * by) / (lenA * lenB);
+              curvatures[i] = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
+            }
+          }
+
+          let maxAngle = 0, bestCornerIdx = 0;
+          for (let i = 0; i < nContour; i++) {
+            if (curvatures[i] > maxAngle) { maxAngle = curvatures[i]; bestCornerIdx = i; }
+          }
+
+          const rotated = contour.slice(bestCornerIdx).concat(contour.slice(0, bestCornerIdx));
+          let maxOppDist = 0, oppCornerIdx = Math.floor(nContour / 2);
+          for (let i = Math.floor(nContour / 4); i < Math.floor(3 * nContour / 4); i++) {
+            const d = Math.hypot(rotated[i].x - rotated[0].x, rotated[i].y - rotated[0].y);
+            if (d > maxOppDist) { maxOppDist = d; oppCornerIdx = i; }
+          }
+
+          const p1 = simplifyRdp(rotated.slice(0, oppCornerIdx + 1), 1.2);
+          const p2 = simplifyRdp(rotated.slice(oppCornerIdx), 1.2);
+          const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
+          if (simplified.length < 3) continue;
+
+          const rawPolyCoords = simplified.map(pt => {
+            const mx = minx + ((pt.x + 0.5) / 512.0) * (maxx - minx);
+            const my = maxy - ((pt.y + 0.5) / 512.0) * (maxy - miny);
+            const pLat = (2.0 * Math.atan(Math.exp(my / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
+            const pLng = (mx / r) * 180.0 / Math.PI;
+            return { lat: Number(pLat.toFixed(7)), lng: Number(pLng.toFixed(7)) };
+          });
+
+          const polyCoords = removeCollinearVertices(rawPolyCoords, 6.0);
+          if (polyCoords.length < 3) continue;
+
+          let area = 0;
+          const n = polyCoords.length;
+          for (let i = 0; i < n; i++) {
+            const pa = polyCoords[i], pb = polyCoords[(i + 1) % n];
+            const x1 = pa.lng * (Math.PI / 180) * r * Math.cos(pa.lat * Math.PI / 180);
+            const y1 = pa.lat * (Math.PI / 180) * r;
+            const x2 = pb.lng * (Math.PI / 180) * r * Math.cos(pb.lat * Math.PI / 180);
+            const y2 = pb.lat * (Math.PI / 180) * r;
+            area += (x1 * y2 - x2 * y1);
+          }
+          area = Math.abs(area) * 0.5;
+
+          if (area >= 15) {
+            const cLat = polyCoords.reduce((s, c) => s + c.lat, 0) / polyCoords.length;
+            const cLng = polyCoords.reduce((s, c) => s + c.lng, 0) / polyCoords.length;
+            const fid = 'PERSIL-' + Math.round(cLat * 100000) + '-' + Math.round(cLng * 100000);
+            parcels.push({
+              found: true,
+              is_official_cadastre: true,
+              is_auto_traced: true,
+              fid: fid,
+              nib: '-',
+              tipe_hak: 'TERDAFTAR ATR/BPN',
+              luas_m2: Math.round(area),
+              luas_terdaftar_m2: Math.round(area),
+              polygon_coords: polyCoords,
+              status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
+              source: 'VEKTOR PERSIL SVG PRESISI'
+            });
+          }
+        }
+
         if (parcels.length > 0) {
+          harmonizeCadastralTopology(parcels, 2.2);
           renderCadastreVectorParcels(parcels);
         }
       } catch (e) {
@@ -1630,6 +1828,39 @@ async function triggerD1Failover() {
               return;
             }
 
+            const dilateQueue = [];
+            for (let i = 0; i < tail; i++) {
+              const qx = queueX[i], qy = queueY[i];
+              const nb = [[qx - 1, qy], [qx + 1, qy], [qx, qy - 1], [qx, qy + 1]];
+              for (let k = 0; k < 4; k++) {
+                const nx = nb[k][0], ny = nb[k][1];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                  const nidx = ny * w + nx;
+                  if (visited[nidx] === 0 && isWall[nidx] === 1) {
+                    visited[nidx] = 1;
+                    dilateQueue.push({ x: nx, y: ny, dist: 1 });
+                  }
+                }
+              }
+            }
+            let dqHead = 0;
+            while (dqHead < dilateQueue.length) {
+              const item = dilateQueue[dqHead++];
+              if (item.dist >= 2) continue;
+              const { x: dx, y: dy, dist: ddist } = item;
+              const nb = [[dx - 1, dy], [dx + 1, dy], [dx, dy - 1], [dx, dy + 1]];
+              for (let k = 0; k < 4; k++) {
+                const nx = nb[k][0], ny = nb[k][1];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                  const nidx = ny * w + nx;
+                  if (visited[nidx] === 0 && isWall[nidx] === 1) {
+                    visited[nidx] = 1;
+                    dilateQueue.push({ x: nx, y: ny, dist: ddist + 1 });
+                  }
+                }
+              }
+            }
+
             let firstX = -1;
             let firstY = -1;
             for (let y = 0; y < h; y++) {
@@ -1755,7 +1986,10 @@ async function triggerD1Failover() {
             const cleanPolyCoords = removeCollinearVertices(polyCoords, 6.0);
             if (cleanPolyCoords.length < 3) { resolve(null); return; }
 
-            const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(cleanPolyCoords) : 0;
+            const finalPolyCoords = snapParcelToCachedVectorParcels(cleanPolyCoords, 2.2);
+            if (finalPolyCoords.length < 3) { resolve(null); return; }
+
+            const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(finalPolyCoords) : 0;
             if (exactArea < 5.0) { resolve(null); return; }
 
             const parcelFid = 'PERSIL-' + Math.floor(100000 + Math.random() * 900000);
@@ -1768,7 +2002,7 @@ async function triggerD1Failover() {
               tipe_hak: 'TERDAFTAR ATR/BPN',
               luas_m2: Math.round(exactArea),
               luas_terdaftar_m2: Math.round(exactArea),
-              polygon_coords: cleanPolyCoords,
+              polygon_coords: finalPolyCoords,
               status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
               source: 'VEKTOR PERSIL SVG PRESISI'
             });
