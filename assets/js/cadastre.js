@@ -1,22 +1,63 @@
+const DEFAULT_CLOUD_STREAM_GATEWAY = 'https://stream.dutamik.id';
+let cachedD1ActiveLink = null;
+let lastFailoverTriggerTime = 0;
+
 function getBpnGatewayBase() {
-      const custom = localStorage.getItem('custom_bpn_gateway_url');
-      if (custom && custom.trim()) {
-        const trimmed = custom.trim().replace(/\/+$/, '');
-        if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
-          return trimmed;
-        }
-      }
-      if (typeof window !== 'undefined' && window.location) {
-        const port = String(window.location.port || '');
-        if (port === '3000' || port === '8085' || port === '8089') {
-          return window.location.origin;
-        }
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
-          return 'http://127.0.0.1:3000';
-        }
-      }
-      return null;
+  const custom = localStorage.getItem('custom_bpn_gateway_url');
+  if (custom && custom.trim()) {
+    const trimmed = custom.trim().replace(/\/+$/, '');
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+      return trimmed;
     }
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    const port = String(window.location.port || '');
+    if (port === '3000' || port === '8085' || port === '8089') {
+      return window.location.origin;
+    }
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+      return 'http://127.0.0.1:3000';
+    }
+  }
+  return DEFAULT_CLOUD_STREAM_GATEWAY;
+}
+
+async function syncGatewayFromD1() {
+  const base = getBpnGatewayBase();
+  try {
+    const res = await fetch(`${base}/api/gateway`, { mode: 'cors' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.active_link) {
+        cachedD1ActiveLink = data.active_link;
+        return data.active_link;
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+async function triggerD1Failover() {
+  if (Date.now() - lastFailoverTriggerTime < 10000) return;
+  lastFailoverTriggerTime = Date.now();
+  const base = getBpnGatewayBase();
+  try {
+    const res = await fetch(`${base}/api/gateway/failover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ failed_id: 'active_tunnel' })
+    });
+    if (res.ok) {
+      const result = await res.json();
+      if (result && result.new_active) {
+        cachedD1ActiveLink = result.new_active;
+        if (persilLayer && map && map.hasLayer(persilLayer)) {
+          persilLayer.redraw();
+        }
+      }
+    }
+  } catch (e) {}
+}
 
     function saveBpnGatewayUrlFromInput() {
       const input = document.getElementById('inputBpnGatewayUrl');
@@ -56,8 +97,8 @@ function getBpnGatewayBase() {
       const persilBase = getBpnGatewayBase();
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
       const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
-      const wmsBase = persilBase ? `${persilBase}/proxy-wms` : 'https://bhumi.atrbpn.go.id/mprx/service';
-      return L.tileLayer.wms(wmsBase, {
+      const wmsBase = persilBase ? `${persilBase}/proxy-wms` : 'https://stream.dutamik.id/proxy-wms';
+      const lyr = L.tileLayer.wms(wmsBase, {
         layers: layerName,
         format: 'image/png',
         transparent: true,
@@ -72,6 +113,10 @@ function getBpnGatewayBase() {
         updateInterval: 100,
         attribution: 'Kementerian ATR/BPN'
       });
+      lyr.on('tileerror', function() {
+        triggerD1Failover();
+      });
+      return lyr;
     }
 
     function createAuthTileLayer(url, options) {
@@ -2319,6 +2364,7 @@ function getBpnGatewayBase() {
           const res = await fetch(`${persilBase}/api/status`, { method: 'GET', mode: 'cors', signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
+            const data = await res.json().catch(() => ({}));
             isProxyActive = true;
             if (badge) {
               badge.className = 'status-pill';
@@ -2326,7 +2372,8 @@ function getBpnGatewayBase() {
               badge.style.color = '#ffffff';
             }
             if (text) {
-              text.innerText = 'Air-Gap Proxy: Aktif (Zero-Leak)';
+              const streamName = data.active_link?.name || 'Cloud Stream D1';
+              text.innerText = `Air-Gap: Aktif (${streamName})`;
             }
             return;
           }

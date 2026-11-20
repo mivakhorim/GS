@@ -6,3 +6,9 @@ versions/
 *.db
 .DS_Store
 Thumbs.db
+cloudflared.exe
+cookies.txt
+*.png
+find_urls.js
+read_pdf.py
+read_pdf_code.py

@@ -1,0 +1,13 @@
+name = "geospasi-gateway"
+main = "index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+routes = [
+  { pattern = "stream.dutamik.id", custom_domain = true }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "geospasi-d1"
+database_id = "f882a441-6bd4-46e2-96e9-a837a6f1fcf4"
