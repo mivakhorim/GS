@@ -420,6 +420,12 @@ Server Sumber Data: ${serverName}`;
         map.removeLayer(activePolygonLayer);
         activePolygonLayer = null;
       }
+      if (typeof cadastreVectorLayer !== 'undefined' && cadastreVectorLayer) {
+        cadastreVectorLayer.clearLayers();
+      }
+      if (typeof cadastreVectorParcelCache !== 'undefined' && cadastreVectorParcelCache) {
+        cadastreVectorParcelCache.clear();
+      }
       activeVertices = [];
       vertexMarkers.forEach(m => map.removeLayer(m));
       vertexMarkers = [];
@@ -528,82 +534,6 @@ Server Sumber Data: ${serverName}`;
       }
       if (pts.length < 3) return pts;
 
-      if (pts.length > 4) {
-        const refLat = pts[0].lat;
-        const cosLat = Math.cos(refLat * Math.PI / 180.0);
-        const mPts = pts.map(p => ({
-          x: p.lng * 111320.0 * cosLat,
-          y: p.lat * 111320.0,
-          orig: p
-        }));
-
-        function perpDist(pt, lStart, lEnd) {
-          const dx = lEnd.x - lStart.x;
-          const dy = lEnd.y - lStart.y;
-          const lenSq = dx * dx + dy * dy;
-          if (lenSq === 0) return Math.hypot(pt.x - lStart.x, pt.y - lStart.y);
-          const t = Math.max(0, Math.min(1, ((pt.x - lStart.x) * dx + (pt.y - lStart.y) * dy) / lenSq));
-          const projX = lStart.x + t * dx;
-          const projY = lStart.y + t * dy;
-          return Math.hypot(pt.x - projX, pt.y - projY);
-        }
-
-        function rdpRec(arr, eps) {
-          if (arr.length <= 2) return arr;
-          let maxD = 0;
-          let idx = 0;
-          for (let i = 1; i < arr.length - 1; i++) {
-            const d = perpDist(arr[i], arr[0], arr[arr.length - 1]);
-            if (d > maxD) {
-              maxD = d;
-              idx = i;
-            }
-          }
-          if (maxD > eps) {
-            const left = rdpRec(arr.slice(0, idx + 1), eps);
-            const right = rdpRec(arr.slice(idx), eps);
-            return left.slice(0, -1).concat(right);
-          } else {
-            return [arr[0], arr[arr.length - 1]];
-          }
-        }
-
-        let maxD = -1;
-        let idxA = 0;
-        let idxB = Math.floor(mPts.length / 2);
-        for (let i = 0; i < mPts.length; i++) {
-          for (let j = i + 1; j < mPts.length; j++) {
-            const d = Math.hypot(mPts[i].x - mPts[j].x, mPts[i].y - mPts[j].y);
-            if (d > maxD) {
-              maxD = d;
-              idxA = i;
-              idxB = j;
-            }
-          }
-        }
-
-        const ring1 = [];
-        for (let i = idxA; ; i = (i + 1) % mPts.length) {
-          ring1.push(mPts[i]);
-          if (i === idxB) break;
-        }
-        const ring2 = [];
-        for (let i = idxB; ; i = (i + 1) % mPts.length) {
-          ring2.push(mPts[i]);
-          if (i === idxA) break;
-        }
-
-        const simp1 = rdpRec(ring1, 0.70);
-        const simp2 = rdpRec(ring2, 0.70);
-        const merged = simp1.slice(0, -1).concat(simp2.slice(0, -1));
-        if (merged.length >= 3) {
-          pts = merged.map(p => ({
-            lat: Number(p.orig.lat.toFixed(7)),
-            lng: Number(p.orig.lng.toFixed(7))
-          }));
-        }
-      }
-
       let changed = true;
       while (changed && pts.length > 3) {
         changed = false;
@@ -680,14 +610,11 @@ Server Sumber Data: ${serverName}`;
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.0000005 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.0000005) {
         pts.pop();
       }
-      pts = cleanAndDeduplicateVertices(pts, 0.05, 0.5);
-      if (pts.length > 12) {
-        pts = cleanAndDeduplicateVertices(pts, 1.2, 12.0);
-      }
+      pts = cleanAndDeduplicateVertices(pts, 0.10, 1.0);
       activeVertices = pts.filter((pt, idx) => {
         if (idx === 0) return true;
         const prev = pts[idx - 1];
-        return Math.hypot((pt.lat - prev.lat) * 111320, (pt.lng - prev.lng) * 111320) >= 0.05;
+        return Math.hypot((pt.lat - prev.lat) * 111320, (pt.lng - prev.lng) * 111320) >= 0.10;
       });
 
       const toolbar = document.getElementById('mapPrecisionToolbar');

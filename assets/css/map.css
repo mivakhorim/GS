@@ -434,12 +434,12 @@
     }
     .active-cadastre-polygon {
       stroke: #0284c7 !important;
-      stroke-width: 2.8px !important;
+      stroke-width: 2.5px !important;
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
-      fill: #38bdf8 !important;
-      fill-opacity: 0.28 !important;
-      filter: drop-shadow(0 2px 8px rgba(2, 132, 199, 0.45));
+      fill: #0284c7 !important;
+      fill-opacity: 0.22 !important;
+      filter: none !important;
     }
     .patok-popup-card {
       font-family: 'Inter', -apple-system, sans-serif;

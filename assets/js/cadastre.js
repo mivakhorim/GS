@@ -109,10 +109,10 @@ async function triggerD1Failover() {
         maxZoom: 26,
         opacity: currentOpacity,
         zIndex: 360,
-        keepBuffer: 8,
-        updateWhenZooming: false,
-        updateWhenIdle: true,
-        updateInterval: 200,
+        keepBuffer: 2,
+        updateWhenZooming: true,
+        updateWhenIdle: false,
+        updateInterval: 150,
         attribution: 'Kementerian ATR/BPN'
       });
     }
@@ -234,21 +234,6 @@ async function triggerD1Failover() {
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
 
       if (!persilBase || !isProxyActive) {
-        const center = map.getCenter();
-        const centerKey = `${center.lat.toFixed(5)},${center.lng.toFixed(5)}`;
-        if (!cadastreVectorParcelCache.has(centerKey)) {
-          isViewportVectorLoading = true;
-          try {
-            const data = await fetchPersilCadastreData(center.lat, center.lng, zoom);
-            if (data && data.found && Array.isArray(data.polygon_coords) && data.polygon_coords.length >= 3) {
-              cadastreVectorParcelCache.set(centerKey, true);
-              renderCadastreVectorParcels([data]);
-            }
-          } catch (e) {
-          } finally {
-            isViewportVectorLoading = false;
-          }
-        }
         return;
       }
 
@@ -1191,40 +1176,63 @@ async function triggerD1Failover() {
 
             const w = 512;
             const h = 512;
-            const isWall = new Uint8Array(w * h);
+            let startX = 256;
+            let startY = 256;
+            let seedIdx = (startY * w + startX) * 4;
+            let seedR = data[seedIdx];
+            let seedG = data[seedIdx + 1];
+            let seedB = data[seedIdx + 2];
+            let seedA = data[seedIdx + 3];
 
-            for (let y = 0; y < h; y++) {
-              const rowOffset = y * w * 4;
-              for (let x = 0; x < w; x++) {
-                const a = data[rowOffset + x * 4 + 3];
-                if (a >= 210 || a < 50) {
-                  isWall[y * w + x] = 1;
+            if (seedA >= 168 || seedA < 60) {
+              for (let rad = 1; rad <= 25; rad++) {
+                for (let dy = -rad; dy <= rad; dy++) {
+                  for (let dx = -rad; dx <= rad; dx++) {
+                    const nx = startX + dx;
+                    const ny = startY + dy;
+                    if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                      const a = data[(ny * w + nx) * 4 + 3];
+                      if (a >= 120 && a <= 165) {
+                        startX = nx;
+                        startY = ny;
+                        seedIdx = (ny * w + nx) * 4;
+                        seedR = data[seedIdx];
+                        seedG = data[seedIdx + 1];
+                        seedB = data[seedIdx + 2];
+                        seedA = a;
+                        break;
+                      }
+                    }
+                  }
+                  if (seedA >= 120 && seedA <= 165) break;
                 }
+                if (seedA >= 120 && seedA <= 165) break;
               }
             }
 
-            let startX = 256;
-            let startY = 256;
-            if (isWall[startY * w + startX] === 1) {
-              let foundFree = false;
-              for (let rad = 1; rad <= 20; rad++) {
-                for (let dy = -rad; dy <= rad; dy++) {
-                  const ny = startY + dy;
-                  if (ny < 0 || ny >= h) continue;
-                  for (let dx = -rad; dx <= rad; dx++) {
-                    const nx = startX + dx;
-                    if (nx >= 0 && nx < w && isWall[ny * w + nx] === 0) {
-                      startX = nx;
-                      startY = ny;
-                      foundFree = true;
-                      break;
-                    }
+            if (seedA < 60) {
+              resolve(null);
+              return;
+            }
+
+            const isWall = new Uint8Array(w * h);
+            for (let y = 0; y < h; y++) {
+              const rowOffset = y * w * 4;
+              for (let x = 0; x < w; x++) {
+                const pxIdx = rowOffset + x * 4;
+                const a = data[pxIdx + 3];
+                if (a >= 168 || a < 60) {
+                  isWall[y * w + x] = 1;
+                } else {
+                  const r = data[pxIdx];
+                  const g = data[pxIdx + 1];
+                  const b = data[pxIdx + 2];
+                  const colorDiff = Math.hypot(r - seedR, g - seedG, b - seedB);
+                  if (colorDiff > 45) {
+                    isWall[y * w + x] = 1;
                   }
-                  if (foundFree) break;
                 }
-                if (foundFree) break;
               }
-              if (!foundFree) { resolve(null); return; }
             }
 
             const visited = new Uint8Array(w * h);
@@ -1265,11 +1273,11 @@ async function triggerD1Failover() {
             }
 
             const totalPixels = tail;
-            if (totalPixels < 60) {
+            if (totalPixels < 40) {
               resolve(null);
               return;
             }
-            if (totalPixels > (w * h * 0.92)) {
+            if (totalPixels > (w * h * 0.90)) {
               if (span < 140.0) {
                 traceParcelFromWmsTile(lat, lng, span * 2.0).then(resolve);
                 return;
@@ -1349,15 +1357,28 @@ async function triggerD1Failover() {
               return [pts[0], pts[last]];
             }
 
-            const simplified = simplifyRdp(contour, 2.5);
+            let maxContourDist = 0;
+            let splitIdx = Math.floor(contour.length / 2);
+            for (let i = 1; i < contour.length; i++) {
+              const d = Math.hypot(contour[i].x - contour[0].x, contour[i].y - contour[0].y);
+              if (d > maxContourDist) {
+                maxContourDist = d;
+                splitIdx = i;
+              }
+            }
+
+            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.0);
+            const p2 = simplifyRdp(contour.slice(splitIdx), 2.0);
+            const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
+
             if (simplified.length < 3) { resolve(null); return; }
 
             const polyCoords = [];
             for (let i = 0; i < simplified.length; i++) {
               const pt = simplified[i];
               if (i === simplified.length - 1 && pt.x === simplified[0].x && pt.y === simplified[0].y) continue;
-              const mx = minx + (pt.x / 512.0) * (maxx - minx);
-              const my = maxy - (pt.y / 512.0) * (maxy - miny);
+              const mx = minx + ((pt.x + 0.5) / 512.0) * (maxx - minx);
+              const my = maxy - ((pt.y + 0.5) / 512.0) * (maxy - miny);
               const pLat = (2.0 * Math.atan(Math.exp(my / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
               const pLng = (mx / r) * 180.0 / Math.PI;
               polyCoords.push({
@@ -1781,6 +1802,15 @@ async function triggerD1Failover() {
       }
 
       isParcelLocked = false;
+      if (typeof clearCanvasRebuilderLayers === 'function') {
+        clearCanvasRebuilderLayers();
+      }
+      if (typeof cadastreVectorLayer !== 'undefined' && cadastreVectorLayer) {
+        cadastreVectorLayer.clearLayers();
+      }
+      if (typeof cadastreVectorParcelCache !== 'undefined' && cadastreVectorParcelCache) {
+        cadastreVectorParcelCache.clear();
+      }
       const seq = ++persilFetchSeq;
       const noPin = document.getElementById('noPinAlert');
       const foundBox = document.getElementById('persilFoundBox');
@@ -1987,7 +2017,6 @@ async function triggerD1Failover() {
           }
 
           rawInitialBboxCoords = effectivePersil.polygon_coords;
-          renderCadastreVectorParcels([effectivePersil]);
           initCanvasRebuilder(lat, lng, activePinData.luas_m2 || 60, rawInitialBboxCoords);
           if (typeof updateAdminPolygonCoordsUI === 'function') {
             updateAdminPolygonCoordsUI(effectivePersil.polygon_coords);
@@ -2636,7 +2665,6 @@ async function triggerD1Failover() {
             activeObj.luas_m2 = traced.luas_m2;
           }
         }
-        renderCadastreVectorParcels([traced]);
         if (typeof initCanvasRebuilder === 'function') {
           initCanvasRebuilder(lat, lng, (activeObj && activeObj.luas_m2) || traced.luas_m2, traced.polygon_coords);
         }

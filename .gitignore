@@ -12,3 +12,5 @@ cookies.txt
 find_urls.js
 read_pdf.py
 read_pdf_code.py
+.wrangler/
+*/.wrangler/
