@@ -604,7 +604,7 @@ Server Sumber Data: ${serverName}`;
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.0000005 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.0000005) {
         pts.pop();
       }
-      pts = cleanAndDeduplicateVertices(pts, 0.10, 1.0);
+      pts = cleanAndDeduplicateVertices(pts, 1.2, 18.0);
       activeVertices = pts.filter((pt, idx) => {
         if (idx === 0) return true;
         const prev = pts[idx - 1];

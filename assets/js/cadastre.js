@@ -282,6 +282,46 @@ async function triggerD1Failover() {
       vectorizeViewportParcelsToSvg();
     }
 
+    function removeCollinearVertices(coords, minDeflectionDeg = 18.0) {
+      if (!coords || coords.length <= 3) return coords;
+      let current = coords.slice();
+      let changed = true;
+      while (changed && current.length > 3) {
+        changed = false;
+        const n = current.length;
+        const nextList = [];
+        for (let i = 0; i < n; i++) {
+          const prev = current[(i - 1 + n) % n];
+          const curr = current[i];
+          const next = current[(i + 1) % n];
+          const cosLat = Math.cos(curr.lat * Math.PI / 180);
+          const ax = (curr.lng - prev.lng) * cosLat;
+          const ay = curr.lat - prev.lat;
+          const bx = (next.lng - curr.lng) * cosLat;
+          const by = next.lat - curr.lat;
+          const lenA = Math.hypot(ax, ay);
+          const lenB = Math.hypot(bx, by);
+          if (lenA === 0 || lenB === 0) {
+            changed = true;
+            continue;
+          }
+          const dot = (ax * bx + ay * by) / (lenA * lenB);
+          const angleDeg = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
+          if (angleDeg < minDeflectionDeg) {
+            changed = true;
+            continue;
+          }
+          nextList.push(curr);
+        }
+        if (nextList.length >= 3) {
+          current = nextList;
+        } else {
+          break;
+        }
+      }
+      return current;
+    }
+
     async function vectorizeViewportParcelsToSvg() {
       if (!map || isViewportVectorizing) return;
       const zoom = map.getZoom();
@@ -299,7 +339,7 @@ async function triggerD1Failover() {
 
       const bounds = map.getBounds();
       const distM = map.distance(bounds.getNorthEast(), center);
-      const span = Math.min(120.0, Math.max(35.0, distM * 0.65));
+      const span = Math.min(450.0, Math.max(120.0, distM * 1.30));
 
       const r = 6378137.0;
       const cx = r * (center.lng * Math.PI / 180.0);
@@ -364,7 +404,7 @@ async function triggerD1Failover() {
           const rowOffset = y * w * 4;
           for (let x = 0; x < w; x++) {
             const a = data[rowOffset + x * 4 + 3];
-            if (a >= 170 || a < 60) isWall[y * w + x] = 1;
+            if (a >= 180 || a < 70) isWall[y * w + x] = 1;
           }
         }
 
@@ -394,8 +434,8 @@ async function triggerD1Failover() {
           return [pts[0], pts[pts.length - 1]];
         }
 
-        for (let y = 10; y < h - 10; y += 8) {
-          for (let x = 10; x < w - 10; x += 8) {
+        for (let y = 5; y < h - 5; y += 4) {
+          for (let x = 5; x < w - 5; x += 4) {
             const idx = y * w + x;
             if (isWall[idx] === 1 || parcelMap[idx] > 0) continue;
 
@@ -409,8 +449,6 @@ async function triggerD1Failover() {
             parcelMap[idx] = currentId;
             queueX[tail] = x; queueY[tail] = y; tail++;
 
-            const seedIdx = (y * w + x) * 4;
-            const seedR = data[seedIdx], seedG = data[seedIdx + 1], seedB = data[seedIdx + 2];
             let minPx = x, maxPx = x, minPy = y, maxPy = y;
 
             while (head < tail) {
@@ -424,18 +462,15 @@ async function triggerD1Failover() {
                 if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
                   const nidx = ny * w + nx;
                   if (parcelMap[nidx] === 0 && isWall[nidx] === 0) {
-                    const npIdx = nidx * 4;
-                    const cd = Math.hypot(data[npIdx] - seedR, data[npIdx + 1] - seedG, data[npIdx + 2] - seedB);
-                    if (cd <= 45) {
-                      parcelMap[nidx] = currentId;
-                      queueX[tail] = nx; queueY[tail] = ny; tail++;
-                    }
+                    parcelMap[nidx] = currentId;
+                    queueX[tail] = nx; queueY[tail] = ny; tail++;
                   }
                 }
               }
             }
 
-            if (tail < 70 || tail > (w * h * 0.85)) continue;
+            if (tail < 120 || tail > (w * h * 0.85)) continue;
+            if (minPx <= 4 || maxPx >= w - 5 || minPy <= 4 || maxPy >= h - 5) continue;
 
             let firstX = -1, firstY = -1;
             for (let py = minPy; py <= maxPy; py++) {
@@ -450,7 +485,7 @@ async function triggerD1Failover() {
 
             const contour = [{ x: firstX, y: firstY }];
             let currX = firstX, currY = firstY, backtrack = 6;
-            for (let step = 0; step < 3000; step++) {
+            for (let step = 0; step < 4000; step++) {
               let found = false;
               for (let i = 0; i < 8; i++) {
                 const cd = (backtrack + i) % 8;
@@ -460,7 +495,7 @@ async function triggerD1Failover() {
                   backtrack = (cd + 5) % 8; found = true; break;
                 }
               }
-              if (!found || (currX === firstX && currY === firstY)) break;
+              if (!found || (currX === firstX && currY === firstY && contour.length > 8)) break;
             }
 
             if (contour.length < 8) continue;
@@ -472,12 +507,12 @@ async function triggerD1Failover() {
               if (d > maxContourDist) { maxContourDist = d; splitIdx = i; }
             }
 
-            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 1.0);
-            const p2 = simplifyRdp(contour.slice(splitIdx), 1.0);
+            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.5);
+            const p2 = simplifyRdp(contour.slice(splitIdx), 2.5);
             const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
             if (simplified.length < 3) continue;
 
-            const polyCoords = simplified.map(pt => {
+            const rawPolyCoords = simplified.map(pt => {
               const mx = minx + ((pt.x + 0.5) / 512.0) * (maxx - minx);
               const my = maxy - ((pt.y + 0.5) / 512.0) * (maxy - miny);
               const pLat = (2.0 * Math.atan(Math.exp(my / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
@@ -485,6 +520,7 @@ async function triggerD1Failover() {
               return { lat: Number(pLat.toFixed(7)), lng: Number(pLng.toFixed(7)) };
             });
 
+            const polyCoords = removeCollinearVertices(rawPolyCoords, 18.0);
             if (polyCoords.length < 3) continue;
 
             let area = 0;
@@ -545,12 +581,12 @@ async function triggerD1Failover() {
         const latlngs = coords.map(c => [c.lat, c.lng]);
         const polyLayer = L.polygon(latlngs, {
           renderer: cadastreSvgRenderer,
-          stroke: false,
-          color: 'transparent',
-          weight: 0,
-          opacity: 0,
-          fillColor: '#38bdf8',
-          fillOpacity: 0.001,
+          stroke: true,
+          color: '#d97706',
+          weight: 1.6,
+          opacity: 0.92,
+          fillColor: '#f59e0b',
+          fillOpacity: 0.14,
           pane: 'cadastreVectorPane',
           interactive: true
         });
@@ -566,12 +602,11 @@ async function triggerD1Failover() {
 
         polyLayer.on('mouseover', function() {
           this.setStyle({
-            stroke: true,
             color: '#0284c7',
-            weight: 2.2,
-            opacity: 0.95,
+            weight: 2.4,
+            opacity: 1,
             fillColor: '#38bdf8',
-            fillOpacity: 0.18
+            fillOpacity: 0.25
           });
           if (map.getContainer()) {
             map.getContainer().style.cursor = 'pointer';
@@ -580,12 +615,11 @@ async function triggerD1Failover() {
 
         polyLayer.on('mouseout', function() {
           this.setStyle({
-            stroke: false,
-            color: 'transparent',
-            weight: 0,
-            opacity: 0,
-            fillColor: '#38bdf8',
-            fillOpacity: 0.001
+            color: '#d97706',
+            weight: 1.6,
+            opacity: 0.92,
+            fillColor: '#f59e0b',
+            fillOpacity: 0.14
           });
           if (map.getContainer()) {
             map.getContainer().style.cursor = '';
@@ -1395,9 +1429,9 @@ async function triggerD1Failover() {
       return hit;
     }
 
-    function traceParcelFromWmsTile(lat, lng, spanMeters = 70.0) {
+    function traceParcelFromWmsTile(lat, lng, spanMeters = 120.0) {
       return new Promise((resolve) => {
-        const span = Number(spanMeters) || 70.0;
+        const span = Number(spanMeters) || 120.0;
         const r = 6378137.0;
         const cx = r * (lng * Math.PI / 180.0);
         const cy = r * Math.log(Math.tan(Math.PI / 4.0 + (lat * Math.PI / 180.0) / 2.0));
@@ -1473,16 +1507,8 @@ async function triggerD1Failover() {
               for (let x = 0; x < w; x++) {
                 const pxIdx = rowOffset + x * 4;
                 const a = data[pxIdx + 3];
-                if (a >= 168 || a < 60) {
+                if (a >= 180 || a < 70) {
                   isWall[y * w + x] = 1;
-                } else {
-                  const r = data[pxIdx];
-                  const g = data[pxIdx + 1];
-                  const b = data[pxIdx + 2];
-                  const colorDiff = Math.hypot(r - seedR, g - seedG, b - seedB);
-                  if (colorDiff > 45) {
-                    isWall[y * w + x] = 1;
-                  }
                 }
               }
             }
@@ -1498,10 +1524,15 @@ async function triggerD1Failover() {
             queueY[tail] = startY;
             tail++;
 
+            let minTracePx = 512, maxTracePx = 0, minTracePy = 512, maxTracePy = 0;
             while (head < tail) {
               const qx = queueX[head];
               const qy = queueY[head];
               head++;
+              if (qx < minTracePx) minTracePx = qx;
+              if (qx > maxTracePx) maxTracePx = qx;
+              if (qy < minTracePy) minTracePy = qy;
+              if (qy > maxTracePy) maxTracePy = qy;
 
               const neighbors = [
                 [qx - 1, qy],
@@ -1529,11 +1560,12 @@ async function triggerD1Failover() {
               resolve(null);
               return;
             }
+            const touchesTileEdge = (minTracePx <= 4 || maxTracePx >= w - 5 || minTracePy <= 4 || maxTracePy >= h - 5);
+            if ((touchesTileEdge || totalPixels > (w * h * 0.90)) && span < 320.0) {
+              traceParcelFromWmsTile(lat, lng, span * 1.8).then(resolve);
+              return;
+            }
             if (totalPixels > (w * h * 0.90)) {
-              if (span < 140.0) {
-                traceParcelFromWmsTile(lat, lng, span * 2.0).then(resolve);
-                return;
-              }
               resolve(null);
               return;
             }
@@ -1577,7 +1609,7 @@ async function triggerD1Failover() {
                   break;
                 }
               }
-              if (!foundNext || (currX === firstX && currY === firstY)) break;
+              if (!foundNext || (currX === firstX && currY === firstY && contour.length > 8)) break;
             }
 
             if (contour.length < 6) { resolve(null); return; }
@@ -1619,8 +1651,8 @@ async function triggerD1Failover() {
               }
             }
 
-            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.0);
-            const p2 = simplifyRdp(contour.slice(splitIdx), 2.0);
+            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.5);
+            const p2 = simplifyRdp(contour.slice(splitIdx), 2.5);
             const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
 
             if (simplified.length < 3) { resolve(null); return; }
@@ -1639,9 +1671,10 @@ async function triggerD1Failover() {
               });
             }
 
-            if (polyCoords.length < 3) { resolve(null); return; }
+            const cleanPolyCoords = removeCollinearVertices(polyCoords, 18.0);
+            if (cleanPolyCoords.length < 3) { resolve(null); return; }
 
-            const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(polyCoords) : 0;
+            const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(cleanPolyCoords) : 0;
             if (exactArea < 5.0) { resolve(null); return; }
 
             const parcelFid = 'PERSIL-' + Math.floor(100000 + Math.random() * 900000);
@@ -1654,7 +1687,7 @@ async function triggerD1Failover() {
               tipe_hak: 'TERDAFTAR ATR/BPN',
               luas_m2: Math.round(exactArea),
               luas_terdaftar_m2: Math.round(exactArea),
-              polygon_coords: polyCoords,
+              polygon_coords: cleanPolyCoords,
               status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
               source: 'VEKTOR PERSIL SVG PRESISI'
             });
