@@ -420,12 +420,6 @@ Server Sumber Data: ${serverName}`;
         map.removeLayer(activePolygonLayer);
         activePolygonLayer = null;
       }
-      if (typeof cadastreVectorLayer !== 'undefined' && cadastreVectorLayer) {
-        cadastreVectorLayer.clearLayers();
-      }
-      if (typeof cadastreVectorParcelCache !== 'undefined' && cadastreVectorParcelCache) {
-        cadastreVectorParcelCache.clear();
-      }
       activeVertices = [];
       vertexMarkers.forEach(m => map.removeLayer(m));
       vertexMarkers = [];

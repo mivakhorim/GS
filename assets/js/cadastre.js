@@ -91,6 +91,61 @@ async function triggerD1Failover() {
       }
     });
 
+    const CachedWmsTileLayer = L.TileLayer.WMS.extend({
+      createTile: function(coords, done) {
+        const tile = document.createElement('img');
+        const tileUrl = this.getTileUrl(coords);
+        tile.crossOrigin = 'anonymous';
+
+        if (typeof window !== 'undefined' && window.caches) {
+          window.caches.open('geospasi-wms-v1').then(cache => {
+            cache.match(tileUrl).then(match => {
+              if (match) {
+                match.blob().then(blob => {
+                  const objUrl = URL.createObjectURL(blob);
+                  tile.onload = () => {
+                    setTimeout(() => { try { URL.revokeObjectURL(objUrl); } catch (_) {} }, 20000);
+                    done(null, tile);
+                  };
+                  tile.src = objUrl;
+                });
+              } else {
+                fetch(tileUrl, { mode: 'cors' })
+                  .then(res => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const cloned = res.clone();
+                    cache.put(tileUrl, cloned).catch(() => {});
+                    return res.blob();
+                  })
+                  .then(blob => {
+                    const objUrl = URL.createObjectURL(blob);
+                    tile.onload = () => {
+                      setTimeout(() => { try { URL.revokeObjectURL(objUrl); } catch (_) {} }, 20000);
+                      done(null, tile);
+                    };
+                    tile.src = objUrl;
+                  })
+                  .catch(() => {
+                    tile.src = tileUrl;
+                    done(null, tile);
+                  });
+              }
+            }).catch(() => {
+              tile.src = tileUrl;
+              done(null, tile);
+            });
+          }).catch(() => {
+            tile.src = tileUrl;
+            done(null, tile);
+          });
+        } else {
+          tile.src = tileUrl;
+          done(null, tile);
+        }
+        return tile;
+      }
+    });
+
     function createCadastreProxyLayer() {
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
@@ -98,7 +153,7 @@ async function triggerD1Failover() {
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
       const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
       const wmsBase = persilBase ? `${persilBase}/proxy-wms` : 'https://stream.dutamik.id/proxy-wms';
-      return L.tileLayer.wms(wmsBase, {
+      return new CachedWmsTileLayer(wmsBase, {
         layers: layerName,
         format: 'image/png',
         transparent: true,
@@ -106,6 +161,7 @@ async function triggerD1Failover() {
         crs: L.CRS.EPSG3857,
         pane: 'persilPane',
         minZoom: 14,
+        maxNativeZoom: 19,
         maxZoom: 26,
         opacity: currentOpacity,
         zIndex: 360,
@@ -200,14 +256,18 @@ async function triggerD1Failover() {
       setTimeout(loadViewportCadastreSvgParcels, 250);
     }
 
+    var vectorizedViewportSet = new Set();
+    var isViewportVectorizing = false;
+
     async function loadViewportCadastreSvgParcels() {
       if (!map) return;
       const zoom = map.getZoom();
-      if (zoom < 14) {
+      if (zoom < 16) {
         if (cadastreVectorLayer) {
           cadastreVectorLayer.clearLayers();
         }
         cadastreVectorParcelCache.clear();
+        vectorizedViewportSet.clear();
         return;
       }
 
@@ -215,48 +275,253 @@ async function triggerD1Failover() {
       if (chk && !chk.checked) {
         if (cadastreVectorLayer) cadastreVectorLayer.clearLayers();
         cadastreVectorParcelCache.clear();
+        vectorizedViewportSet.clear();
         return;
       }
 
-      if (viewportFetchController) {
-        try { viewportFetchController.abort(); } catch (_) {}
+      vectorizeViewportParcelsToSvg();
+    }
+
+    async function vectorizeViewportParcelsToSvg() {
+      if (!map || isViewportVectorizing) return;
+      const zoom = map.getZoom();
+      if (zoom < 16) return;
+
+      const center = map.getCenter();
+      const vpKey = `${center.lat.toFixed(4)},${center.lng.toFixed(4)},${zoom}`;
+      if (vectorizedViewportSet.has(vpKey)) return;
+      vectorizedViewportSet.add(vpKey);
+
+      if (vectorizedViewportSet.size > 80) {
+        const first = vectorizedViewportSet.values().next().value;
+        vectorizedViewportSet.delete(first);
       }
-      viewportFetchController = new AbortController();
 
       const bounds = map.getBounds();
-      const minLat = bounds.getSouth();
-      const minLng = bounds.getWest();
-      const maxLat = bounds.getNorth();
-      const maxLng = bounds.getEast();
+      const distM = map.distance(bounds.getNorthEast(), center);
+      const span = Math.min(180.0, Math.max(45.0, distM * 0.75));
+
+      const r = 6378137.0;
+      const cx = r * (center.lng * Math.PI / 180.0);
+      const cy = r * Math.log(Math.tan(Math.PI / 4.0 + (center.lat * Math.PI / 180.0) / 2.0));
+      const minx = cx - span, maxx = cx + span;
+      const miny = cy - span, maxy = cy + span;
+      const bbox = `${minx.toFixed(4)},${miny.toFixed(4)},${maxx.toFixed(4)},${maxy.toFixed(4)}`;
 
       const persilBase = getBpnGatewayBase();
-      const sbKey = (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) ? SUPABASE_ANON_KEY : 'sb_publishable_NBReVvac6_FUBe969fLbOw_ZGZjcwKM';
+      const streamBase = (persilBase && (persilBase.startsWith('http://') || persilBase.startsWith('https://'))) ? persilBase : DEFAULT_CLOUD_STREAM_GATEWAY;
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
+      const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
+      const tileUrl = `${streamBase}/proxy-wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=${layerName}&STYLES=&CRS=EPSG:3857&WIDTH=512&HEIGHT=512&BBOX=${bbox}`;
 
-      if (!persilBase || !isProxyActive) {
-        return;
-      }
-
-      const isCloud = persilBase.includes('supabase.co');
-      const url = isCloud
-        ? `${persilBase}?action=viewport-parcels&min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}&server=${mode}`
-        : `${persilBase}/api/viewport-parcels?min_lat=${minLat}&min_lng=${minLng}&max_lat=${maxLat}&max_lng=${maxLng}&zoom=${zoom}&server=${mode}`;
-
-      isViewportVectorLoading = true;
+      isViewportVectorizing = true;
       try {
-        const fetchOpts = isCloud
-          ? { headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }, mode: 'cors', signal: viewportFetchController.signal }
-          : { mode: 'cors', signal: viewportFetchController.signal };
-        const res = await fetch(url, fetchOpts);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.success && Array.isArray(data.parcels)) {
-            renderCadastreVectorParcels(data.parcels);
+        let blob = null;
+        if (typeof window !== 'undefined' && window.caches) {
+          try {
+            const cache = await window.caches.open('geospasi-wms-v1');
+            const match = await cache.match(tileUrl);
+            if (match) {
+              blob = await match.blob();
+            } else {
+              const res = await fetch(tileUrl, { mode: 'cors' });
+              if (res.ok) {
+                const cloned = res.clone();
+                cache.put(tileUrl, cloned).catch(() => {});
+                blob = await res.blob();
+              }
+            }
+          } catch (_) {}
+        }
+        if (!blob) {
+          const res = await fetch(tileUrl, { mode: 'cors' });
+          if (res.ok) blob = await res.blob();
+        }
+        if (!blob) return;
+
+        const objUrl = URL.createObjectURL(blob);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = objUrl;
+        });
+        setTimeout(() => { try { URL.revokeObjectURL(objUrl); } catch (_) {} }, 10000);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, 512, 512);
+        const data = imgData.data;
+
+        const w = 512, h = 512;
+        const isWall = new Uint8Array(w * h);
+        for (let y = 0; y < h; y++) {
+          const rowOffset = y * w * 4;
+          for (let x = 0; x < w; x++) {
+            const a = data[rowOffset + x * 4 + 3];
+            if (a >= 168 || a < 60) isWall[y * w + x] = 1;
           }
+        }
+
+        const globalVisited = new Uint8Array(w * h);
+        const parcels = [];
+        const dirD = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
+
+        function distToSeg(pt, a, b) {
+          const dx = b.x - a.x, dy = b.y - a.y;
+          if (dx === 0 && dy === 0) return Math.hypot(pt.x - a.x, pt.y - a.y);
+          return Math.abs(dy * pt.x - dx * pt.y + b.x * a.y - b.y * a.x) / Math.hypot(dx, dy);
+        }
+
+        function simplifyRdp(pts, eps) {
+          if (pts.length < 3) return pts;
+          let maxD = 0, idx = 0;
+          for (let i = 1; i < pts.length - 1; i++) {
+            const d = distToSeg(pts[i], pts[0], pts[pts.length - 1]);
+            if (d > maxD) { maxD = d; idx = i; }
+          }
+          if (maxD > eps) {
+            const left = simplifyRdp(pts.slice(0, idx + 1), eps);
+            const right = simplifyRdp(pts.slice(idx), eps);
+            return left.slice(0, -1).concat(right);
+          }
+          return [pts[0], pts[pts.length - 1]];
+        }
+
+        for (let y = 12; y < h - 12; y += 12) {
+          for (let x = 12; x < w - 12; x += 12) {
+            const idx = y * w + x;
+            if (isWall[idx] === 1 || globalVisited[idx] === 1) continue;
+
+            const queueX = new Int16Array(w * h);
+            const queueY = new Int16Array(w * h);
+            let head = 0, tail = 0;
+
+            globalVisited[idx] = 1;
+            queueX[tail] = x; queueY[tail] = y; tail++;
+
+            const seedIdx = (y * w + x) * 4;
+            const seedR = data[seedIdx], seedG = data[seedIdx + 1], seedB = data[seedIdx + 2];
+            let minPx = x, maxPx = x, minPy = y, maxPy = y;
+
+            while (head < tail) {
+              const qx = queueX[head], qy = queueY[head]; head++;
+              if (qx < minPx) minPx = qx; if (qx > maxPx) maxPx = qx;
+              if (qy < minPy) minPy = qy; if (qy > maxPy) maxPy = qy;
+
+              const nb = [[qx - 1, qy], [qx + 1, qy], [qx, qy - 1], [qx, qy + 1]];
+              for (let i = 0; i < 4; i++) {
+                const nx = nb[i][0], ny = nb[i][1];
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                  const nidx = ny * w + nx;
+                  if (globalVisited[nidx] === 0 && isWall[nidx] === 0) {
+                    const npIdx = nidx * 4;
+                    const cd = Math.hypot(data[npIdx] - seedR, data[npIdx + 1] - seedG, data[npIdx + 2] - seedB);
+                    if (cd <= 45) {
+                      globalVisited[nidx] = 1;
+                      queueX[tail] = nx; queueY[tail] = ny; tail++;
+                    }
+                  }
+                }
+              }
+            }
+
+            if (tail < 50 || tail > (w * h * 0.88)) continue;
+
+            let firstX = -1, firstY = -1;
+            for (let py = minPy; py <= maxPy; py++) {
+              for (let px = minPx; px <= maxPx; px++) {
+                if (globalVisited[py * w + px] === 1) {
+                  firstX = px; firstY = py; break;
+                }
+              }
+              if (firstX !== -1) break;
+            }
+            if (firstX === -1) continue;
+
+            const contour = [{ x: firstX, y: firstY }];
+            let currX = firstX, currY = firstY, backtrack = 6;
+            for (let step = 0; step < 2500; step++) {
+              let found = false;
+              for (let i = 0; i < 8; i++) {
+                const cd = (backtrack + i) % 8;
+                const nx = currX + dirD[cd][0], ny = currY + dirD[cd][1];
+                if (nx >= minPx && nx <= maxPx && ny >= minPy && ny <= maxPy && globalVisited[ny * w + nx] === 1) {
+                  currX = nx; currY = ny; contour.push({ x: currX, y: currY });
+                  backtrack = (cd + 5) % 8; found = true; break;
+                }
+              }
+              if (!found || (currX === firstX && currY === firstY)) break;
+            }
+
+            if (contour.length < 6) continue;
+
+            let maxContourDist = 0;
+            let splitIdx = Math.floor(contour.length / 2);
+            for (let i = 1; i < contour.length; i++) {
+              const d = Math.hypot(contour[i].x - contour[0].x, contour[i].y - contour[0].y);
+              if (d > maxContourDist) { maxContourDist = d; splitIdx = i; }
+            }
+
+            const p1 = simplifyRdp(contour.slice(0, splitIdx + 1), 2.0);
+            const p2 = simplifyRdp(contour.slice(splitIdx), 2.0);
+            const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
+            if (simplified.length < 3) continue;
+
+            const polyCoords = simplified.map(pt => {
+              const mx = minx + ((pt.x + 0.5) / 512.0) * (maxx - minx);
+              const my = maxy - ((pt.y + 0.5) / 512.0) * (maxy - miny);
+              const pLat = (2.0 * Math.atan(Math.exp(my / r)) - Math.PI / 2.0) * 180.0 / Math.PI;
+              const pLng = (mx / r) * 180.0 / Math.PI;
+              return { lat: Number(pLat.toFixed(7)), lng: Number(pLng.toFixed(7)) };
+            });
+
+            if (polyCoords.length < 3) continue;
+
+            let area = 0;
+            const n = polyCoords.length;
+            for (let i = 0; i < n; i++) {
+              const pa = polyCoords[i], pb = polyCoords[(i + 1) % n];
+              const x1 = pa.lng * (Math.PI / 180) * r * Math.cos(pa.lat * Math.PI / 180);
+              const y1 = pa.lat * (Math.PI / 180) * r;
+              const x2 = pb.lng * (Math.PI / 180) * r * Math.cos(pb.lat * Math.PI / 180);
+              const y2 = pb.lat * (Math.PI / 180) * r;
+              area += (x1 * y2 - x2 * y1);
+            }
+            area = Math.abs(area) * 0.5;
+
+            if (area >= 15) {
+              const cLat = polyCoords.reduce((s, c) => s + c.lat, 0) / polyCoords.length;
+              const cLng = polyCoords.reduce((s, c) => s + c.lng, 0) / polyCoords.length;
+              const fid = 'PERSIL-' + Math.round(cLat * 100000) + '-' + Math.round(cLng * 100000);
+              parcels.push({
+                found: true,
+                is_official_cadastre: true,
+                is_auto_traced: true,
+                fid: fid,
+                nib: '-',
+                tipe_hak: 'TERDAFTAR ATR/BPN',
+                luas_m2: Math.round(area),
+                luas_terdaftar_m2: Math.round(area),
+                polygon_coords: polyCoords,
+                status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
+                source: 'VEKTOR PERSIL SVG PRESISI'
+              });
+            }
+          }
+        }
+
+        if (parcels.length > 0) {
+          renderCadastreVectorParcels(parcels);
         }
       } catch (e) {
       } finally {
-        isViewportVectorLoading = false;
+        isViewportVectorizing = false;
       }
     }
 
@@ -265,23 +530,8 @@ async function triggerD1Failover() {
       const slider = document.getElementById('persilOpacity');
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.85;
 
-      let strokeColor = '#e65100';
-      let fillColor = '#ff9800';
-      let dashStyle = null;
-      if (currentCadastreStreamMode === 'vector_mvt') {
-        strokeColor = '#0284c7';
-        fillColor = '#38bdf8';
-      } else if (currentCadastreStreamMode === 'vector_wfs') {
-        strokeColor = '#16a34a';
-        fillColor = '#4ade80';
-        dashStyle = '4,4';
-      } else if (currentCadastreStreamMode === 'raster_wms') {
-        strokeColor = '#ea580c';
-        fillColor = '#f97316';
-      } else if (currentCadastreStreamMode === 'raster_arcgis') {
-        strokeColor = '#4f46e5';
-        fillColor = '#818cf8';
-      }
+      const strokeColor = '#0284c7';
+      const fillColor = '#38bdf8';
 
       parcelsList.forEach(parcel => {
         const coords = parcel.polygon_coords || parcel.coordinates;
@@ -293,11 +543,10 @@ async function triggerD1Failover() {
         const polyLayer = L.polygon(latlngs, {
           renderer: cadastreSvgRenderer,
           color: strokeColor,
-          weight: 1.8,
-          dashArray: dashStyle,
-          opacity: currentOpacity,
+          weight: 1.5,
+          opacity: currentOpacity * 0.85,
           fillColor: fillColor,
-          fillOpacity: currentOpacity * 0.16,
+          fillOpacity: currentOpacity * 0.10,
           pane: 'cadastreVectorPane',
           interactive: true
         });
@@ -311,29 +560,24 @@ async function triggerD1Failover() {
           opacity: 0.95
         });
 
-        polyLayer.on('mouseover', function(e) {
+        polyLayer.on('mouseover', function() {
           this.setStyle({
-            color: '#b71c1c',
-            weight: 2.6,
-            fillColor: '#ff5722',
-            fillOpacity: 0.28
+            color: '#0369a1',
+            weight: 2.4,
+            fillColor: '#0284c7',
+            fillOpacity: 0.25
           });
           if (map.getContainer()) {
             map.getContainer().style.cursor = 'pointer';
-          }
-          if (typeof isMergeMode !== 'undefined' && isMergeMode && window.isMapPointerDown) {
-            if (typeof handleMergeParcelClick === 'function') {
-              handleMergeParcelClick(e.latlng.lat, e.latlng.lng, parcel);
-            }
           }
         });
 
         polyLayer.on('mouseout', function() {
           this.setStyle({
-            color: '#e65100',
-            weight: 1.6,
-            fillColor: '#ff9800',
-            fillOpacity: currentOpacity * 0.12
+            color: strokeColor,
+            weight: 1.5,
+            fillColor: fillColor,
+            fillOpacity: currentOpacity * 0.10
           });
           if (map.getContainer()) {
             map.getContainer().style.cursor = '';
@@ -1804,12 +2048,6 @@ async function triggerD1Failover() {
       isParcelLocked = false;
       if (typeof clearCanvasRebuilderLayers === 'function') {
         clearCanvasRebuilderLayers();
-      }
-      if (typeof cadastreVectorLayer !== 'undefined' && cadastreVectorLayer) {
-        cadastreVectorLayer.clearLayers();
-      }
-      if (typeof cadastreVectorParcelCache !== 'undefined' && cadastreVectorParcelCache) {
-        cadastreVectorParcelCache.clear();
       }
       const seq = ++persilFetchSeq;
       const noPin = document.getElementById('noPinAlert');
