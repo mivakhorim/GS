@@ -134,8 +134,21 @@ function toggleMobileSidebar(forceClose = false) {
       if (tabId === 'tab-koordinat' && typeof renderCoordinatesTable === 'function') {
         renderCoordinatesTable();
       }
-      if (tabId === 'tab-search' && typeof initWilayahDropdowns === 'function') {
-        initWilayahDropdowns();
+      if (tabId === 'tab-search') {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('collapsed')) {
+          sidebar.classList.remove('collapsed');
+          const fab = document.getElementById('mapSidebarFab');
+          if (fab) fab.style.display = 'none';
+          if (typeof map !== 'undefined' && map) setTimeout(() => map.invalidateSize(), 300);
+        }
+        if (typeof initWilayahDropdowns === 'function') {
+          initWilayahDropdowns();
+        }
+        setTimeout(() => {
+          const el = document.getElementById('quickWilayahInput');
+          if (el) el.focus();
+        }, 150);
       }
     }
 

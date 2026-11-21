@@ -40,6 +40,26 @@ function copyActiveWilayahToKop() {
       ddProv.innerHTML = '<option value="">- Memuat Data Wilayah Indonesia... -</option>';
       ddProv.disabled = true;
 
+      try {
+        const res = await fetch('data/wilayah_indonesia.json');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            wilayahHierarchyData = data;
+            ddProv.innerHTML = '<option value="">- Pilih Provinsi -</option>';
+            data.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.id;
+              opt.textContent = p.n;
+              ddProv.appendChild(opt);
+            });
+            ddProv.disabled = false;
+            isWilayahDropdownsLoaded = true;
+            return;
+          }
+        }
+      } catch (err) {}
+
       const apiBase = getBpnGatewayBase();
       const hasBackend = Boolean(apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://')));
       if (hasBackend) {
@@ -62,33 +82,10 @@ function copyActiveWilayahToKop() {
               return;
             }
           }
-        } catch (err) {
-        }
+        } catch (err) {}
       }
 
-      try {
-        const fetchUrl = hasBackend ? `${apiBase}/api/wilayah/all.json` : 'data/wilayah_indonesia.json';
-        let res = await fetch(fetchUrl);
-        if (!res.ok && hasBackend) {
-          res = await fetch('data/wilayah_indonesia.json');
-        }
-        if (res.ok) {
-          wilayahHierarchyData = await res.json();
-          if (Array.isArray(wilayahHierarchyData) && wilayahHierarchyData.length > 0) {
-            ddProv.innerHTML = '<option value="">- Pilih Provinsi -</option>';
-            wilayahHierarchyData.forEach(p => {
-              const opt = document.createElement('option');
-              opt.value = p.id;
-              opt.textContent = p.n;
-              ddProv.appendChild(opt);
-            });
-            ddProv.disabled = false;
-            isWilayahDropdownsLoaded = true;
-            return;
-          }
-        }
-      } catch (err) {}
-      ddProv.innerHTML = '<option value="">Pilih lokasi manual di peta</option>';
+      ddProv.innerHTML = '<option value="">Gagal memuat wilayah. Silakan muat ulang halaman.</option>';
       ddProv.disabled = false;
     }
 
@@ -349,31 +346,58 @@ function copyActiveWilayahToKop() {
         wilayahHighlightMarker = null;
       }
 
-      showToast(`Menyorot batas Kelurahan ${w.desa}...`, 'info');
+      showToast(`Menyorot lokasi ${w.desa}...`, 'info');
+
+      if (w.lat && w.lon) {
+        map.flyTo([w.lat, w.lon], 18, { duration: 1.2 });
+        wilayahHighlightMarker = L.circleMarker([w.lat, w.lon], {
+          pane: 'thematicPane',
+          radius: 12,
+          color: '#0284c7',
+          weight: 2.5,
+          fillColor: '#0284c7',
+          fillOpacity: 0.22
+        }).addTo(map);
+        if (typeof handleMapClick === 'function') {
+          handleMapClick(w.lat, w.lon, true);
+        }
+        if (typeof switchTab === 'function') {
+          switchTab('tab-digitasi');
+        }
+        return;
+      }
 
       if (hasBackend) {
         try {
           const qUrl = `${apiBase}/api/batas-kelurahan?desa=${encodeURIComponent(w.desa)}&kec=${encodeURIComponent(w.kec)}&kab=${encodeURIComponent(w.kab)}&prov=${encodeURIComponent(w.prov)}`;
           const res = await fetch(qUrl);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.type === 'FeatureCollection' && data.features && data.features.length > 0) {
-            kelurahanHighlightLayer = L.geoJSON(data, {
-              pane: 'thematicPane',
-              style: {
-                color: '#0284c7',
-                weight: 2.5,
-                dashArray: '6, 4',
-                fillColor: '#0284c7',
-                fillOpacity: 0.12
-              }
-            }).addTo(map);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.type === 'FeatureCollection' && Array.isArray(data.features) && data.features.length > 0) {
+              kelurahanHighlightLayer = L.geoJSON(data, {
+                pane: 'thematicPane',
+                style: {
+                  color: '#0284c7',
+                  weight: 2.5,
+                  dashArray: '6, 4',
+                  fillColor: '#0284c7',
+                  fillOpacity: 0.12
+                }
+              }).addTo(map);
 
-            map.fitBounds(kelurahanHighlightLayer.getBounds(), { padding: [35, 35], maxZoom: 18 });
-            showToast(`Batas wilayah Kelurahan ${w.desa} disorot aktif.`, 'success');
-            return;
+              const bounds = kelurahanHighlightLayer.getBounds();
+              map.fitBounds(bounds, { padding: [35, 35], maxZoom: 18 });
+              const center = bounds.getCenter();
+              if (typeof handleMapClick === 'function') {
+                handleMapClick(center.lat, center.lng, true);
+              }
+              if (typeof switchTab === 'function') {
+                switchTab('tab-digitasi');
+              }
+              showToast(`Batas wilayah ${w.desa} disorot aktif. Bidang kadaster dipilih otomatis.`, 'success');
+              return;
+            }
           }
-        }
         } catch (err) {}
       }
 
@@ -394,7 +418,7 @@ function copyActiveWilayahToKop() {
       } catch (err) {}
 
       if (lat !== null && lon !== null) {
-        map.flyTo([lat, lon], 17, { duration: 1.5 });
+        map.flyTo([lat, lon], 18, { duration: 1.5 });
         wilayahHighlightMarker = L.circleMarker([lat, lon], {
           pane: 'thematicPane',
           radius: 12,
@@ -403,9 +427,118 @@ function copyActiveWilayahToKop() {
           fillColor: '#0284c7',
           fillOpacity: 0.22
         }).addTo(map);
+        if (typeof handleMapClick === 'function') {
+          handleMapClick(lat, lon, true);
+        }
+        if (typeof switchTab === 'function') {
+          switchTab('tab-digitasi');
+        }
+        showToast(`Lokasi ${w.desa} ditemukan. Bidang kadaster dipilih otomatis.`, 'success');
+      } else {
+        showToast(`Titik koordinat untuk ${w.desa} tidak ditemukan.`, 'warn');
       }
     }
 
+    function selectQuickSearchResult(item) {
+      if (!item) return;
+      const container = document.getElementById('quickWilayahResults');
+      if (container) container.style.display = 'none';
+
+      currentSelectedWilayah = item;
+      const elTitle = document.getElementById('selectedWilayahTitle');
+      if (elTitle) elTitle.innerText = item.desa;
+      const elBadge = document.getElementById('selectedKodePosBadge');
+      if (elBadge) elBadge.innerText = item.kodepos ? `Kode Pos: ${item.kodepos}` : 'Kode Pos: -';
+      const elDesc = document.getElementById('selectedWilayahDesc');
+      if (elDesc) elDesc.innerText = `Kecamatan ${item.kec}, ${item.kab}, Provinsi ${item.prov}`;
+      const card = document.getElementById('wilayahSelectedCard');
+      if (card) card.style.display = 'block';
+
+      if (item.lat && item.lon) {
+        map.flyTo([item.lat, item.lon], 19, { duration: 1.2 });
+        if (typeof handleMapClick === 'function') {
+          handleMapClick(item.lat, item.lon, true);
+        }
+        if (typeof switchTab === 'function') {
+          switchTab('tab-digitasi');
+        }
+        showToast(`Lokasi "${item.desa}" ditemukan. Bidang kadaster dipilih otomatis.`, 'success');
+      } else {
+        sorotWilayahTerpilih();
+      }
+    }
+
+    async function executeQuickSearch() {
+      const input = document.getElementById('quickWilayahInput');
+      if (!input) return;
+      const q = input.value.trim();
+      if (!q) {
+        showToast('Ketik nama jalan, desa, kota, kode pos, atau koordinat.', 'info');
+        return;
+      }
+
+      const coordMatch = q.match(/^([-+]?\d{1,2}(?:\.\d+)?)[,\s]+([-+]?\d{1,3}(?:\.\d+)?)$/);
+      if (coordMatch) {
+        const cLat = parseFloat(coordMatch[1]);
+        const cLng = parseFloat(coordMatch[2]);
+        if (cLat >= -15 && cLat <= 10 && cLng >= 90 && cLng <= 145) {
+          const container = document.getElementById('quickWilayahResults');
+          if (container) container.style.display = 'none';
+          map.flyTo([cLat, cLng], 19, { duration: 1.2 });
+          if (typeof handleMapClick === 'function') {
+            handleMapClick(cLat, cLng, true);
+          }
+          if (typeof switchTab === 'function') {
+            switchTab('tab-digitasi');
+          }
+          showToast(`Koordinat ${cLat.toFixed(6)}, ${cLng.toFixed(6)} ditemukan. Bidang kadaster dipilih otomatis.`, 'success');
+          return;
+        }
+      }
+
+      const container = document.getElementById('quickWilayahResults');
+      if (container) {
+        const firstItem = container.querySelector('.search-res-item[data-idx]');
+        if (firstItem && container.style.display !== 'none') {
+          firstItem.click();
+          return;
+        }
+        container.innerHTML = '<div class="search-res-item">Mencari lokasi di seluruh Indonesia...</div>';
+        container.style.display = 'block';
+      }
+
+      try {
+        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(q)}&countrycodes=id&limit=8`);
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          if (Array.isArray(geoData) && geoData.length > 0) {
+            const items = geoData.map(g => {
+              const a = g.address || {};
+              const title = g.name || a.road || a.village || a.suburb || a.quarter || q;
+              return {
+                lat: parseFloat(g.lat),
+                lon: parseFloat(g.lon),
+                desa: title,
+                kec: a.city_district || a.district || a.subdistrict || a.municipality || '-',
+                kab: a.city || a.town || a.county || '-',
+                prov: a.state || '-',
+                kodepos: a.postcode || '-',
+                display: g.display_name
+              };
+            });
+            selectQuickSearchResult(items[0]);
+            return;
+          }
+        }
+        if (container) {
+          container.innerHTML = '<div class="search-res-item" style="color:var(--crimson);">Lokasi tidak ditemukan. Coba nama jalan, kelurahan, atau kota lain.</div>';
+        }
+      } catch (e) {
+        if (container) {
+          container.innerHTML = `<div class="search-res-item" style="color:var(--crimson);">Gagal mencari: ${e.message}</div>`;
+        }
+      }
+    }
 
     function onQuickWilayahInput(val) {
       clearTimeout(quickWilayahTimer);
@@ -418,48 +551,55 @@ function copyActiveWilayahToKop() {
         return;
       }
 
+      const coordMatch = q.match(/^([-+]?\d{1,2}(?:\.\d+)?)[,\s]+([-+]?\d{1,3}(?:\.\d+)?)$/);
+      if (coordMatch) {
+        container.innerHTML = `
+          <div class="search-res-item" style="cursor:pointer;" onclick="executeQuickSearch()">
+            <strong style="color:var(--text-main);">Titik Koordinat Geografis</strong><br>
+            <small style="color:var(--accent);">Latitude: ${coordMatch[1]}, Longitude: ${coordMatch[2]} (Klik untuk menuju lokasi)</small>
+          </div>
+        `;
+        container.style.display = 'block';
+        return;
+      }
+
       quickWilayahTimer = setTimeout(async () => {
-        container.innerHTML = '<div class="search-res-item">Mencari di database seluruh wilayah Indonesia...</div>';
+        container.innerHTML = '<div class="search-res-item">Mencari lokasi di seluruh Indonesia...</div>';
         container.style.display = 'block';
 
         try {
-          const apiBase = getBpnGatewayBase();
           let items = [];
-          if (isProxyActive && apiBase && (apiBase.startsWith('https://') || apiBase.startsWith('http://'))) {
-            try {
-              const res = await fetch(`${apiBase}/api/wilayah/search?q=${encodeURIComponent(q)}`);
-              if (res.ok) items = await res.json();
-            } catch (e) {}
-          }
-
-        if (!items || items.length === 0) {
-          try {
-            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(q)}&countrycodes=id&limit=8`);
-            if (geoRes.ok) {
-              const geoData = await geoRes.json();
-              items = (geoData || []).map(g => {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(q)}&countrycodes=id&limit=8`);
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            if (Array.isArray(geoData) && geoData.length > 0) {
+              items = geoData.map(g => {
                 const a = g.address || {};
+                const title = g.name || a.road || a.village || a.suburb || a.quarter || q;
                 return {
-                  desa: a.village || a.suburb || a.quarter || g.name || q,
-                  kec: a.city_district || a.district || a.municipality || '-',
+                  lat: parseFloat(g.lat),
+                  lon: parseFloat(g.lon),
+                  desa: title,
+                  kec: a.city_district || a.district || a.subdistrict || a.municipality || '-',
                   kab: a.city || a.town || a.county || '-',
                   prov: a.state || '-',
-                  kodepos: a.postcode || '-'
+                  kodepos: a.postcode || '-',
+                  display: g.display_name
                 };
               });
             }
-          } catch (e) {}
-        }
+          }
 
-        if (!items || items.length === 0) {
-          container.innerHTML = '<div class="search-res-item" style="color:var(--crimson);">Tidak ditemukan wilayah dengan nama atau kode pos tersebut.</div>';
-          return;
-        }
+          if (!items || items.length === 0) {
+            container.innerHTML = '<div class="search-res-item" style="color:var(--crimson);">Lokasi tidak ditemukan. Coba nama jalan, kelurahan, atau kota lain.</div>';
+            return;
+          }
 
           container.innerHTML = '';
-          items.forEach(it => {
+          items.forEach((it, idx) => {
             const div = document.createElement('div');
             div.className = 'search-res-item';
+            div.setAttribute('data-idx', idx);
             div.innerHTML = `
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <strong style="color:var(--text-main);">${it.desa}</strong>
@@ -467,16 +607,7 @@ function copyActiveWilayahToKop() {
               </div>
               <small style="color:var(--text-sub); font-size:0.69rem;">Kec. ${it.kec}, ${it.kab}, ${it.prov}</small>
             `;
-            div.onclick = () => {
-              currentSelectedWilayah = it;
-              document.getElementById('selectedWilayahTitle').innerText = it.desa;
-              document.getElementById('selectedKodePosBadge').innerText = it.kodepos ? `Kode Pos: ${it.kodepos}` : 'Kode Pos: -';
-              document.getElementById('selectedWilayahDesc').innerText = `Kecamatan ${it.kec}, ${it.kab}, Provinsi ${it.prov}`;
-              const card = document.getElementById('wilayahSelectedCard');
-              if (card) card.style.display = 'block';
-              container.style.display = 'none';
-              sorotWilayahTerpilih();
-            };
+            div.onclick = () => selectQuickSearchResult(it);
             container.appendChild(div);
           });
         } catch (err) {
@@ -484,3 +615,9 @@ function copyActiveWilayahToKop() {
         }
       }, 250);
     }
+
+    window.executeQuickSearch = executeQuickSearch;
+    window.selectQuickSearchResult = selectQuickSearchResult;
+    window.onQuickWilayahInput = onQuickWilayahInput;
+    window.sorotWilayahTerpilih = sorotWilayahTerpilih;
+    window.initWilayahDropdowns = initWilayahDropdowns;

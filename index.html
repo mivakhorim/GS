@@ -1071,10 +1071,41 @@
           <div class="content-box">
             <div class="box-header">
               <div class="box-title">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                Dropdown Wilayah & Kode Pos Indonesia
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Pencarian Lokasi &amp; Wilayah Indonesia
               </div>
-              
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-sub); margin-bottom: 0.6rem; line-height: 1.4;">
+              Cari alamat, nama jalan, desa, kota, kode pos, atau koordinat. Peta otomatis terbang dan mendeteksi bidang tanah secara instan.
+            </div>
+
+            <div style="margin-bottom: 0.5rem;">
+              <div style="display: flex; gap: 0.4rem;">
+                <input type="text" id="quickWilayahInput" class="form-input" placeholder="Ketik jalan, desa, kota, kode pos, atau koordinat..." oninput="onQuickWilayahInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();executeQuickSearch();}">
+                <button type="button" class="btn btn-primary" onclick="executeQuickSearch()" style="min-width: 60px; justify-content: center; font-weight: 700;">Cari</button>
+              </div>
+            </div>
+            <div id="quickWilayahResults" class="search-res-list" style="display: none; margin-bottom: 0.5rem; max-height: 220px; overflow-y: auto;"></div>
+
+            <div id="wilayahSelectedCard" class="content-box" style="display: none; background-color: var(--bg-subtle); margin-top: 0.6rem; border-color: var(--border-light);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-main);" id="selectedWilayahTitle">Wilayah Terpilih</span>
+                <span class="badge-pill green" id="selectedKodePosBadge">Kode Pos: -</span>
+              </div>
+              <div style="font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;" id="selectedWilayahDesc">-</div>
+              <button class="btn btn-primary btn-block" onclick="sorotWilayahTerpilih()" style="margin-top: 0.5rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2"/></svg>
+                Pilih dan Arahkan ke Bidang
+              </button>
+            </div>
+          </div>
+
+          <div class="content-box">
+            <div class="box-header">
+              <div class="box-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Dropdown Wilayah Bertingkat (Provinsi - Desa)
+              </div>
             </div>
             <div style="font-size: 0.72rem; color: var(--text-sub); margin-bottom: 0.6rem; line-height: 1.4;">
               Pilih wilayah bertingkat (Provinsi, Kabupaten, Kecamatan, Desa). Peta otomatis terbang dan menyorot titik lokasi kadaster.
@@ -1102,32 +1133,11 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">4. Desa / Kelurahan & Kode Pos</label>
+              <label class="form-label">4. Desa / Kelurahan &amp; Kode Pos</label>
               <select id="ddDesa" class="form-input" onchange="onDesaChange()" disabled>
                 <option value="">- Pilih Kecamatan Dahulu -</option>
               </select>
             </div>
-
-            <div id="wilayahSelectedCard" class="content-box" style="display: none; background-color: var(--bg-subtle); margin-top: 0.6rem; border-color: var(--border-light);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-main);" id="selectedWilayahTitle">Wilayah Terpilih</span>
-                <span class="badge-pill green" id="selectedKodePosBadge">Kode Pos: -</span>
-              </div>
-              <div style="font-size: 0.71rem; color: var(--text-sub); line-height: 1.45;" id="selectedWilayahDesc">-</div>
-              <button class="btn btn-primary btn-block" onclick="sorotWilayahTerpilih()" style="margin-top: 0.5rem;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2"/></svg>
-                Sorot dan Arahkan Peta
-              </button>
-            </div>
-
-            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light);">
-              <label class="form-label">Pencarian Cepat Wilayah & Kode Pos (83.202 Desa)</label>
-              <div style="display: flex; gap: 0.4rem;">
-                <input type="text" id="quickWilayahInput" class="form-input" placeholder="Ketik nama desa atau kode pos (misal: 57552 / Madegondo)..." oninput="onQuickWilayahInput(this.value)">
-                <button class="btn btn-outline" onclick="onQuickWilayahInput(document.getElementById('quickWilayahInput').value)">Cari</button>
-              </div>
-            </div>
-            <div id="quickWilayahResults" class="search-res-list" style="display: none; margin-top: 0.5rem; max-height: 220px; overflow-y: auto;"></div>
           </div>
 
           <div class="content-box">
