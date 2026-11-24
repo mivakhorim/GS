@@ -746,4 +746,10 @@
       stroke: #0284c7 !important;
       fill-opacity: 0.35 !important;
     }
+    .leaflet-tile-error,
+    img.leaflet-tile:not([src]),
+    img.leaflet-tile[src=""] {
+      opacity: 0 !important;
+      visibility: hidden !important;
+    }
 

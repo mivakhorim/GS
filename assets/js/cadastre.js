@@ -95,7 +95,13 @@ async function triggerD1Failover() {
       createTile: function(coords, done) {
         const tile = document.createElement('img');
         const tileUrl = this.getTileUrl(coords);
+        const transparent1x1 = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
         tile.crossOrigin = 'anonymous';
+
+        tile.onerror = () => {
+          tile.src = transparent1x1;
+          done(null, tile);
+        };
 
         if (typeof window !== 'undefined' && window.caches) {
           window.caches.open('geospasi-wms-v1').then(cache => {
@@ -126,16 +132,16 @@ async function triggerD1Failover() {
                     tile.src = objUrl;
                   })
                   .catch(() => {
-                    tile.src = tileUrl;
+                    tile.src = transparent1x1;
                     done(null, tile);
                   });
               }
             }).catch(() => {
-              tile.src = tileUrl;
+              tile.src = transparent1x1;
               done(null, tile);
             });
           }).catch(() => {
-            tile.src = tileUrl;
+            tile.src = transparent1x1;
             done(null, tile);
           });
         } else {
