@@ -407,7 +407,7 @@ Server Sumber Data: ${serverName}`;
 
     function snapToPersilBorder() {
       if (rawInitialBboxCoords && rawInitialBboxCoords.length >= 3) {
-        activeVertices = cleanAndDeduplicateVertices(rawInitialBboxCoords.map(c => ({ lat: c.lat, lng: c.lng })), 1.20, 10.0);
+        activeVertices = cleanAndDeduplicateVertices(rawInitialBboxCoords.map(c => ({ lat: c.lat, lng: c.lng })), 0.40, 4.5);
         renderCanvasPolygon(true);
       }
     }
@@ -520,7 +520,7 @@ Server Sumber Data: ${serverName}`;
     }
     window.isPointInsideOrNearPolygon = isPointInsideOrNearPolygon;
 
-    function cleanAndDeduplicateVertices(coords, minMeters = 1.20, maxDeg = 10.0) {
+    function cleanAndDeduplicateVertices(coords, minMeters = 0.40, maxDeg = 4.5) {
       if (!coords || coords.length < 3) return coords;
       let pts = coords.map(p => Array.isArray(p) ? { lat: Number(p[1]), lng: Number(p[0]) } : { lat: Number(p.lat), lng: Number(p.lng) });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
@@ -581,7 +581,7 @@ Server Sumber Data: ${serverName}`;
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.20, 10.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.40, 4.5);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
@@ -604,7 +604,7 @@ Server Sumber Data: ${serverName}`;
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.0000005 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.0000005) {
         pts.pop();
       }
-      pts = cleanAndDeduplicateVertices(pts, 1.20, 10.0);
+      pts = cleanAndDeduplicateVertices(pts, 0.40, 4.5);
       activeVertices = pts.filter((pt, idx) => {
         if (idx === 0) return true;
         const prev = pts[idx - 1];

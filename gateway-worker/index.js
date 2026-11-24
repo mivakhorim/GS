@@ -160,15 +160,31 @@ export default {
           forwardHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
         }
 
-        const upstreamRes = await fetch(targetUrl, {
+        let upstreamRes = await fetch(targetUrl, {
           method: 'GET',
           headers: forwardHeaders
         });
 
-        if (!upstreamRes.ok && activeLink && activeLink.id === 'active_tunnel') {
-          ctx.waitUntil(
-            env.DB.prepare("UPDATE gateway_links SET error_count = error_count + 1 WHERE id = 'active_tunnel'").run()
-          );
+        if ((!upstreamRes.ok || upstreamRes.status >= 500) && isTunnel) {
+          if (env.DB) {
+            ctx.waitUntil(
+              env.DB.prepare("UPDATE gateway_links SET error_count = error_count + 1 WHERE id = 'active_tunnel'").run()
+            );
+          }
+          const fallbackBase = 'https://bhumi.atrbpn.go.id/mprx/service';
+          const fallbackUrl = fallbackBase + (fallbackBase.includes('?') ? '&' : '?') + searchParams.toString();
+          const fbHeaders = {
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Referer': 'https://bhumi.atrbpn.go.id/',
+            'Origin': 'https://bhumi.atrbpn.go.id',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          };
+          try {
+            const fbRes = await fetch(fallbackUrl, { method: 'GET', headers: fbHeaders });
+            if (fbRes.ok) {
+              upstreamRes = fbRes;
+            }
+          } catch (_) {}
         }
 
         const respHeaders = new Headers(upstreamRes.headers);
@@ -180,6 +196,26 @@ export default {
           headers: respHeaders
         });
       } catch (err) {
+        if (isTunnel) {
+          const fallbackBase = 'https://bhumi.atrbpn.go.id/mprx/service';
+          const fallbackUrl = fallbackBase + (fallbackBase.includes('?') ? '&' : '?') + searchParams.toString();
+          try {
+            const fbRes = await fetch(fallbackUrl, {
+              headers: {
+                'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                'Referer': 'https://bhumi.atrbpn.go.id/',
+                'Origin': 'https://bhumi.atrbpn.go.id',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+              }
+            });
+            if (fbRes.ok) {
+              const respHeaders = new Headers(fbRes.headers);
+              Object.entries(CORS_HEADERS).forEach(([k, v]) => respHeaders.set(k, v));
+              respHeaders.set('Cache-Control', 'public, max-age=86400');
+              return new Response(fbRes.body, { status: fbRes.status, headers: respHeaders });
+            }
+          } catch (_) {}
+        }
         return jsonResponse({
           error: 'Gagal memuat stream data peta',
           target: targetUrl,

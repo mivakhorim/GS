@@ -151,7 +151,7 @@ async function triggerD1Failover() {
       const currentOpacity = slider ? (parseFloat(slider.value) / 100) : 0.90;
       const persilBase = getBpnGatewayBase();
       const mode = (typeof getCadastreServerMode === 'function') ? getCadastreServerMode() : 'server1';
-      const layerName = (mode === 'server2') ? 'umum:Persil' : 'bhumi_persil';
+      const layerName = (mode === 'server2') ? 'bhumi_persil' : 'umum:Persil';
       const wmsBase = persilBase ? `${persilBase}/proxy-wms` : 'https://stream.dutamik.id/proxy-wms';
       return new CachedWmsTileLayer(wmsBase, {
         layers: layerName,
@@ -253,7 +253,7 @@ async function triggerD1Failover() {
     async function loadViewportCadastreSvgParcels() {
     }
 
-    function removeCollinearVertices(coords, minDeflectionDeg = 10.0) {
+    function removeCollinearVertices(coords, minDeflectionDeg = 4.5) {
       if (!coords || coords.length <= 3) return coords;
       let current = coords.slice();
       let changed = true;
@@ -1729,6 +1729,47 @@ async function triggerD1Failover() {
                 }
               }
             }
+
+            const textVisited = new Uint8Array(w * h);
+            const qTxtX = new Int16Array(w * h);
+            const qTxtY = new Int16Array(w * h);
+            for (let y = 2; y < h - 2; y++) {
+              for (let x = 2; x < w - 2; x++) {
+                const idx = y * w + x;
+                if (isWall[idx] === 1 && textVisited[idx] === 0) {
+                  let head = 0, tail = 0;
+                  textVisited[idx] = 1;
+                  qTxtX[tail] = x; qTxtY[tail] = y; tail++;
+                  let minX = x, maxX = x, minY = y, maxY = y;
+                  let touchesBorder = false;
+                  while (head < tail) {
+                    const cx = qTxtX[head], cy = qTxtY[head]; head++;
+                    if (cx <= 1 || cx >= w - 2 || cy <= 1 || cy >= h - 2) touchesBorder = true;
+                    if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
+                    if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+                    const nbs = [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]];
+                    for (let i = 0; i < 4; i++) {
+                      const nx = nbs[i][0], ny = nbs[i][1];
+                      if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                        const nidx = ny * w + nx;
+                        if (isWall[nidx] === 1 && textVisited[nidx] === 0) {
+                          textVisited[nidx] = 1;
+                          qTxtX[tail] = nx; qTxtY[tail] = ny; tail++;
+                        }
+                      }
+                    }
+                  }
+                  const compW = maxX - minX + 1;
+                  const compH = maxY - minY + 1;
+                  if (!touchesBorder && compW <= 42 && compH <= 34 && tail < 480) {
+                    for (let i = 0; i < tail; i++) {
+                      isWall[qTxtY[i] * w + qTxtX[i]] = 0;
+                    }
+                  }
+                }
+              }
+            }
+
             for (let y = 1; y < h - 1; y++) {
               const row = y * w;
               for (let x = 1; x < w - 1; x++) {
@@ -1903,40 +1944,82 @@ async function triggerD1Failover() {
               return [pts[0], pts[last]];
             }
 
-            const nContour = contour.length;
-            const kWin = Math.min(5, Math.floor(nContour / 4));
-            const curvatures = new Float32Array(nContour);
-            for (let i = 0; i < nContour; i++) {
-              const prev = contour[(i - kWin + nContour) % nContour];
-              const curr = contour[i];
-              const next = contour[(i + kWin) % nContour];
-              const ax = curr.x - prev.x, ay = curr.y - prev.y;
-              const bx = next.x - curr.x, by = next.y - curr.y;
-              const lenA = Math.hypot(ax, ay), lenB = Math.hypot(bx, by);
-              if (lenA > 0 && lenB > 0) {
-                const dot = (ax * bx + ay * by) / (lenA * lenB);
-                curvatures[i] = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
+            let maxDist = 0, pAIdx = 0, pBIdx = 0;
+            const nC = contour.length;
+            const cStep = nC > 300 ? 2 : 1;
+            for (let i = 0; i < nC; i += cStep) {
+              for (let j = i + 1; j < nC; j += cStep) {
+                const d = Math.hypot(contour[i].x - contour[j].x, contour[i].y - contour[j].y);
+                if (d > maxDist) { maxDist = d; pAIdx = i; pBIdx = j; }
               }
             }
 
-            let maxAngle = 0, bestCornerIdx = 0;
-            for (let i = 0; i < nContour; i++) {
-              if (curvatures[i] > maxAngle) { maxAngle = curvatures[i]; bestCornerIdx = i; }
+            let ch1, ch2;
+            if (pAIdx < pBIdx) {
+              ch1 = contour.slice(pAIdx, pBIdx + 1);
+              ch2 = contour.slice(pBIdx).concat(contour.slice(0, pAIdx + 1));
+            } else {
+              ch1 = contour.slice(pBIdx, pAIdx + 1);
+              ch2 = contour.slice(pAIdx).concat(contour.slice(0, pBIdx + 1));
             }
 
-            const rotated = contour.slice(bestCornerIdx).concat(contour.slice(0, bestCornerIdx));
-            let maxOppDist = 0, oppCornerIdx = Math.floor(nContour / 2);
-            for (let i = Math.floor(nContour / 4); i < Math.floor(3 * nContour / 4); i++) {
-              const d = Math.hypot(rotated[i].x - rotated[0].x, rotated[i].y - rotated[0].y);
-              if (d > maxOppDist) {
-                maxOppDist = d;
-                oppCornerIdx = i;
+            const s1 = simplifyRdp(ch1, 1.25);
+            const s2 = simplifyRdp(ch2, 1.25);
+            let simplified = s1.slice(0, -1).concat(s2.slice(0, -1));
+
+            if (simplified.length < 3) { resolve(null); return; }
+
+            let changedSpikes = true;
+            let iterSpikes = 0;
+            while (changedSpikes && simplified.length > 3 && iterSpikes < 8) {
+              changedSpikes = false;
+              iterSpikes++;
+              const n = simplified.length;
+              const kept = [];
+              for (let i = 0; i < n; i++) {
+                const prev = simplified[(i - 1 + n) % n];
+                const curr = simplified[i];
+                const next = simplified[(i + 1) % n];
+                const d1 = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+                const d2 = Math.hypot(next.x - curr.x, next.y - curr.y);
+                if (d1 === 0 || d2 === 0) { changedSpikes = true; continue; }
+                const dot = ((curr.x - prev.x) * (next.x - curr.x) + (curr.y - prev.y) * (next.y - curr.y)) / (d1 * d2);
+                const defl = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
+                if (defl > 135 && (d1 < 4.8 || d2 < 4.8)) {
+                  changedSpikes = true;
+                  continue;
+                }
+                kept.push(curr);
               }
+              simplified = kept;
             }
 
-            const p1 = simplifyRdp(rotated.slice(0, oppCornerIdx + 1), 1.6);
-            const p2 = simplifyRdp(rotated.slice(oppCornerIdx), 1.6);
-            const simplified = p1.slice(0, -1).concat(p2.slice(0, -1));
+            let changedChamfer = true;
+            let iterChamfer = 0;
+            while (changedChamfer && simplified.length > 3 && iterChamfer < 8) {
+              changedChamfer = false;
+              iterChamfer++;
+              const n = simplified.length;
+              const kept = [];
+              let skipNext = false;
+              for (let i = 0; i < n; i++) {
+                if (skipNext) { skipNext = false; continue; }
+                const curr = simplified[i];
+                const next = simplified[(i + 1) % n];
+                const d = Math.hypot(next.x - curr.x, next.y - curr.y);
+                if (d < 4.5 && n > 3) {
+                  kept.push({
+                    x: Math.round((curr.x + next.x) * 0.5),
+                    y: Math.round((curr.y + next.y) * 0.5)
+                  });
+                  skipNext = true;
+                  changedChamfer = true;
+                } else {
+                  kept.push(curr);
+                }
+              }
+              simplified = kept;
+            }
 
             if (simplified.length < 3) { resolve(null); return; }
 
@@ -1954,10 +2037,10 @@ async function triggerD1Failover() {
               });
             }
 
-            let cleanPolyCoords = removeCollinearVertices(polyCoords, 10.0);
+            let cleanPolyCoords = removeCollinearVertices(polyCoords, 4.5);
             if (cleanPolyCoords.length < 3) { resolve(null); return; }
             if (typeof cleanAndDeduplicateVertices === 'function') {
-              cleanPolyCoords = cleanAndDeduplicateVertices(cleanPolyCoords, 1.20, 10.0);
+              cleanPolyCoords = cleanAndDeduplicateVertices(cleanPolyCoords, 0.40, 4.5);
             }
             if (cleanPolyCoords.length < 3) { resolve(null); return; }
 
@@ -2828,7 +2911,7 @@ async function triggerD1Failover() {
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
     }
 
-    function cleanAndDeduplicateVertices(coords, minMeters = 1.20, maxDeg = 10.0) {
+    function cleanAndDeduplicateVertices(coords, minMeters = 0.40, maxDeg = 4.5) {
       if (!coords || coords.length < 3) return coords;
       let pts = coords.map(p => Array.isArray(p) ? { lat: p[1], lng: p[0] } : { lat: p.lat, lng: p.lng });
       if (pts.length > 1 && Math.abs(pts[0].lat - pts[pts.length - 1].lat) < 0.000001 && Math.abs(pts[0].lng - pts[pts.length - 1].lng) < 0.000001) {
@@ -2887,7 +2970,7 @@ async function triggerD1Failover() {
     function cleanActiveVerticesManual() {
       if (!activeVertices || activeVertices.length < 3) return;
       const countBefore = activeVertices.length;
-      activeVertices = cleanAndDeduplicateVertices(activeVertices, 1.20, 10.0);
+      activeVertices = cleanAndDeduplicateVertices(activeVertices, 0.40, 4.5);
       const countAfter = activeVertices.length;
       renderCanvasPolygon(true);
       if (typeof renderCoordinatesTable === 'function') renderCoordinatesTable();
