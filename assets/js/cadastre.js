@@ -761,9 +761,10 @@ async function triggerD1Failover() {
               is_auto_traced: true,
               fid: fid,
               nib: '-',
-              tipe_hak: 'TERDAFTAR ATR/BPN',
+              tipe_hak: '-',
               luas_m2: Math.round(area),
-              luas_terdaftar_m2: Math.round(area),
+              luas_ukur_m2: Math.round(area),
+              luas_terdaftar_m2: 0,
               polygon_coords: polyCoords,
               status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
               source: 'VEKTOR PERSIL SVG PRESISI'
@@ -2116,16 +2117,19 @@ async function triggerD1Failover() {
             const exactArea = (typeof calculatePolygonArea === 'function') ? calculatePolygonArea(cleanPolyCoords) : 0;
             if (exactArea < 5.0) { resolve(null); return; }
 
-            const parcelFid = 'PERSIL-' + Math.floor(100000 + Math.random() * 900000);
+            const cLat = cleanPolyCoords.reduce((s, c) => s + c.lat, 0) / cleanPolyCoords.length;
+            const cLng = cleanPolyCoords.reduce((s, c) => s + c.lng, 0) / cleanPolyCoords.length;
+            const parcelFid = 'PERSIL-WMS-' + Math.round(cLat * 100000) + '-' + Math.round(cLng * 100000);
             resolve({
               found: true,
               is_official_cadastre: true,
               is_auto_traced: true,
               fid: parcelFid,
               nib: '-',
-              tipe_hak: 'TERDAFTAR ATR/BPN',
+              tipe_hak: '-',
               luas_m2: Math.round(exactArea),
-              luas_terdaftar_m2: Math.round(exactArea),
+              luas_ukur_m2: Math.round(exactArea),
+              luas_terdaftar_m2: 0,
               polygon_coords: cleanPolyCoords,
               status_validasi: 'Batas Bidang Kadaster Terdeteksi (SVG)',
               source: 'VEKTOR PERSIL SVG PRESISI'
@@ -2433,14 +2437,23 @@ async function triggerD1Failover() {
 
       const rawDataArea = p.luas_terdaftar_m2 || p.luas_bpn || (p.is_auto_traced ? null : p.luas_m2);
       const luasData = (rawDataArea && Number(rawDataArea) > 0) ? Number(rawDataArea) : 0;
+      const subtextEl = document.getElementById('pinLuasBpnSubtext');
 
       if (cardTerdaftar && elLuasBpn) {
         cardTerdaftar.style.display = 'block';
         if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
         if (luasData > 0) {
           elLuasBpn.innerText = Math.round(luasData).toLocaleString('id-ID') + ' m²';
+          elLuasBpn.style.color = '#15803d';
+          cardTerdaftar.style.background = '#f0fdf4';
+          cardTerdaftar.style.borderColor = '#bbf7d0';
+          if (subtextEl) subtextEl.innerText = 'Data Resmi ATR/BPN';
         } else {
           elLuasBpn.innerText = '-';
+          elLuasBpn.style.color = '#64748b';
+          cardTerdaftar.style.background = '#f8fafc';
+          cardTerdaftar.style.borderColor = '#e2e8f0';
+          if (subtextEl) subtextEl.innerText = 'Belum Ada Data Resmi';
         }
       }
 
@@ -2463,26 +2476,18 @@ async function triggerD1Failover() {
         }
       }
 
-      // 2. Badge Hak (Only show authentic BPN hak)
       const badgeHak = document.getElementById('badgeTipeHak');
       if (badgeHak) {
-        const isAuthenticHak = p.tipe_hak && p.tipe_hak !== '-' && p.tipe_hak !== 'Delineasi Mandiri' && p.tipe_hak !== 'Delineasi Bidang Mandiri';
-        if (isAuthenticHak) {
-          badgeHak.style.display = 'inline-block';
-          badgeHak.innerText = p.tipe_hak.toUpperCase();
-        } else {
-          badgeHak.style.display = 'none';
-        }
+        badgeHak.style.display = 'none';
       }
 
-      // 3. Spec items with zero dummy display
-      const nibVal = (p.nib && p.nib !== '-') ? (p.nib_lengkap || p.nib) : null;
+      const nibVal = (p.nib && p.nib !== '-' && !p.is_auto_traced) ? (p.nib_lengkap || p.nib) : null;
       setRow('rowPinNib', 'pinNibText', nibVal);
-      setRow('rowPinTipeHak', 'pinTipeHakText', (p.tipe_hak && p.tipe_hak !== 'Delineasi Mandiri') ? p.tipe_hak : null);
-      setRow('rowPinNomorHak', 'pinNomorHakText', (p.nomor_hak && p.nomor_hak !== '-') ? p.nomor_hak : null);
+      setRow('rowPinTipeHak', 'pinTipeHakText', null);
+      setRow('rowPinNomorHak', 'pinNomorHakText', (p.nomor_hak && p.nomor_hak !== '-' && !p.is_auto_traced) ? p.nomor_hak : null);
       setRow('rowPinKabkot', 'pinKabkotText', (p.kabkot && p.kabkot !== '-') ? p.kabkot : null);
-      setRow('rowPinKecamatan', 'pinKecamatanText', (p.kecamatan && p.kecamatan !== '-') ? p.kecamatan : null);
-      setRow('rowPinDesa', 'pinDesaText', (p.desa && p.desa !== '-') ? p.desa : null);
+      setRow('rowPinKecamatan', 'pinKecamatanText', null);
+      setRow('rowPinDesa', 'pinDesaText', null);
 
       if (p.lat && p.lng) {
         setRow('rowPinCoords', 'pinCoordsText', p.lat.toFixed(6) + ', ' + p.lng.toFixed(6));
@@ -2628,7 +2633,7 @@ async function triggerD1Failover() {
 
           const registeredAreaM2 = (effectivePersil.luas_terdaftar_m2 && Number(effectivePersil.luas_terdaftar_m2) > 0)
             ? Number(effectivePersil.luas_terdaftar_m2)
-            : ((effectivePersil.luas_bpn && Number(effectivePersil.luas_bpn) > 0) ? Number(effectivePersil.luas_bpn) : ((effectivePersil.luas_m2 && Number(effectivePersil.luas_m2) > 0 && !effectivePersil.is_auto_traced) ? Number(effectivePersil.luas_m2) : Math.round(exactAreaM2)));
+            : ((effectivePersil.luas_bpn && Number(effectivePersil.luas_bpn) > 0) ? Number(effectivePersil.luas_bpn) : ((effectivePersil.luas_m2 && Number(effectivePersil.luas_m2) > 0 && !effectivePersil.is_auto_traced) ? Number(effectivePersil.luas_m2) : 0));
 
           activePinData = {
             lat: lat,
@@ -2643,7 +2648,7 @@ async function triggerD1Failover() {
             tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '-'),
             luas_m2: Math.round(exactAreaM2),
             luas_ukur_m2: Math.round(exactAreaM2),
-            luas_terdaftar_m2: Math.round(registeredAreaM2),
+            luas_terdaftar_m2: registeredAreaM2 > 0 ? Math.round(registeredAreaM2) : 0,
             desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
             kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
             kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
@@ -2675,13 +2680,25 @@ async function triggerD1Failover() {
           if (elLokasi) elLokasi.innerText = lokasiUtama;
 
           const elLuasBpn = document.getElementById('pinLuasBpnText');
+          const subtextEl = document.getElementById('pinLuasBpnSubtext');
+          const cardTerdaftar = document.getElementById('cardLuasTerdaftar');
           if (elLuasBpn) {
             if (activePinData.luas_terdaftar_m2 > 0) {
               elLuasBpn.innerText = `${Math.round(activePinData.luas_terdaftar_m2).toLocaleString('id-ID')} m²`;
-            } else if (activePinData.luas_m2 > 0) {
-              elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
+              elLuasBpn.style.color = '#15803d';
+              if (cardTerdaftar) {
+                cardTerdaftar.style.background = '#f0fdf4';
+                cardTerdaftar.style.borderColor = '#bbf7d0';
+              }
+              if (subtextEl) subtextEl.innerText = 'Data Resmi ATR/BPN';
             } else {
               elLuasBpn.innerText = '-';
+              elLuasBpn.style.color = '#64748b';
+              if (cardTerdaftar) {
+                cardTerdaftar.style.background = '#f8fafc';
+                cardTerdaftar.style.borderColor = '#e2e8f0';
+              }
+              if (subtextEl) subtextEl.innerText = 'Belum Ada Data Resmi';
             }
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
@@ -2828,22 +2845,40 @@ async function triggerD1Failover() {
       addr = addr || {};
       const desa = data?.desa || addr.village || addr.suburb || addr.neighbourhood || addr.quarter || '-';
       let kec = data?.kecamatan || addr.subdistrict || addr.city_district || addr.municipality || addr.district || addr.town || '-';
-      let kabkot = data?.kabupaten || addr.city || addr.town || addr.county || addr.state_district || '-';
       let prov = data?.provinsi || addr.state || '-';
       if (typeof normalizeIndonesianProvince === 'function') {
         prov = normalizeIndonesianProvince(prov) || prov;
       }
-      if (kabkot !== '-') {
-        const lowerK = kabkot.toLowerCase();
-        if (lowerK.includes('jakarta') || lowerK.includes('special capital region')) {
-          if (lowerK.includes('special capital region of jakarta') || lowerK === 'special capital region') {
-            kabkot = 'Kota Administrasi Jakarta Pusat';
+
+      let kabkot = '-';
+      const isJakarta = (addr.city && addr.city.toLowerCase().includes('jakarta')) ||
+                        (addr.state && addr.state.toLowerCase().includes('jakarta')) ||
+                        (addr.country_code === 'id' && lat >= -6.40 && lat <= -5.20 && lng >= 106.65 && lng <= 107.05);
+      if (isJakarta) {
+        prov = 'DKI Jakarta';
+        const combined = ((addr.city_district || '') + ' ' + (addr.county || '') + ' ' + (addr.subdistrict || '') + ' ' + (addr.suburb || '') + ' ' + (addr.city || '')).toLowerCase();
+        if (combined.includes('seribu') || combined.includes('thousand') || (lat > -5.95 && lat < -5.0)) {
+          kabkot = 'Kabupaten Administrasi Kepulauan Seribu';
+        } else if (combined.includes('timur') || combined.includes('east') || (lng > 106.87 && lat < -6.18 && lat > -6.38)) {
+          kabkot = 'Kota Administrasi Jakarta Timur';
+        } else if (combined.includes('selatan') || combined.includes('south') || (lat < -6.23 && lng <= 106.87 && lng >= 106.75)) {
+          kabkot = 'Kota Administrasi Jakarta Selatan';
+        } else if (combined.includes('barat') || combined.includes('west') || (lng < 106.79 && lat >= -6.24)) {
+          kabkot = 'Kota Administrasi Jakarta Barat';
+        } else if (combined.includes('utara') || combined.includes('north') || (lat > -6.18 && lat < -6.08 && lng >= 106.72 && lng <= 106.98)) {
+          kabkot = 'Kota Administrasi Jakarta Utara';
+        } else {
+          kabkot = 'Kota Administrasi Jakarta Pusat';
+        }
+      } else {
+        let rawKab = data?.kabupaten || addr.city || addr.town || addr.county || addr.state_district || addr.municipality || addr.city_district || '';
+        if (rawKab && rawKab !== '-') {
+          rawKab = rawKab.replace(/^(City of|Regency of|Kota Administrasi|Kota|Kabupaten|Kab\.|Kotamadya)\s{0,}/i, '').trim();
+          if (/^(Surakarta|Bandung|Surabaya|Semarang|Medan|Makassar|Yogyakarta|Depok|Bekasi|Bogor|Tangerang|Tangerang Selatan|Malang|Batam|Palembang|Pekanbaru|Bandar Lampung|Padang|Denpasar|Samarinda|Banjarmasin|Balikpapan|Pontianak|Manado|Cimahi|Salatiga|Magelang|Pekalongan|Tegal|Cirebon|Sukabumi|Tasikmalaya|Probolinggo|Pasuruan|Mojokerto|Madiun|Kediri|Blitar|Batu)/i.test(rawKab)) {
+            kabkot = 'Kota ' + rawKab;
           } else {
-            kabkot = `Kota ${kabkot.replace(/^(Kabupaten|Kota|Kota Administrasi)\s{0,}/i, '').trim()}`;
+            kabkot = 'Kabupaten ' + rawKab;
           }
-          if (!prov || prov === '-') prov = 'DKI Jakarta';
-        } else if (!/^Kabupaten|^Kota/i.test(kabkot)) {
-          kabkot = `Kabupaten ${kabkot}`;
         }
       }
       if ((!prov || prov === '-') && (desa.toLowerCase().includes('jakarta') || kec.toLowerCase().includes('menteng') || kec.toLowerCase().includes('gambir'))) {
@@ -3400,9 +3435,6 @@ async function triggerD1Failover() {
           activeObj.status_validasi = 'Batas Bidang Kadaster Terdeteksi (SVG)';
           activeObj.luas_m2 = traced.luas_m2;
           activeObj.luas_ukur_m2 = traced.luas_m2;
-          if (!activeObj.luas_terdaftar_m2 || activeObj.luas_terdaftar_m2 <= 0) {
-            activeObj.luas_terdaftar_m2 = traced.luas_m2;
-          }
         }
         if (typeof window.renderBidangInfoPanel === 'function') {
           window.renderBidangInfoPanel(activeObj, traced.polygon_coords);
@@ -3844,6 +3876,51 @@ async function triggerD1Failover() {
 
       showToast('Urutan koordinat polygon_coords ditukar: Preview posisi bidang diperbarui di peta.', 'success');
     }
+
+    function copyCurrentCoordinates() {
+      const el = document.getElementById('pinCoordsText');
+      let txt = el ? el.innerText.trim() : '';
+      if (!txt || txt === '-' || txt === 'Memuat...') {
+        if (typeof activePinData !== 'undefined' && activePinData && activePinData.lat && activePinData.lng) {
+          txt = `${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}`;
+        }
+      }
+      if (!txt || txt === '-' || txt === 'Memuat...') {
+        if (typeof showToast === 'function') {
+          showToast('Koordinat belum tersedia untuk disalin.', 'warn');
+        }
+        return;
+      }
+      const doneCopy = () => {
+        if (typeof showToast === 'function') {
+          showToast(`Koordinat disalin: ${txt}`, 'success');
+        }
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(doneCopy).catch(() => {
+          fallbackCopyText(txt);
+          doneCopy();
+        });
+      } else {
+        fallbackCopyText(txt);
+        doneCopy();
+      }
+    }
+
+    function fallbackCopyText(txt) {
+      const input = document.createElement('input');
+      input.value = txt;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      try {
+        document.execCommand('copy');
+      } catch (_) {}
+      document.body.removeChild(input);
+    }
+
+    window.copyCurrentCoordinates = copyCurrentCoordinates;
 
     window.reloadCurrentCadastreStream = reloadCurrentCadastreStream;
     window.generateCurrentStreamImage = generateCurrentStreamImage;

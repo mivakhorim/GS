@@ -243,7 +243,7 @@
                 <div style="margin-top: 3px;">
                   <span id="pinLuasBpnText" style="font-size: 1.15rem; font-weight: 800; color: #15803d; font-family: monospace; line-height: 1.1;">-</span>
                 </div>
-                <div style="font-size: 0.62rem; color: #16a34a; margin-top: 2px;">
+                <div id="pinLuasBpnSubtext" style="font-size: 0.62rem; color: #16a34a; margin-top: 2px;">
                   Data Resmi ATR/BPN
                 </div>
               </div>
@@ -260,11 +260,21 @@
             </div>
 
             <div class="spec-list" style="margin-bottom: 0.6rem; display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem;">
-              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px;">
                 <span style="color: #64748b;">Koordinat Titik</span>
-                <span id="pinCoordsText" class="font-mono" style="font-weight: 600; color: #1e293b;">-</span>
+                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span id="pinCoordsText" class="font-mono" style="font-weight: 600; color: #1e293b;">-</span>
+                  <button type="button" id="btnCopyPinCoords" class="btn btn-outline" onclick="copyCurrentCoordinates()" title="Salin Koordinat Titik" style="padding: 1px 6px; height: 20px; font-size: 0.65rem; border-color: #cbd5e1; display: inline-flex; align-items: center; gap: 3px; cursor: pointer; color: #475569;" aria-label="Salin Koordinat">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    <span>Salin</span>
+                  </button>
+                </div>
               </div>
-              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px;">
+              <div id="rowPinKabkot" style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px;">
+                <span style="color: #64748b;">Kab/Kota</span>
+                <span id="pinKabkotText" style="font-weight: 700; color: #0a2e5c;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px;">
                 <span style="color: #64748b;">Keliling Bidang</span>
                 <span id="pinKelilingText" class="font-mono" style="font-weight: 600; color: #1e293b;"><span id="valKeliling">0</span> m</span>
               </div>
@@ -283,10 +293,6 @@
               <div id="rowPinNomorHak" style="display: none; justify-content: space-between;">
                 <span style="color: #64748b;">No. Sertipikat</span>
                 <span id="pinNomorHakText" class="font-mono"></span>
-              </div>
-              <div id="rowPinKabkot" style="display: none; justify-content: space-between;">
-                <span style="color: #64748b;">Kab/Kota</span>
-                <span id="pinKabkotText"></span>
               </div>
               <div id="rowPinKecamatan" style="display: none; justify-content: space-between;">
                 <span style="color: #64748b;">Kecamatan</span>
