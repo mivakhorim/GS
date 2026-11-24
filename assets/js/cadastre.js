@@ -2417,13 +2417,12 @@ async function triggerD1Failover() {
       const luasData = (rawDataArea && Number(rawDataArea) > 0) ? Number(rawDataArea) : 0;
 
       if (cardTerdaftar && elLuasBpn) {
+        cardTerdaftar.style.display = 'block';
+        if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
         if (luasData > 0) {
-          cardTerdaftar.style.display = 'block';
           elLuasBpn.innerText = Math.round(luasData).toLocaleString('id-ID') + ' m²';
-          if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
         } else {
-          cardTerdaftar.style.display = 'none';
-          if (grid) grid.style.gridTemplateColumns = '1fr';
+          elLuasBpn.innerText = '-';
         }
       }
 

@@ -1090,13 +1090,12 @@ Server Sumber Data: ${serverName}`;
       const grid = document.getElementById('gridLuasCards');
       const elLuasBpn = document.getElementById('pinLuasBpnText');
       if (cardTerdaftar && elLuasBpn) {
+        cardTerdaftar.style.display = 'block';
+        if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
         if (!isManual && registeredBpnArea > 0) {
-          cardTerdaftar.style.display = 'block';
           elLuasBpn.innerText = formatAreaM2(registeredBpnArea);
-          if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
         } else {
-          cardTerdaftar.style.display = 'none';
-          if (grid) grid.style.gridTemplateColumns = '1fr';
+          elLuasBpn.innerText = '-';
         }
       }
       if (typeof window.renderBidangInfoPanel === 'function') {
