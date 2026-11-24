@@ -166,7 +166,7 @@ async function triggerD1Failover() {
         version: '1.3.0',
         crs: L.CRS.EPSG3857,
         pane: 'persilPane',
-        minZoom: 14,
+        minZoom: 15,
         maxNativeZoom: 19,
         maxZoom: 26,
         opacity: currentOpacity,
@@ -1532,21 +1532,39 @@ async function triggerD1Failover() {
       const z = map.getZoom();
       const scaleBadge = document.getElementById('scaleLevelBadge');
       const scaleHint = document.getElementById('scaleLevelHint');
-      if (z < 14) {
+      const zoomAlert = document.getElementById('zoomAlert');
+      const zoomText = document.getElementById('currentZoomText');
+      const badgeStatusBidang = document.getElementById('badgeStatusBidang');
+      if (zoomText) zoomText.innerText = z;
+      if (z < 15) {
         if (scaleBadge) {
           scaleBadge.className = 'badge-pill blue';
           scaleBadge.innerText = `Skala Makro (Zoom ${z})`;
         }
         if (scaleHint) {
-          scaleHint.innerHTML = 'Tingkat Provinsi/Kabkot: Menampilkan lapisan makro (RTRW / Tata Ruang). Persil aktif pada Zoom &ge; 14.';
+          scaleHint.innerHTML = 'Tingkat Makro / Kota: Peta persil tidak dimuat untuk menghemat server. Perbesar ke Zoom &ge; 15 (batas desa/kelurahan) untuk memuat persil.';
+        }
+        if (zoomAlert) {
+          zoomAlert.style.display = 'flex';
+        }
+        if (badgeStatusBidang) {
+          badgeStatusBidang.className = 'badge-pill blue';
+          badgeStatusBidang.innerText = 'Standby (< 15)';
         }
       } else {
         if (scaleBadge) {
           scaleBadge.className = 'badge-pill green';
-          scaleBadge.innerText = `Skala Kelurahan (Zoom ${z})`;
+          scaleBadge.innerText = `Skala Desa/Kelurahan (Zoom ${z})`;
         }
         if (scaleHint) {
-          scaleHint.innerHTML = 'Tingkat Kelurahan/Persil: Hamparan persil aktif. Klik bidang untuk deteksi Vektor SVG presisi.';
+          scaleHint.innerHTML = 'Tingkat Batas Desa/Kelurahan: Hamparan persil aktif. Klik bidang untuk deteksi Vektor SVG presisi.';
+        }
+        if (zoomAlert) {
+          zoomAlert.style.display = 'none';
+        }
+        if (badgeStatusBidang) {
+          badgeStatusBidang.className = 'badge-pill green';
+          badgeStatusBidang.innerText = 'Aktif';
         }
       }
     }

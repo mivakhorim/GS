@@ -75,7 +75,7 @@
 
     var DEFAULT_LAT = -6.1884;
     var DEFAULT_LON = 106.8320;
-    var DEFAULT_ZOOM = 17;
+    var DEFAULT_ZOOM = 13;
 
     var isFreeDeleteVertexMode = false;
     var persilFetchSeq = 0;
