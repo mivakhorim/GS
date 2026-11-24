@@ -678,18 +678,58 @@
             <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.35;">
               Sumber: Basis Data Kadastral Geospasial Nasional (memuat mutasi, pemecahan, dan pendaftaran bidang terbaru).
             </div>
-            <div id="serverKadasterControlBox" style="display: none; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border-light);">
+            <div id="scaleTransitionStatusBox" style="margin-top: 0.6rem; padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-main);">Transisi Skala Peta</span>
+                <span id="scaleLevelBadge" class="badge-pill green">Skala Kelurahan</span>
+              </div>
+              <div id="scaleLevelHint" style="font-size: 0.66rem; color: var(--text-muted); line-height: 1.35;">
+                Tingkat Kelurahan/Persil: Hamparan persil aktif. Klik bidang untuk deteksi Vektor SVG presisi.
+              </div>
+            </div>
+
+            <div id="serverKadasterControlBox" style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border-light);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-main);">Pilihan Server Kadaster</span>
-                <span id="badgeServerKadaster" class="badge-pill blue">SERVER 1</span>
+                <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-main);">Lapisan Persil Kadaster</span>
+                <span id="badgeServerKadaster" class="badge-pill blue">umum:Persil</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
-                <button type="button" id="btnServer1" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 1">
-                  <span>Server 1</span>
+                <button type="button" id="btnServer1" class="btn btn-outline active" onclick="switchCadastreServer('server1')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="umum:Persil (Server 1 Bhumi Geos)">
+                  <span>umum:Persil</span>
                 </button>
-                <button type="button" id="btnServer2" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="Server 2">
-                  <span>Server 2</span>
+                <button type="button" id="btnServer2" class="btn btn-outline" onclick="switchCadastreServer('server2')" style="font-size: 0.7rem; justify-content: center; height: 32px;" title="bhumi_persil (Server 2 MPRX)">
+                  <span>bhumi_persil</span>
                 </button>
+              </div>
+            </div>
+
+            <div id="thematicQuickLayersBox" style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border-light);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-main);">Lapisan Tematik Tambahan</span>
+                <span style="font-size: 0.64rem; color: var(--text-muted);">ATR/BPN &amp; Gistaru</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px;">
+                  <label style="display: flex; align-items: center; gap: 0.45rem; font-size: 0.73rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="chkQuickRtrw" onchange="toggleQuickThematicLayer('rtrw', this.checked)" style="accent-color: #ea580c;">
+                    <span style="font-weight: 600; color: #ea580c;">RTRW (Tata Ruang)</span>
+                  </label>
+                  <span id="badgeQuickRTRW" class="badge-pill" style="font-size: 0.62rem;">Off</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px;">
+                  <label style="display: flex; align-items: center; gap: 0.45rem; font-size: 0.73rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="chkQuickLp2b" onchange="toggleQuickThematicLayer('lp2b', this.checked)" style="accent-color: #16a34a;">
+                    <span style="font-weight: 600; color: #16a34a;">LP2B (Pangan Berkelanjutan)</span>
+                  </label>
+                  <span id="badgeQuickLP2B" class="badge-pill" style="font-size: 0.62rem;">Off</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px;">
+                  <label style="display: flex; align-items: center; gap: 0.45rem; font-size: 0.73rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="chkQuickLsd" onchange="toggleQuickThematicLayer('lsd', this.checked)" style="accent-color: #059669;">
+                    <span style="font-weight: 600; color: #059669;">LSD (Sawah Dilindungi)</span>
+                  </label>
+                  <span id="badgeQuickLSD" class="badge-pill" style="font-size: 0.62rem;">Off</span>
+                </div>
               </div>
             </div>
 

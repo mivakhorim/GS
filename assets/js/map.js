@@ -281,6 +281,9 @@ async function geocodeAndFly(query, zoomLevel = 14) {
       const currentZoom = map.getZoom();
       const zoomText = document.getElementById('currentZoomText');
       if (zoomText) zoomText.innerText = currentZoom;
+      if (typeof updateScaleTransitionUI === 'function') {
+        updateScaleTransitionUI();
+      }
     }
 
     function flyToLoc(lat, lon, zoom, label) {

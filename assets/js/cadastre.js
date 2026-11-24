@@ -1486,26 +1486,17 @@ async function triggerD1Failover() {
     }
 
     function getCadastreServerMode() {
-      const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
-      if (isAdmin) {
-        const mode = localStorage.getItem('cadastre_server_mode');
-        return mode === 'server1' ? 'server1' : 'server2';
-      }
-      return 'server1';
+      const mode = localStorage.getItem('cadastre_server_mode');
+      return mode === 'server2' ? 'server2' : 'server1';
     }
 
     function switchCadastreServer(mode) {
-      const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
-      if (!isAdmin) {
-        showToast('Pemilihan server kadaster khusus untuk Administrator.', 'warn');
-        return false;
-      }
       if (mode === 'server2') {
         localStorage.setItem('cadastre_server_mode', 'server2');
-        showToast('Server 2 Kadaster Aktif (Vektor Kontur Presisi ATR/BPN)', 'success');
+        showToast('Lapisan Server 2 Aktif (bhumi_persil - MPRX ATR/BPN)', 'success');
       } else {
         localStorage.setItem('cadastre_server_mode', 'server1');
-        showToast('Server 1 Kadaster Aktif (Basis Data Standar)', 'info');
+        showToast('Lapisan Server 1 Aktif (umum:Persil - Bhumi Geos)', 'info');
       }
       if (typeof cadastreVectorParcelCache !== 'undefined' && cadastreVectorParcelCache) {
         cadastreVectorParcelCache.clear();
@@ -1528,15 +1519,60 @@ async function triggerD1Failover() {
       return true;
     }
 
+    function updateScaleTransitionUI() {
+      if (!map) return;
+      const z = map.getZoom();
+      const scaleBadge = document.getElementById('scaleLevelBadge');
+      const scaleHint = document.getElementById('scaleLevelHint');
+      if (z < 14) {
+        if (scaleBadge) {
+          scaleBadge.className = 'badge-pill blue';
+          scaleBadge.innerText = `Skala Makro (Zoom ${z})`;
+        }
+        if (scaleHint) {
+          scaleHint.innerHTML = 'Tingkat Provinsi/Kabkot: Menampilkan lapisan makro (RTRW / Tata Ruang). Persil aktif pada Zoom &ge; 14.';
+        }
+      } else {
+        if (scaleBadge) {
+          scaleBadge.className = 'badge-pill green';
+          scaleBadge.innerText = `Skala Kelurahan (Zoom ${z})`;
+        }
+        if (scaleHint) {
+          scaleHint.innerHTML = 'Tingkat Kelurahan/Persil: Hamparan persil aktif. Klik bidang untuk deteksi Vektor SVG presisi.';
+        }
+      }
+    }
+
+    function toggleQuickThematicLayer(layerType, checked) {
+      if (layerType === 'rtrw') {
+        toggleCekingLayer('rtrw_kabkot', checked);
+        const cbMain = document.getElementById('chkCekingRtrwKabkot');
+        if (cbMain) cbMain.checked = checked;
+      } else if (layerType === 'lp2b') {
+        toggleCekingLayer('lppb', checked);
+        const cbMain = document.getElementById('chkCekingLppb');
+        if (cbMain) cbMain.checked = checked;
+      } else if (layerType === 'lsd') {
+        toggleCekingLayer('lsd_12_provinsi', checked);
+        const cbMain = document.getElementById('chkCekingLsd12Prov') || document.getElementById('chkCekingLsd');
+        if (cbMain) cbMain.checked = checked;
+      }
+      const badge = document.getElementById(`badgeQuick${layerType.toUpperCase()}`);
+      if (badge) {
+        badge.className = checked ? 'badge-pill green' : 'badge-pill';
+        badge.innerText = checked ? 'Aktif' : 'Off';
+      }
+    }
+
     function updateCadastreServerUI() {
       const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
       const controlBox = document.getElementById('serverKadasterControlBox');
       if (controlBox) {
-        controlBox.style.display = isAdmin ? 'block' : 'none';
+        controlBox.style.display = 'block';
       }
       const modalBox = document.getElementById('serverKadasterModalBox');
       if (modalBox) {
-        modalBox.style.display = isAdmin ? 'block' : 'none';
+        modalBox.style.display = 'block';
       }
       const mode = getCadastreServerMode();
       const badge = document.getElementById('badgeServerKadaster');
@@ -1550,31 +1586,31 @@ async function triggerD1Failover() {
       if (mode === 'server2') {
         if (badge) {
           badge.className = 'badge-pill green';
-          badge.innerText = 'SERVER 2';
+          badge.innerText = 'bhumi_persil';
         }
         if (badgeBidang) {
           badgeBidang.className = 'badge-pill green';
-          badgeBidang.innerText = 'SERVER 2';
+          badgeBidang.innerText = 'bhumi_persil';
         }
         if (btn1) btn1.classList.remove('active');
         if (btn2) btn2.classList.add('active');
         if (btn1Bidang) btn1Bidang.classList.remove('active');
         if (btn2Bidang) btn2Bidang.classList.add('active');
-        if (pinServerText) pinServerText.innerText = 'Server 2';
+        if (pinServerText) pinServerText.innerText = 'bhumi_persil (Server 2)';
       } else {
         if (badge) {
           badge.className = 'badge-pill blue';
-          badge.innerText = 'SERVER 1';
+          badge.innerText = 'umum:Persil';
         }
         if (badgeBidang) {
           badgeBidang.className = 'badge-pill blue';
-          badgeBidang.innerText = 'SERVER 1';
+          badgeBidang.innerText = 'umum:Persil';
         }
         if (btn1) btn1.classList.add('active');
         if (btn2) btn2.classList.remove('active');
         if (btn1Bidang) btn1Bidang.classList.add('active');
         if (btn2Bidang) btn2Bidang.classList.remove('active');
-        if (pinServerText) pinServerText.innerText = 'Server 1';
+        if (pinServerText) pinServerText.innerText = 'umum:Persil (Server 1)';
       }
 
       const streamBox = document.getElementById('adminCadastreStreamBox');
@@ -1592,6 +1628,7 @@ async function triggerD1Failover() {
       if (typeof updateAdminPolygonCoordsUI === 'function') {
         updateAdminPolygonCoordsUI();
       }
+      updateScaleTransitionUI();
     }
 
     function isAxisAlignedRectangle(coords) {
@@ -3766,3 +3803,5 @@ async function triggerD1Failover() {
     window.sendPolygonCoordsToBatchInput = sendPolygonCoordsToBatchInput;
     window.swapAdminPolygonCoordsOrder = swapAdminPolygonCoordsOrder;
     window.updateDynamicMapLegend = updateDynamicMapLegend;
+    window.toggleQuickThematicLayer = toggleQuickThematicLayer;
+    window.updateScaleTransitionUI = updateScaleTransitionUI;
