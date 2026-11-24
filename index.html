@@ -223,19 +223,40 @@
               </button>
             </div>
 
-            <div class="stat-card" style="margin-bottom: 0.55rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                <span class="stat-label" style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #475569; letter-spacing: 0.5px;">Luas Ukur Bidang</span>
-                <span id="valLuasHa" style="font-size: 11px; color: #64748b; font-weight: 600;">0,0000 Ha</span>
+            <div id="gridLuasCards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.55rem;">
+              <div class="stat-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: #0284c7; letter-spacing: 0.5px;">Luas di Gambar</span>
+                </div>
+                <div style="margin-top: 3px;">
+                  <span id="canvasLiveAreaM2" class="stat-value highlight" style="font-size: 1.15rem; font-weight: 800; color: #0a2e5c; font-family: monospace; line-height: 1.1;">0,00 m²</span>
+                </div>
+                <div style="font-size: 0.62rem; color: #64748b; margin-top: 2px;">
+                  <span id="valLuasHa">0,0000 Ha</span> • Ukur Geometri
+                </div>
               </div>
-              <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 6px;">
-                <span id="canvasLiveAreaM2" class="stat-value highlight" style="font-size: 22px; font-weight: 800; color: #0a2e5c; font-family: monospace; line-height: 1;">0,00 m²</span>
-                <span id="pinLuasBpnText" style="display: none; font-size: 11.5px; color: #16a34a; font-weight: 700;"></span>
+
+              <div id="cardLuasTerdaftar" class="stat-card" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: #16a34a; letter-spacing: 0.5px;">Luas dari Data</span>
+                </div>
+                <div style="margin-top: 3px;">
+                  <span id="pinLuasBpnText" style="font-size: 1.15rem; font-weight: 800; color: #15803d; font-family: monospace; line-height: 1.1;">-</span>
+                </div>
+                <div style="font-size: 0.62rem; color: #16a34a; margin-top: 2px;">
+                  Data Resmi ATR/BPN
+                </div>
               </div>
-              <div style="display: none;">
-                <span id="valLuasM2">0,00 m²</span>
-                <span id="valTitik">0</span>
-              </div>
+            </div>
+
+            <div id="boxSelisihLuas" style="display: none; margin-bottom: 0.55rem; padding: 6px 10px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; font-size: 0.7rem; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; color: #92400e;">Selisih Luas (Gambar vs Data):</span>
+              <span id="textSelisihLuas" class="font-mono" style="font-weight: 700; color: #b45309;">-</span>
+            </div>
+
+            <div style="display: none;">
+              <span id="valLuasM2">0,00 m²</span>
+              <span id="valTitik">0</span>
             </div>
 
             <div class="spec-list" style="margin-bottom: 0.6rem; display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem;">

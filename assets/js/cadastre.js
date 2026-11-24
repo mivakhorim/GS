@@ -809,8 +809,16 @@ async function triggerD1Failover() {
         polyLayer._parcelData = parcel;
 
         const nibLabel = (parcel.nib && parcel.nib !== '-') ? `NIB: ${parcel.nib}` : 'Bidang Terdaftar';
-        const luasLabel = parcel.luas_m2 ? `${Math.round(parcel.luas_m2).toLocaleString('id-ID')} m²` : '';
-        polyLayer.bindTooltip(`<strong>${nibLabel}</strong>${luasLabel ? '<br>' + luasLabel : ''}`, {
+        let tooltipContent = `<strong>${nibLabel}</strong>`;
+        const luasUkur = parcel.luas_ukur_m2 || parcel.luas_m2;
+        const luasData = parcel.luas_terdaftar_m2;
+        if (luasUkur) {
+          tooltipContent += `<br><span>Luas Gambar: ${Math.round(luasUkur).toLocaleString('id-ID')} m²</span>`;
+        }
+        if (luasData && Math.abs(luasData - (luasUkur || 0)) >= 1) {
+          tooltipContent += `<br><span style="color:#16a34a; font-weight:700;">Luas Data BPN: ${Math.round(luasData).toLocaleString('id-ID')} m²</span>`;
+        }
+        polyLayer.bindTooltip(tooltipContent, {
           sticky: true,
           direction: 'auto',
           opacity: 0.95
@@ -2384,16 +2392,57 @@ async function triggerD1Failover() {
       const cardTerdaftar = document.getElementById('cardLuasTerdaftar');
       const grid = document.getElementById('gridLuasCards');
       const elLuasBpn = document.getElementById('pinLuasBpnText');
+      const boxDiff = document.getElementById('boxSelisihLuas');
+      const textDiff = document.getElementById('textSelisihLuas');
+      const elCanvasM2 = document.getElementById('canvasLiveAreaM2');
+      const elValHa = document.getElementById('valLuasHa');
 
-      const isManual = (p.tipe_hak === 'Delineasi Mandiri' || p.source === 'MANUAL_DELINEATION' || !p.luas_m2 || p.luas_m2 <= 0);
+      let luasGambar = 0;
+      if (v && v.length >= 3 && typeof calculatePolygonArea === 'function') {
+        luasGambar = calculatePolygonArea(v);
+      } else if (p.luas_ukur_m2 && Number(p.luas_ukur_m2) > 0) {
+        luasGambar = Number(p.luas_ukur_m2);
+      } else if (p.luas_m2 && Number(p.luas_m2) > 0) {
+        luasGambar = Number(p.luas_m2);
+      }
+
+      if (elCanvasM2 && luasGambar > 0) {
+        elCanvasM2.innerText = (typeof formatAreaM2 === 'function') ? formatAreaM2(luasGambar) : (Math.round(luasGambar).toLocaleString('id-ID') + ' m²');
+      }
+      if (elValHa && luasGambar > 0) {
+        elValHa.innerText = (typeof formatAreaHa === 'function') ? formatAreaHa(luasGambar) : ((luasGambar / 10000.0).toFixed(4) + ' Ha');
+      }
+
+      const rawDataArea = p.luas_terdaftar_m2 || p.luas_bpn || (p.is_auto_traced ? null : p.luas_m2);
+      const luasData = (rawDataArea && Number(rawDataArea) > 0) ? Number(rawDataArea) : 0;
+
       if (cardTerdaftar && elLuasBpn) {
-        if (!isManual && p.luas_m2 > 0) {
+        if (luasData > 0) {
           cardTerdaftar.style.display = 'block';
-          elLuasBpn.innerText = Math.round(p.luas_m2).toLocaleString('id-ID') + ' m²';
+          elLuasBpn.innerText = Math.round(luasData).toLocaleString('id-ID') + ' m²';
           if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
         } else {
           cardTerdaftar.style.display = 'none';
           if (grid) grid.style.gridTemplateColumns = '1fr';
+        }
+      }
+
+      if (boxDiff && textDiff) {
+        if (luasGambar > 0 && luasData > 0) {
+          const diff = luasGambar - luasData;
+          const pct = (diff / luasData) * 100;
+          if (Math.abs(diff) >= 0.5) {
+            boxDiff.style.display = 'flex';
+            const sign = diff > 0 ? '+' : '';
+            textDiff.innerText = `${sign}${diff.toFixed(1)} m² (${sign}${pct.toFixed(1)}%)`;
+            textDiff.style.color = Math.abs(pct) <= 5.0 ? '#16a34a' : '#b45309';
+          } else {
+            boxDiff.style.display = 'flex';
+            textDiff.innerText = 'Presisi Sempurna (100% Identik)';
+            textDiff.style.color = '#16a34a';
+          }
+        } else {
+          boxDiff.style.display = 'none';
         }
       }
 
@@ -2560,6 +2609,10 @@ async function triggerD1Failover() {
             ? calculatePolygonArea(effectivePersil.polygon_coords)
             : (effectivePersil.luas_m2 || 0);
 
+          const registeredAreaM2 = (effectivePersil.luas_terdaftar_m2 && Number(effectivePersil.luas_terdaftar_m2) > 0)
+            ? Number(effectivePersil.luas_terdaftar_m2)
+            : ((effectivePersil.luas_bpn && Number(effectivePersil.luas_bpn) > 0) ? Number(effectivePersil.luas_bpn) : ((effectivePersil.luas_m2 && Number(effectivePersil.luas_m2) > 0 && !effectivePersil.is_auto_traced) ? Number(effectivePersil.luas_m2) : Math.round(exactAreaM2)));
+
           activePinData = {
             lat: lat,
             lng: lng,
@@ -2572,7 +2625,8 @@ async function triggerD1Failover() {
             nosu: decoded ? decoded.nosu : (effectivePersil.nosu || '-'),
             tahun: decoded ? decoded.tahun : (effectivePersil.tahun || '-'),
             luas_m2: Math.round(exactAreaM2),
-            luas_terdaftar_m2: Math.round(exactAreaM2),
+            luas_ukur_m2: Math.round(exactAreaM2),
+            luas_terdaftar_m2: Math.round(registeredAreaM2),
             desa: decoded ? decoded.desa : ((effectivePersil.desa && effectivePersil.desa !== '-') ? effectivePersil.desa : ((geoData && geoData.desa !== '-') ? geoData.desa : '-')),
             kecamatan: decoded ? decoded.kecamatan : ((effectivePersil.kecamatan && effectivePersil.kecamatan !== '-') ? effectivePersil.kecamatan : ((geoData && geoData.kecamatan !== '-') ? geoData.kecamatan : '-')),
             kabkot: decoded ? decoded.kabkot : ((effectivePersil.kabkot && effectivePersil.kabkot !== '-') ? effectivePersil.kabkot : ((geoData && geoData.kabkot !== '-') ? geoData.kabkot : '-')),
@@ -2605,16 +2659,12 @@ async function triggerD1Failover() {
 
           const elLuasBpn = document.getElementById('pinLuasBpnText');
           if (elLuasBpn) {
-            if (activePinData.luas_m2 > 0) {
-              elLuasBpn.className = 'stat-value emerald';
+            if (activePinData.luas_terdaftar_m2 > 0) {
+              elLuasBpn.innerText = `${Math.round(activePinData.luas_terdaftar_m2).toLocaleString('id-ID')} m²`;
+            } else if (activePinData.luas_m2 > 0) {
               elLuasBpn.innerText = `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`;
-            } else if (activePinData.polygon_coords && activePinData.polygon_coords.length >= 3) {
-              const calcLuas = (typeof calculatePolygonAreaM2 === 'function') ? calculatePolygonAreaM2(activePinData.polygon_coords) : 0;
-              elLuasBpn.className = 'stat-value emerald';
-              elLuasBpn.innerText = (calcLuas > 0) ? `${Math.round(calcLuas).toLocaleString('id-ID')} m²` : 'Delineasi Bidang Mandiri';
             } else {
-              elLuasBpn.className = 'stat-value emerald';
-              elLuasBpn.innerText = 'Delineasi Bidang Mandiri';
+              elLuasBpn.innerText = '-';
             }
           }
           const elTipeHak = document.getElementById('pinTipeHakText');
@@ -3332,7 +3382,13 @@ async function triggerD1Failover() {
           activeObj.source = 'VEKTOR PERSIL SVG PRESISI';
           activeObj.status_validasi = 'Batas Bidang Kadaster Terdeteksi (SVG)';
           activeObj.luas_m2 = traced.luas_m2;
-          activeObj.luas_terdaftar_m2 = traced.luas_m2;
+          activeObj.luas_ukur_m2 = traced.luas_m2;
+          if (!activeObj.luas_terdaftar_m2 || activeObj.luas_terdaftar_m2 <= 0) {
+            activeObj.luas_terdaftar_m2 = traced.luas_m2;
+          }
+        }
+        if (typeof window.renderBidangInfoPanel === 'function') {
+          window.renderBidangInfoPanel(activeObj, traced.polygon_coords);
         }
         if (typeof initCanvasRebuilder === 'function') {
           initCanvasRebuilder(lat, lng, (activeObj && activeObj.luas_m2) || traced.luas_m2, traced.polygon_coords);
