@@ -194,19 +194,40 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
 
   activeVertices = pts;
   activeMultiParts = [pts];
+  const cLat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+  const cLng = pts.reduce((s, p) => s + p.lng, 0) / pts.length;
+  const geo = typeof detectIndonesianLocationByCoords === 'function' ? detectIndonesianLocationByCoords(cLat, cLng) : (typeof window.detectIndonesianLocationByCoords === 'function' ? window.detectIndonesianLocationByCoords(cLat, cLng) : null);
   activePinData = {
+    lat: cLat,
+    lng: cLng,
     identifikasi: 'DIGITASI-MANDIRI',
-    tipe: 'HAK MILIK / PERIZINAN',
+    tipe_hak: 'HAK MILIK / PERIZINAN',
     luas_bpn: Math.round(calculatePolygonArea(pts)),
     luas_ukur: Math.round(calculatePolygonArea(pts)),
+    luas_m2: Math.round(calculatePolygonArea(pts)),
     polygon_coords: pts,
     is_bbox: false,
     source: isExplicitLngLat ? 'BATCH DIGITASI (LNG, LAT)' : 'BATCH DIGITASI (LAT, LNG)',
-    desa: '-',
-    kecamatan: '-',
-    kabkot: '-',
-    provinsi: '-'
+    desa: geo?.desa || '-',
+    kecamatan: geo?.kecamatan || '-',
+    kabkot: geo?.kabkot || '-',
+    provinsi: geo?.provinsi || '-',
+    kantah: geo?.kantah || '-'
   };
+  if (typeof window.fetchLocationDetails === 'function') {
+    window.fetchLocationDetails(cLat, cLng).then(det => {
+      if (activePinData && Math.abs(activePinData.lat - cLat) < 0.001) {
+        if (det.desa && det.desa !== '-') activePinData.desa = det.desa;
+        if (det.kecamatan && det.kecamatan !== '-') activePinData.kecamatan = det.kecamatan;
+        if (det.kabkot && det.kabkot !== '-') activePinData.kabkot = det.kabkot;
+        if (det.provinsi && det.provinsi !== '-') activePinData.provinsi = det.provinsi;
+        if (det.kantah && det.kantah !== '-') activePinData.kantah = det.kantah;
+        if (typeof window.renderBidangInfoPanel === 'function') {
+          window.renderBidangInfoPanel(activePinData, pts);
+        }
+      }
+    }).catch(() => {});
+  }
 
   renderCanvasPolygon(true);
   if (activePolygonLayer) {
@@ -231,7 +252,7 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
   }
 }
 
-    function startDelineasiMandiriAtClick() {
+    function startDelineasiMandiriAtClick(incomingGeo) {
       if (!activePinMarker) {
         showToast('Tentukan titik patok terlebih dahulu pada peta.', 'warn');
         return;
@@ -247,21 +268,49 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
         { lat: +(lat - deltaLat).toFixed(7), lng: +(lng - deltaLng).toFixed(7) }
       ];
       const estArea = Math.round(calculatePolygonArea(manualBox));
-      activePinData = activePinData || {};
-      activePinData.lat = lat;
-      activePinData.lng = lng;
-      activePinData.luas_m2 = 0;
-      activePinData.tipe_hak = 'Delineasi Mandiri';
-      activePinData.source = 'MANUAL_DELINEATION';
-      activePinData.nib = '';
-      activePinData.nomor_hak = '';
-      activePinData.nosu = '';
+      const geo = incomingGeo || (typeof detectIndonesianLocationByCoords === 'function' ? detectIndonesianLocationByCoords(lat, lng) : (typeof window.detectIndonesianLocationByCoords === 'function' ? window.detectIndonesianLocationByCoords(lat, lng) : null));
+      activePinData = {
+        lat: lat,
+        lng: lng,
+        fid: 'DIGITASI-MANDIRI',
+        tipe_hak: 'Delineasi Mandiri',
+        source: 'MANUAL_DELINEATION',
+        nib: '',
+        nib_lengkap: '',
+        nomor_hak: '',
+        nomor_hak_raw: '',
+        nosu: '',
+        tahun: '-',
+        luas_m2: 0,
+        luas_ukur_m2: estArea,
+        luas_terdaftar_m2: 0,
+        desa: geo?.desa || '-',
+        kecamatan: geo?.kecamatan || '-',
+        kabkot: geo?.kabkot || '-',
+        provinsi: geo?.provinsi || '-',
+        kantah: geo?.kantah || '-',
+        status_validasi: 'Delineasi Mandiri'
+      };
       rawInitialBboxCoords = manualBox;
       initCanvasRebuilder(lat, lng, estArea, manualBox);
       if (typeof window.renderBidangInfoPanel === 'function') {
         window.renderBidangInfoPanel(activePinData, manualBox);
       } else if (typeof renderCadastralProFields === 'function') {
         renderCadastralProFields();
+      }
+      if (!incomingGeo && typeof window.fetchLocationDetails === 'function') {
+        window.fetchLocationDetails(lat, lng).then(det => {
+          if (activePinData && Math.abs(activePinData.lat - lat) < 0.001) {
+            if (det.desa && det.desa !== '-') activePinData.desa = det.desa;
+            if (det.kecamatan && det.kecamatan !== '-') activePinData.kecamatan = det.kecamatan;
+            if (det.kabkot && det.kabkot !== '-') activePinData.kabkot = det.kabkot;
+            if (det.provinsi && det.provinsi !== '-') activePinData.provinsi = det.provinsi;
+            if (det.kantah && det.kantah !== '-') activePinData.kantah = det.kantah;
+            if (typeof window.renderBidangInfoPanel === 'function') {
+              window.renderBidangInfoPanel(activePinData, manualBox);
+            }
+          }
+        }).catch(() => {});
       }
       const elStatusValidasi = document.getElementById('pinStatusValidasiText');
       if (elStatusValidasi) {
@@ -378,6 +427,11 @@ Server Sumber Data: ${serverName}`;
       const elHutan = document.getElementById('pinHutanText'); if (elHutan) elHutan.innerText = '-';
       const elZnt = document.getElementById('pinZntText'); if (elZnt) elZnt.innerText = '-';
       const elZntRange = document.getElementById('pinZntRangeText'); if (elZntRange) elZntRange.innerText = '-';
+      const elLiveM2 = document.getElementById('canvasLiveAreaM2'); if (elLiveM2) elLiveM2.innerText = '0 m²';
+      const elLiveHa = document.getElementById('valLuasHa'); if (elLiveHa) elLiveHa.innerText = '0,0000 Ha';
+      const elLiveKel = document.getElementById('valKeliling'); if (elLiveKel) elLiveKel.innerText = '0';
+      const elCount = document.getElementById('canvasVerticesCount'); if (elCount) elCount.innerText = '0 Patok';
+      const rowKab = document.getElementById('rowPinKabkot'); if (rowKab) rowKab.style.display = 'none';
 
       const elAdminCoordsBox = document.getElementById('adminPolygonCoordsBox');
       if (elAdminCoordsBox) elAdminCoordsBox.style.display = 'none';
@@ -2718,18 +2772,40 @@ Server Sumber Data: ${serverName}`;
 
       activeVertices = finalPts.map(p => ({ lat: p.lat, lng: p.lng }));
       activeMultiParts = null;
-      if (!activePinData) {
-        const areaM2 = roundArea2(calculatePolygonArea(activeVertices));
-        activePinData = {
-          fid: 'Digitasi Mandiri',
-          tipe_hak: 'Hasil Pengukuran',
-          luas_m2: areaM2,
-          luas_ha: roundAreaHa6(areaM2),
-          desa: '-',
-          kecamatan: '-',
-          kabkot: '-',
-          provinsi: '-'
-        };
+      const areaM2 = roundArea2(calculatePolygonArea(activeVertices));
+      const cLat = activeVertices.reduce((s, p) => s + p.lat, 0) / activeVertices.length;
+      const cLng = activeVertices.reduce((s, p) => s + p.lng, 0) / activeVertices.length;
+      const geo = typeof detectIndonesianLocationByCoords === 'function' ? detectIndonesianLocationByCoords(cLat, cLng) : (typeof window.detectIndonesianLocationByCoords === 'function' ? window.detectIndonesianLocationByCoords(cLat, cLng) : null);
+      activePinData = {
+        lat: cLat,
+        lng: cLng,
+        fid: 'Digitasi Mandiri',
+        tipe_hak: 'Hasil Pengukuran',
+        source: 'MANUAL_DELINEATION',
+        luas_m2: areaM2,
+        luas_ha: roundAreaHa6(areaM2),
+        desa: geo?.desa || '-',
+        kecamatan: geo?.kecamatan || '-',
+        kabkot: geo?.kabkot || '-',
+        provinsi: geo?.provinsi || '-',
+        kantah: geo?.kantah || '-'
+      };
+      if (typeof window.renderBidangInfoPanel === 'function') {
+        window.renderBidangInfoPanel(activePinData, activeVertices);
+      }
+      if (typeof window.fetchLocationDetails === 'function') {
+        window.fetchLocationDetails(cLat, cLng).then(det => {
+          if (activePinData && Math.abs(activePinData.lat - cLat) < 0.001) {
+            if (det.desa && det.desa !== '-') activePinData.desa = det.desa;
+            if (det.kecamatan && det.kecamatan !== '-') activePinData.kecamatan = det.kecamatan;
+            if (det.kabkot && det.kabkot !== '-') activePinData.kabkot = det.kabkot;
+            if (det.provinsi && det.provinsi !== '-') activePinData.provinsi = det.provinsi;
+            if (det.kantah && det.kantah !== '-') activePinData.kantah = det.kantah;
+            if (typeof window.renderBidangInfoPanel === 'function') {
+              window.renderBidangInfoPanel(activePinData, activeVertices);
+            }
+          }
+        }).catch(() => {});
       }
       isParcelLocked = true;
       isGeometryManuallyEdited = true;

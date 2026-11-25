@@ -217,9 +217,6 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                 <span>Informasi Bidang Tanah</span>
               </div>
-              <button type="button" class="btn btn-outline btn-sm" onclick="copyCurrentCoordinates()" title="Salin Titik Koordinat Pusat" style="padding: 2px 7px; height: 24px; font-size: 0.68rem;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              </button>
             </div>
 
             <div id="gridLuasCards" style="margin-bottom: 0.55rem;">
@@ -325,21 +322,10 @@
                 <span>Toolbar Patok:</span>
                 <span id="canvasVerticesCount" class="badge-pill blue" style="font-size: 0.63rem;">0 Patok</span>
               </div>
-              <div class="geo-patok-toolbar">
-                <button type="button" id="btnToolbarAddVertex" class="btn-tool-icon" onclick="startAddVertexMode()" title="Tambah Patok Baru (Klik di Garis Batas Poligon)" aria-label="Tambah Patok">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                </button>
-                <button type="button" id="btnToolbarSnap" class="btn-tool-icon" onclick="toggleSnapGuideLines()" title="Kunci Sudut Siku-Siku 90 Derajat Bangunan" aria-label="Snap Siku-Siku">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M4 20V4"/><line x1="9" y1="20" x2="9" y2="15"/><line x1="4" y1="15" x2="9" y2="15"/></svg>
-                </button>
-                <button type="button" id="btnToolbarDeleteVertex" class="btn-tool-icon" onclick="startDeleteVertexMode()" title="Hapus Patok Batas (Klik Patok di Peta)" aria-label="Hapus Patok">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                </button>
-                <button type="button" class="btn-tool-icon" onclick="cleanInternalDanglingVertices()" title="Rapikan Garis dan Patok Dalam" aria-label="Rapikan Patok">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                </button>
-                <button type="button" class="btn-tool-icon danger" onclick="removeActivePin()" title="Batalkan Pilihan Bidang (Bersihkan Peta)" aria-label="Batal Pilihan">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <div class="geo-patok-toolbar" style="grid-template-columns: 1fr;">
+                <button type="button" class="btn btn-outline danger" onclick="removeActivePin()" title="Hapus Bidang dan Bersihkan Peta" style="border-color: #fca5a5; background-color: #ffffff; color: #dc2626; font-weight: 700; font-size: 0.74rem; justify-content: center; gap: 0.4rem; width: 100%; height: 32px; display: inline-flex; align-items: center; border-radius: var(--radius-sm); cursor: pointer;" aria-label="Hapus Bidang">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <span>Hapus Bidang / Bersihkan Peta</span>
                 </button>
               </div>
             </div>

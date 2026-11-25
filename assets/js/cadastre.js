@@ -2405,8 +2405,8 @@ async function triggerD1Failover() {
         if (row) {
           row.style.display = isValid ? 'flex' : 'none';
         }
-        if (text && isValid) {
-          text.innerText = val.trim();
+        if (text) {
+          text.innerText = isValid ? val.trim() : '-';
         }
       }
 
@@ -2720,7 +2720,7 @@ async function triggerD1Failover() {
             }, 350);
           }
         } else {
-          startDelineasiMandiriAtClick();
+          startDelineasiMandiriAtClick(geoData);
         }
       } catch (err) {
         showToast('Terjadi kesalahan saat memuat data bidang. Silakan coba kembali.', 'warn');
@@ -2740,6 +2740,84 @@ async function triggerD1Failover() {
       el.innerText = ` (${desa}, ${kec}, ${kab})`;
     }
 
+    function detectIndonesianLocationByCoords(lat, lng) {
+      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+        return { kabkot: '-', provinsi: '-', kantah: '-' };
+      }
+      if (lat >= -6.38 && lat <= -5.20 && lng >= 106.68 && lng <= 106.98) {
+        if (lat > -5.95 && lat < -5.0) return { kabkot: 'Kabupaten Administrasi Kepulauan Seribu', provinsi: 'DKI Jakarta', kantah: 'Kantor Pertanahan Kabupaten Kepulauan Seribu' };
+        if (lat >= -6.15 && lat < -6.08) return { kabkot: 'Kota Administrasi Jakarta Utara', provinsi: 'DKI Jakarta', kantah: 'Kantor Pertanahan Kota Administrasi Jakarta Utara' };
+        if (lng > 106.87 && lat < -6.18) return { kabkot: 'Kota Administrasi Jakarta Timur', provinsi: 'DKI Jakarta', kantah: 'Kantor Pertanahan Kota Administrasi Jakarta Timur' };
+        if (lat < -6.22 && lng >= 106.75 && lng <= 106.87) return { kabkot: 'Kota Administrasi Jakarta Selatan', provinsi: 'DKI Jakarta', kantah: 'Kantor Pertanahan Kota Administrasi Jakarta Selatan' };
+        if (lng < 106.80 && lat >= -6.22 && lat < -6.12) return { kabkot: 'Kota Administrasi Jakarta Barat', provinsi: 'DKI Jakarta', kantah: 'Kantor Pertanahan Kota Administrasi Jakarta Barat' };
+        return { kabkot: 'Kota Administrasi Jakarta Pusat', provinsi: 'DKI Jakarta', kantah: 'Kantor Pertanahan Kota Administrasi Jakarta Pusat' };
+      }
+      if (lat >= -7.60 && lat <= -7.52 && lng >= 110.79 && lng <= 110.87) {
+        return { kabkot: 'Kota Surakarta', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kota Surakarta' };
+      }
+      if (lat >= -7.78 && lat <= -7.55 && lng >= 110.72 && lng <= 110.95) {
+        return { kabkot: 'Kabupaten Sukoharjo', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kabupaten Sukoharjo' };
+      }
+      if (lat >= -7.75 && lat <= -7.50 && lng >= 110.85 && lng <= 111.20) {
+        return { kabkot: 'Kabupaten Karanganyar', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kabupaten Karanganyar' };
+      }
+      if (lat >= -7.80 && lat <= -7.55 && lng >= 110.50 && lng <= 110.75) {
+        return { kabkot: 'Kabupaten Klaten', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kabupaten Klaten' };
+      }
+      if (lat >= -7.60 && lat <= -7.30 && lng >= 110.45 && lng <= 110.80) {
+        return { kabkot: 'Kabupaten Boyolali', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kabupaten Boyolali' };
+      }
+      if (lat >= -7.50 && lat <= -7.28 && lng >= 110.85 && lng <= 111.15) {
+        return { kabkot: 'Kabupaten Sragen', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kabupaten Sragen' };
+      }
+      if (lat >= -8.20 && lat <= -7.75 && lng >= 110.75 && lng <= 111.30) {
+        return { kabkot: 'Kabupaten Wonogiri', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kabupaten Wonogiri' };
+      }
+      if (lat >= -7.15 && lat <= -6.90 && lng >= 110.30 && lng <= 110.55) {
+        return { kabkot: 'Kota Semarang', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kota Semarang' };
+      }
+      if (lat >= -7.36 && lat <= -7.30 && lng >= 110.48 && lng <= 110.53) {
+        return { kabkot: 'Kota Salatiga', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kota Salatiga' };
+      }
+      if (lat >= -7.60 && lat <= -7.42 && lng >= 110.15 && lng <= 110.30) {
+        return { kabkot: 'Kota Magelang', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kota Magelang' };
+      }
+      if (lat >= -8.25 && lat <= -7.50 && lng >= 110.00 && lng <= 110.85) {
+        if (lat >= -7.83 && lat <= -7.76 && lng >= 110.35 && lng <= 110.42) return { kabkot: 'Kota Yogyakarta', provinsi: 'Daerah Istimewa Yogyakarta', kantah: 'Kantor Pertanahan Kota Yogyakarta' };
+        if (lat >= -7.78 && lat <= -7.55 && lng >= 110.25 && lng <= 110.50) return { kabkot: 'Kabupaten Sleman', provinsi: 'Daerah Istimewa Yogyakarta', kantah: 'Kantor Pertanahan Kabupaten Sleman' };
+        if (lat >= -8.02 && lat <= -7.80 && lng >= 110.25 && lng <= 110.55) return { kabkot: 'Kabupaten Bantul', provinsi: 'Daerah Istimewa Yogyakarta', kantah: 'Kantor Pertanahan Kabupaten Bantul' };
+        if (lat >= -7.95 && lat <= -7.65 && lng >= 110.00 && lng <= 110.28) return { kabkot: 'Kabupaten Kulon Progo', provinsi: 'Daerah Istimewa Yogyakarta', kantah: 'Kantor Pertanahan Kabupaten Kulon Progo' };
+        return { kabkot: 'Kabupaten Gunungkidul', provinsi: 'Daerah Istimewa Yogyakarta', kantah: 'Kantor Pertanahan Kabupaten Gunungkidul' };
+      }
+      if (lat >= -8.30 && lat <= -6.40 && lng >= 108.70 && lng <= 111.80) {
+        return { kabkot: 'Kabupaten Sukoharjo', provinsi: 'Jawa Tengah', kantah: 'Kantor Pertanahan Kabupaten Sukoharjo' };
+      }
+      if (lat >= -8.80 && lat <= -6.70 && lng >= 111.00 && lng <= 114.60) {
+        if (lat >= -7.35 && lat <= -7.18 && lng >= 112.60 && lng <= 112.85) return { kabkot: 'Kota Surabaya', provinsi: 'Jawa Timur', kantah: 'Kantor Pertanahan Kota Surabaya' };
+        if (lat >= -7.55 && lat <= -7.35 && lng >= 112.55 && lng <= 112.80) return { kabkot: 'Kabupaten Sidoarjo', provinsi: 'Jawa Timur', kantah: 'Kantor Pertanahan Kabupaten Sidoarjo' };
+        if (lat >= -8.10 && lat <= -7.90 && lng >= 112.55 && lng <= 112.75) return { kabkot: 'Kota Malang', provinsi: 'Jawa Timur', kantah: 'Kantor Pertanahan Kota Malang' };
+        return { kabkot: 'Jawa Timur', provinsi: 'Jawa Timur', kantah: 'Kantor Pertanahan ATR/BPN' };
+      }
+      if (lat >= -7.85 && lat <= -5.90 && lng >= 106.35 && lng <= 108.85) {
+        if (lat >= -7.00 && lat <= -6.85 && lng >= 107.55 && lng <= 107.75) return { kabkot: 'Kota Bandung', provinsi: 'Jawa Barat', kantah: 'Kantor Pertanahan Kota Bandung' };
+        if (lat >= -6.35 && lat <= -6.18 && lng >= 106.95 && lng <= 107.10) return { kabkot: 'Kota Bekasi', provinsi: 'Jawa Barat', kantah: 'Kantor Pertanahan Kota Bekasi' };
+        if (lat >= -6.45 && lat <= -6.32 && lng >= 106.75 && lng <= 106.90) return { kabkot: 'Kota Depok', provinsi: 'Jawa Barat', kantah: 'Kantor Pertanahan Kota Depok' };
+        if (lat >= -6.65 && lat <= -6.50 && lng >= 106.75 && lng <= 106.85) return { kabkot: 'Kota Bogor', provinsi: 'Jawa Barat', kantah: 'Kantor Pertanahan Kota Bogor' };
+        return { kabkot: 'Jawa Barat', provinsi: 'Jawa Barat', kantah: 'Kantor Pertanahan ATR/BPN' };
+      }
+      if (lat >= -7.05 && lat <= -5.85 && lng >= 105.10 && lng <= 106.75) {
+        if (lat >= -6.26 && lat <= -6.15 && lng >= 106.58 && lng <= 106.73) return { kabkot: 'Kota Tangerang', provinsi: 'Banten', kantah: 'Kantor Pertanahan Kota Tangerang' };
+        if (lat >= -6.35 && lat <= -6.26 && lng >= 106.66 && lng <= 106.76) return { kabkot: 'Kota Tangerang Selatan', provinsi: 'Banten', kantah: 'Kantor Pertanahan Kota Tangerang Selatan' };
+        return { kabkot: 'Banten', provinsi: 'Banten', kantah: 'Kantor Pertanahan ATR/BPN' };
+      }
+      if (lat >= -8.90 && lat <= -8.05 && lng >= 114.40 && lng <= 115.75) {
+        if (lat >= -8.72 && lat <= -8.58 && lng >= 115.18 && lng <= 115.28) return { kabkot: 'Kota Denpasar', provinsi: 'Bali', kantah: 'Kantor Pertanahan Kota Denpasar' };
+        return { kabkot: 'Kabupaten Badung', provinsi: 'Bali', kantah: 'Kantor Pertanahan Kabupaten Badung' };
+      }
+      return { kabkot: '-', provinsi: '-', kantah: '-' };
+    }
+    window.detectIndonesianLocationByCoords = detectIndonesianLocationByCoords;
+
     async function fetchLocationDetails(lat, lng) {
       const persilApiBase = getBpnGatewayBase();
       let addr = null;
@@ -2750,13 +2828,13 @@ async function triggerD1Failover() {
           const url = `${persilApiBase}/api/reverse-geocode?lat=${lat}&lng=${lng}`;
           const res = await fetch(url);
           if (res.ok) {
-            data = await res.json();
-            if (data.address) {
-              addr = data.address;
+            const parsed = await res.json();
+            if (parsed && parsed.address) {
+              data = parsed;
+              addr = parsed.address;
             }
           }
-        } catch (e) {
-        }
+        } catch (e) {}
       }
 
       if (!addr || Object.keys(addr).length === 0) {
@@ -2774,18 +2852,21 @@ async function triggerD1Failover() {
       }
 
       addr = addr || {};
-      const desa = data?.desa || addr.village || addr.suburb || addr.neighbourhood || addr.quarter || '-';
+      const fallbackGeo = detectIndonesianLocationByCoords(lat, lng);
+      const isCoordInsideJakarta = (lat >= -6.38 && lat <= -5.20 && lng >= 106.68 && lng <= 106.98);
+
+      let desa = data?.desa || addr.village || addr.suburb || addr.neighbourhood || addr.quarter || '-';
       let kec = data?.kecamatan || addr.subdistrict || addr.city_district || addr.municipality || addr.district || addr.town || '-';
       let prov = data?.provinsi || addr.state || '-';
       if (typeof normalizeIndonesianProvince === 'function') {
         prov = normalizeIndonesianProvince(prov) || prov;
       }
+      if (!prov || prov === '-' || (prov === 'DKI Jakarta' && !isCoordInsideJakarta)) {
+        prov = fallbackGeo.provinsi || '-';
+      }
 
       let kabkot = '-';
-      const isJakarta = (addr.city && addr.city.toLowerCase().includes('jakarta')) ||
-                        (addr.state && addr.state.toLowerCase().includes('jakarta')) ||
-                        (addr.country_code === 'id' && lat >= -6.40 && lat <= -5.20 && lng >= 106.65 && lng <= 107.05);
-      if (isJakarta) {
+      if (isCoordInsideJakarta) {
         prov = 'DKI Jakarta';
         const combined = ((addr.city_district || '') + ' ' + (addr.county || '') + ' ' + (addr.subdistrict || '') + ' ' + (addr.suburb || '') + ' ' + (addr.city || '')).toLowerCase();
         if (combined.includes('seribu') || combined.includes('thousand') || (lat > -5.95 && lat < -5.0)) {
@@ -2794,7 +2875,7 @@ async function triggerD1Failover() {
           kabkot = 'Kota Administrasi Jakarta Timur';
         } else if (combined.includes('selatan') || combined.includes('south') || (lat < -6.23 && lng <= 106.87 && lng >= 106.75)) {
           kabkot = 'Kota Administrasi Jakarta Selatan';
-        } else if (combined.includes('barat') || combined.includes('west') || (lng < 106.79 && lat >= -6.24)) {
+        } else if (combined.includes('barat') || combined.includes('west') || (lng < 106.81 && lat >= -6.24)) {
           kabkot = 'Kota Administrasi Jakarta Barat';
         } else if (combined.includes('utara') || combined.includes('north') || (lat > -6.18 && lat < -6.08 && lng >= 106.72 && lng <= 106.98)) {
           kabkot = 'Kota Administrasi Jakarta Utara';
@@ -2802,23 +2883,27 @@ async function triggerD1Failover() {
           kabkot = 'Kota Administrasi Jakarta Pusat';
         }
       } else {
-        let rawKab = data?.kabupaten || addr.city || addr.town || addr.county || addr.state_district || addr.municipality || addr.city_district || '';
-        if (rawKab && rawKab !== '-') {
+        let rawKab = data?.kabupaten || addr.county || addr.city || addr.town || addr.state_district || addr.municipality || addr.city_district || '';
+        if (rawKab && rawKab !== '-' && !rawKab.toLowerCase().includes('jakarta')) {
           rawKab = rawKab.replace(/^(City of|Regency of|Kota Administrasi|Kota|Kabupaten|Kab\.|Kotamadya)\s{0,}/i, '').trim();
           if (/^(Surakarta|Bandung|Surabaya|Semarang|Medan|Makassar|Yogyakarta|Depok|Bekasi|Bogor|Tangerang|Tangerang Selatan|Malang|Batam|Palembang|Pekanbaru|Bandar Lampung|Padang|Denpasar|Samarinda|Banjarmasin|Balikpapan|Pontianak|Manado|Cimahi|Salatiga|Magelang|Pekalongan|Tegal|Cirebon|Sukabumi|Tasikmalaya|Probolinggo|Pasuruan|Mojokerto|Madiun|Kediri|Blitar|Batu)/i.test(rawKab)) {
             kabkot = 'Kota ' + rawKab;
           } else {
             kabkot = 'Kabupaten ' + rawKab;
           }
+        } else {
+          kabkot = fallbackGeo.kabkot || '-';
         }
       }
-      if ((!prov || prov === '-') && (desa.toLowerCase().includes('jakarta') || kec.toLowerCase().includes('menteng') || kec.toLowerCase().includes('gambir'))) {
-        prov = 'DKI Jakarta';
+
+      if (kabkot === '-' || kabkot === 'Kota -' || kabkot === 'Kabupaten -') {
+        kabkot = fallbackGeo.kabkot || '-';
       }
+
       const kodepos = addr.postcode || '-';
       const jalan = data?.alamat_lengkap || addr.road || addr.amenity || data?.display_name || '-';
       const cleanKab = kabkot !== '-' ? kabkot.replace(/^Kabupaten\s{0,}/i, '').replace(/^Kota\s{0,}/i, '').trim() : '';
-      const kantah = data?.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : '-');
+      const kantah = data?.kantah || (cleanKab ? `Kantor Pertanahan ${cleanKab}` : fallbackGeo.kantah || '-');
 
       return { desa, kecamatan: kec, kabkot, provinsi: prov, kodepos, kantah, jalan };
     }
@@ -2938,6 +3023,11 @@ async function triggerD1Failover() {
       const elHutan = document.getElementById('pinHutanText'); if (elHutan) elHutan.innerText = '-';
       const elZnt = document.getElementById('pinZntText'); if (elZnt) elZnt.innerText = '-';
       const elZntRange = document.getElementById('pinZntRangeText'); if (elZntRange) elZntRange.innerText = '-';
+      const elLiveM2 = document.getElementById('canvasLiveAreaM2'); if (elLiveM2) elLiveM2.innerText = '0 m²';
+      const elLiveHa = document.getElementById('valLuasHa'); if (elLiveHa) elLiveHa.innerText = '0,0000 Ha';
+      const elLiveKel = document.getElementById('valKeliling'); if (elLiveKel) elLiveKel.innerText = '0';
+      const elCount = document.getElementById('canvasVerticesCount'); if (elCount) elCount.innerText = '0 Patok';
+      const rowKab = document.getElementById('rowPinKabkot'); if (rowKab) rowKab.style.display = 'none';
 
       const hud = document.getElementById('canvasHud');
       if (hud) hud.style.display = 'none';
