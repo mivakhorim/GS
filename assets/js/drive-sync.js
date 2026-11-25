@@ -322,6 +322,14 @@
   }
 
   function openParcelAttributesModal(featureOrId = null) {
+    const isUserLoggedIn = (typeof window !== 'undefined' && typeof window.isMemberProActive === 'function') ? window.isMemberProActive() : false;
+    if (!isUserLoggedIn) {
+      if (typeof showToast === 'function') {
+        showToast('Silakan masuk akun terlebih dahulu untuk mengakses Database Koleksi Bidang.', 'warn');
+      }
+      if (typeof openMemberModal === 'function') openMemberModal();
+      return;
+    }
     let feature = null;
     if (typeof featureOrId === 'string') {
       const catalog = getLocalCatalog();

@@ -88,6 +88,13 @@ function togglePrintDimensions(show) {
     }
 
     function openMapPrintModal() {
+      if (typeof isMemberProActive === 'function' && !isMemberProActive()) {
+        if (typeof showToast === 'function') {
+          showToast('Silakan masuk akun terlebih dahulu untuk mencetak peta bidang.', 'warn');
+        }
+        if (typeof openMemberModal === 'function') openMemberModal();
+        return;
+      }
       if (typeof isMobileDevice === 'function' && isMobileDevice()) {
         processDirectMobilePdfPrint();
         return;

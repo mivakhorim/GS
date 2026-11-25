@@ -63,57 +63,23 @@ function closeServerModal() {
     ];
 
     function verifyProLicenseIntegrity() {
-      if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) return false;
-      if (!currentMemberSession.access_token) return false;
-      const role = String(_memberSecureState.role || '').toLowerCase().trim();
-      const status = String(_memberSecureState.status || '').toLowerCase().trim();
-      const rolePerm = _cachedRolesList.find(r => r.role_id === role);
-      const isAllowed = (role === 'pro' || role === 'admin' || role === 'administrator' || role === 'superadmin') || (rolePerm && rolePerm.can_export_shp === true);
-      const isStatusValid = (status === 'active' || status === 'aktif' || status === 'verified' || status === '' || role === 'admin' || role === 'administrator');
-      if (!isAllowed || !isStatusValid) return false;
-      const sEmail = (_memberSecureState.email || '').toLowerCase().trim();
-      const uEmail = (currentMemberSession.user.email || '').toLowerCase().trim();
-      if (sEmail !== uEmail) return false;
-      if (role !== 'admin' && role !== 'administrator' && _memberSecureState.expires_at && new Date(_memberSecureState.expires_at) <= new Date()) return false;
-      return true;
+      return !!(currentMemberSession && currentMemberSession.user && currentMemberSession.user.email);
     }
 
     function verifyAdminLicenseIntegrity() {
-      if (!currentMemberSession || !currentMemberSession.user || !currentMemberSession.user.email) {
-        if (typeof window !== 'undefined') {
-          const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-          const hasLocalPinSession = sessionStorage.getItem('duta_admin_local_auth') === 'verified';
-          if (isLocal && hasLocalPinSession) {
-            return true;
-          }
-        }
-        return false;
-      }
-      if (!currentMemberSession.access_token) return false;
-      const sEmail = (_memberSecureState.email || '').toLowerCase().trim();
-      const uEmail = (currentMemberSession.user.email || '').toLowerCase().trim();
-      if (sEmail !== uEmail) return false;
-      const isMasterAdmin = ['admin@dutamik.id', 'duta.digital.agensi@gmail.com', 'm.ivakhorim@gmail.com'].includes(uEmail);
-      if (isMasterAdmin) return true;
-      const role = String(_memberSecureState.role || '').toLowerCase().trim();
-      const status = String(_memberSecureState.status || '').toLowerCase().trim();
-      const rolePerm = _cachedRolesList.find(r => r.role_id === role);
-      const isAllowed = (role === 'admin' || role === 'administrator' || role === 'superadmin') || (rolePerm && rolePerm.can_use_server2 === true && rolePerm.can_manage_roles === true);
-      const isStatusValid = (status === 'active' || status === 'aktif' || status === 'verified' || status === '' || !status);
-      if (!isAllowed || !isStatusValid) return false;
       return true;
     }
 
     try {
       Object.defineProperty(window, 'isMemberProActive', {
         value: verifyProLicenseIntegrity,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
       });
       Object.defineProperty(window, 'isMemberAdminActive', {
         value: verifyAdminLicenseIntegrity,
-        writable: false,
-        configurable: false
+        writable: true,
+        configurable: true
       });
     } catch (e) {
       window.isMemberProActive = verifyProLicenseIntegrity;
@@ -545,28 +511,24 @@ function closeServerModal() {
       const guestBody = document.getElementById('memberModalBodyGuest');
       const userBody = document.getElementById('memberModalBodyUser');
 
-      const isPro = (typeof window !== "undefined" && typeof window.isMemberProActive === "function") ? window.isMemberProActive() : (typeof isMemberProActive === "function" ? isMemberProActive() : false);
-      const isAdmin = (typeof isMemberAdminActive === 'function') ? isMemberAdminActive() : (_memberSecureState.role === 'admin');
-      const isLoggedIn = !!currentMemberSession?.user;
+      const isUserLoggedIn = !!(currentMemberSession && currentMemberSession.user && currentMemberSession.user.email);
 
       if (headerBadge) {
-        if (isAdmin) {
-          headerBadge.textContent = 'ADMIN';
-          headerBadge.className = 'tier-tag pro';
-        } else if (isPro) {
-          headerBadge.textContent = 'PRO';
+        if (isUserLoggedIn) {
+          headerBadge.textContent = 'TERVERIFIKASI';
           headerBadge.className = 'tier-tag pro';
         } else {
-          headerBadge.textContent = 'FREE';
+          headerBadge.textContent = 'MASUK';
           headerBadge.className = 'tier-tag free';
         }
       }
 
       if (headerText) {
-        if (isLoggedIn) {
-          headerText.textContent = (currentMemberProfile.name || 'Member').substring(0, 10);
+        if (isUserLoggedIn) {
+          const userName = currentMemberProfile.name || currentMemberSession.user.user_metadata?.full_name || currentMemberSession.user.email.split('@')[0] || 'User';
+          headerText.textContent = userName.substring(0, 10);
         } else {
-          headerText.textContent = 'Member';
+          headerText.textContent = 'AKUN';
         }
       }
 
@@ -576,65 +538,50 @@ function closeServerModal() {
       const attrModeBadge = document.getElementById('attrModeBadge');
       const boxEkspor = document.getElementById('boxEkspor');
 
-      if (!isPro) {
-        attrInputIds.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) {
-            el.disabled = false;
-            el.style.backgroundColor = '';
-            el.style.cursor = '';
-          }
-        });
+      attrInputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.disabled = false;
+          el.style.backgroundColor = '';
+          el.style.cursor = '';
+        }
+      });
 
-        if (tabBtnCustom) {
-          tabBtnCustom.disabled = true;
-          tabBtnCustom.style.opacity = '0.7';
-          tabBtnCustom.style.cursor = 'pointer';
-        }
-        if (tabBtnOss) {
-          tabBtnOss.disabled = false;
-          tabBtnOss.style.cursor = 'pointer';
-        }
+      if (tabBtnCustom) {
+        tabBtnCustom.disabled = false;
+        tabBtnCustom.style.opacity = '1';
+        tabBtnCustom.style.cursor = 'pointer';
+      }
+      if (tabBtnOss) {
+        tabBtnOss.disabled = false;
+        tabBtnOss.style.cursor = 'pointer';
+      }
+
+      if (!isUserLoggedIn) {
         if (attrModeBadge) {
           attrModeBadge.className = '';
           attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--text-sub);';
-          attrModeBadge.innerText = 'Free User Max 150 M2';
+          attrModeBadge.innerText = 'Masuk Akun untuk Mengunduh Berkas';
         }
         let freeNotice = document.getElementById('shpFreeAttrNotice');
         if (!freeNotice && boxEkspor) {
           freeNotice = document.createElement('div');
           freeNotice.id = 'shpFreeAttrNotice';
           freeNotice.style.cssText = 'font-size: 0.71rem; color: var(--text-sub); margin: 4px 0 6px 0; line-height: 1.45;';
-          freeNotice.innerHTML = 'Untuk mengedit atribut peta memerlukan akses PRO (Maks luas 150 m²). Berkas: <code>geospasi.zip</code>. <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Upgrade ke PRO</a> untuk akses kustom &amp; luas tanpa batas.';
+          freeNotice.innerHTML = 'Silakan <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Masuk Akun Google</a> untuk mengunduh berkas spasial lengkap (SHP, DXF, GeoJSON, KML, Excel) tanpa batasan luas.';
           const tabNav = boxEkspor.querySelector('div[style*="border-bottom"]');
           if (tabNav) {
             boxEkspor.insertBefore(freeNotice, tabNav);
           }
         } else if (freeNotice) {
           freeNotice.style.display = 'block';
+          freeNotice.innerHTML = 'Silakan <a href="javascript:void(0)" onclick="openMemberModal()" style="color: var(--accent); font-weight: 600; text-decoration: none;">Masuk Akun Google</a> untuk mengunduh berkas spasial lengkap (SHP, DXF, GeoJSON, KML, Excel) tanpa batasan luas.';
         }
       } else {
-        attrInputIds.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) {
-            el.disabled = false;
-            el.style.backgroundColor = '';
-            el.style.cursor = '';
-          }
-        });
-        if (tabBtnCustom) {
-          tabBtnCustom.disabled = false;
-          tabBtnCustom.style.opacity = '1';
-          tabBtnCustom.style.cursor = 'pointer';
-        }
-        if (tabBtnOss) {
-          tabBtnOss.disabled = false;
-          tabBtnOss.style.cursor = 'pointer';
-        }
         if (attrModeBadge) {
           attrModeBadge.className = '';
           attrModeBadge.style.cssText = 'font-size: 0.72rem; font-weight: 600; color: var(--emerald);';
-          attrModeBadge.innerText = 'Ekspor PRO: Akses Kustom & Luas Tanpa Batas';
+          attrModeBadge.innerText = 'Akun Terverifikasi: Ekspor Lengkap Aktif';
         }
         const freeNotice = document.getElementById('shpFreeAttrNotice');
         if (freeNotice) {
@@ -646,7 +593,7 @@ function closeServerModal() {
         renderCadastralProFields();
       }
 
-      if (isLoggedIn) {
+      if (isUserLoggedIn) {
         if (guestBody) guestBody.style.display = 'none';
         if (userBody) userBody.style.display = 'flex';
 
@@ -659,43 +606,23 @@ function closeServerModal() {
         const qrisBtn = document.getElementById('btnUpgradeQris');
         const thankYouCard = document.getElementById('proMemberThankYouCard');
 
-        if (nameEl) nameEl.textContent = currentMemberProfile.name || 'Member Duta GeoSpasi';
-        if (emailEl) emailEl.textContent = currentMemberProfile.email || '-';
-        if (avatarEl) avatarEl.textContent = (currentMemberProfile.name || currentMemberProfile.email || 'M').charAt(0).toUpperCase();
+        const name = currentMemberProfile.name || currentMemberSession.user.user_metadata?.full_name || currentMemberSession.user.email.split('@')[0] || 'User';
+        const email = currentMemberSession.user.email || '';
 
-        if (isAdmin) {
-          if (badgeEl) {
-            badgeEl.className = 'member-plan-badge pro';
-            badgeEl.textContent = 'ADMINISTRATOR';
-          }
-          if (alertEl) alertEl.style.display = 'none';
-          if (thankYouCard) thankYouCard.style.display = 'block';
-          if (qrisBtn) qrisBtn.style.display = 'none';
-          if (upgradeBtn) upgradeBtn.style.display = 'none';
-        } else if (isPro) {
-          if (badgeEl) {
-            badgeEl.className = 'member-plan-badge pro';
-            badgeEl.textContent = 'PRO MEMBER RESMI';
-          }
-          if (alertEl) {
-            alertEl.style.display = 'none';
-          }
-          if (thankYouCard) thankYouCard.style.display = 'block';
-          if (qrisBtn) qrisBtn.style.display = 'none';
-          if (upgradeBtn) upgradeBtn.style.display = 'none';
-        } else {
-          if (badgeEl) {
-            badgeEl.className = 'member-plan-badge free';
-            badgeEl.textContent = 'FREE TIER';
-          }
-          if (alertEl) {
-            alertEl.style.display = 'block';
-            alertEl.innerHTML = 'Untuk mengedit atribut peta memerlukan akses PRO. Mode Akun Gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom & luas tanpa batas.';
-          }
-          if (thankYouCard) thankYouCard.style.display = 'none';
-          if (qrisBtn) qrisBtn.style.display = 'flex';
-          if (upgradeBtn) upgradeBtn.style.display = 'flex';
+        if (nameEl) nameEl.textContent = name;
+        if (emailEl) emailEl.textContent = email;
+        if (avatarEl) avatarEl.textContent = (name.charAt(0) || 'U').toUpperCase();
+        if (badgeEl) {
+          badgeEl.className = 'tier-tag pro';
+          badgeEl.textContent = 'TERVERIFIKASI';
         }
+        if (alertEl) {
+          alertEl.style.display = 'block';
+          alertEl.innerHTML = 'Akun Google Anda terhubung dan terverifikasi. Seluruh hak akses ekspor berkas spasial (SHP, CAD, GeoJSON, Excel) dan penyimpanan database koleksi bidang tanah aktif penuh.';
+        }
+        if (thankYouCard) thankYouCard.style.display = 'none';
+        if (qrisBtn) qrisBtn.style.display = 'none';
+        if (upgradeBtn) upgradeBtn.style.display = 'none';
       } else {
         if (guestBody) guestBody.style.display = 'flex';
         if (userBody) userBody.style.display = 'none';
@@ -704,10 +631,8 @@ function closeServerModal() {
         updateCadastreServerUI();
       }
       if (typeof syncAdminMejaKerjaVisibility === 'function') {
-        syncAdminMejaKerjaVisibility(isAdmin);
+        syncAdminMejaKerjaVisibility(true);
       }
-      renderAdminRoleManagementUI(isAdmin);
-      if (typeof updateSimulationUI === "function") updateSimulationUI();
     }
 
     function openMemberModal() {

@@ -1642,7 +1642,7 @@ async function triggerD1Failover() {
 
       const streamBox = document.getElementById('adminCadastreStreamBox');
       if (streamBox) {
-        streamBox.style.display = isAdmin ? 'block' : 'none';
+        streamBox.style.display = 'block';
       }
       const streamMode = localStorage.getItem('cadastre_stream_mode') || 'vector_geojson';
       const selStream = document.getElementById('selectCadastreStream');
@@ -2945,7 +2945,6 @@ async function triggerD1Failover() {
         showToast('Pilih bidang tanah pada peta terlebih dahulu.', 'warn');
         return;
       }
-      const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
       let summary = `DATA RESMI BIDANG TANAH KADASTRAL\n\n`;
       summary += `Tipe Hak: ${activePinData.tipe_hak || 'Hak Milik'}\n`;
       summary += `Luas Terdaftar: ${Math.round(activePinData.luas_m2 || 0).toLocaleString('id-ID')} m²\n`;
@@ -2953,24 +2952,21 @@ async function triggerD1Failover() {
       summary += `Provinsi: ${activePinData.provinsi || '-'}\n`;
       summary += `Koordinat: ${activePinData.lat.toFixed(6)}, ${activePinData.lng.toFixed(6)}\n`;
       summary += `Status Validasi: ${activePinData.status_validasi || 'Terdaftar di Basis Data'}\n`;
-
-      if (isPro) {
-        summary += `\nDATA DETAIL KADASTER & TATA RUANG (PRO):\n`;
-        summary += `NIB Lengkap: ${activePinData.nib_lengkap || activePinData.nib || '-'}\n`;
-        summary += `Kantah: ${activePinData.kantah || '-'}\n`;
-        summary += `Kluster PTSL: ${activePinData.kluster_ptsl || '-'}\n`;
-        summary += `Akurasi & Alat: ${activePinData.akurasibidang || '-'}\n`;
-        summary += `RTRW Kab/Kota: ${activePinData.rtrw || '-'}\n`;
-        summary += `RDTR (Detail): ${activePinData.rdtr || '-'}\n`;
-        summary += `Status LSD: ${activePinData.lsd || '-'}\n`;
-        summary += `Status LBS: ${activePinData.lbs || '-'}\n`;
-        summary += `Kawasan Hutan (KLHK): ${activePinData.hutan || '-'}\n`;
-        summary += `Zona Nilai Tanah: ${activePinData.znt || '-'}\n`;
-        summary += `Rentang Nilai ZNT: ${activePinData.znt_range || '-'}\n`;
-      }
+      summary += `\nDATA DETAIL KADASTER & TATA RUANG:\n`;
+      summary += `NIB Lengkap: ${activePinData.nib_lengkap || activePinData.nib || '-'}\n`;
+      summary += `Kantah: ${activePinData.kantah || '-'}\n`;
+      summary += `Kluster PTSL: ${activePinData.kluster_ptsl || '-'}\n`;
+      summary += `Akurasi & Alat: ${activePinData.akurasibidang || '-'}\n`;
+      summary += `RTRW Kab/Kota: ${activePinData.rtrw || '-'}\n`;
+      summary += `RDTR (Detail): ${activePinData.rdtr || '-'}\n`;
+      summary += `Status LSD: ${activePinData.lsd || '-'}\n`;
+      summary += `Status LBS: ${activePinData.lbs || '-'}\n`;
+      summary += `Kawasan Hutan (KLHK): ${activePinData.hutan || '-'}\n`;
+      summary += `Zona Nilai Tanah: ${activePinData.znt || '-'}\n`;
+      summary += `Rentang Nilai ZNT: ${activePinData.znt_range || '-'}\n`;
 
       navigator.clipboard.writeText(summary).then(() => {
-        showToast(isPro ? 'Data lengkap kadaster dan tata ruang berhasil disalin!' : 'Data dasar bidang berhasil disalin ke clipboard!', 'success');
+        showToast('Data lengkap kadaster dan tata ruang berhasil disalin!', 'success');
       });
     }
 
@@ -3597,15 +3593,6 @@ async function triggerD1Failover() {
     }
 
     async function switchCadastreDataStream(streamMode) {
-      const isAdmin = ((typeof isMemberAdminActive === 'function') && isMemberAdminActive()) ||
-                      (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'));
-      if (!isAdmin) {
-        showToast('Pemilihan format data stream kadaster lengkap (Vektor 1-3 & Raster 1-2) khusus untuk Administrator.', 'warn');
-        const sel = document.getElementById('selectCadastreStream');
-        if (sel) sel.value = 'vector_geojson';
-        return false;
-      }
-
       currentCadastreStreamMode = streamMode;
       localStorage.setItem('cadastre_stream_mode', streamMode);
       if (typeof cadastreVectorParcelCache !== 'undefined' && cadastreVectorParcelCache) {
@@ -3643,11 +3630,12 @@ async function triggerD1Failover() {
 
     function exportWmsTileMap(format = 'png') {
       const isPro = (typeof isMemberProActive === 'function') && isMemberProActive();
-      const z = map ? Math.min(map.getZoom(), isPro ? 21 : 16) : 17;
-
-      if (!isPro && (format === 'webp' || (map && map.getZoom() > 16))) {
-        showToast('Unduh WMS/WMTS resolusi tinggi (WebP / Zoom > 16) khusus Member PRO/Administrator. Akun gratis mengunduh resolusi standar.', 'warn');
+      if (!isPro) {
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh gambar peta WMS.', 'warn');
+        if (typeof openMemberModal === 'function') openMemberModal();
+        return;
       }
+      const z = map ? Math.min(map.getZoom(), 21) : 17;
 
       const center = map ? map.getCenter() : { lat: DEFAULT_LAT, lng: DEFAULT_LON };
       const tilePt = latlngToMercator(center.lat, center.lng);
@@ -3674,7 +3662,7 @@ async function triggerD1Failover() {
         return res.blob();
       })
       .then(blob => {
-        downloadFile(blob, `DutaGeoSpasi_WMS_Tile_${isPro ? 'PRO_HighRes' : 'Free_SD'}.${format}`, format === 'webp' ? 'image/webp' : 'image/png');
+        downloadFile(blob, `DutaGeoSpasi_WMS_Tile.${format}`, format === 'webp' ? 'image/webp' : 'image/png');
         showToast(`Gambar peta WMS/WMTS (${format.toUpperCase()}) berhasil diunduh.`, 'success');
       })
       .catch(err => {
@@ -3684,18 +3672,17 @@ async function triggerD1Failover() {
       });
     }
 
-    function exportArcgisWebMap(format = 'png', resolution = 'sd') {
+    function exportArcgisWebMap(format = 'png', resolution = 'hd') {
       const isPro = (typeof isMemberProActive === 'function') && isMemberProActive();
-
-      if (!isPro && (resolution === 'hd' || resolution === '4k' || format === 'pdf')) {
-        showToast('Ekspor ArcGIS Web Map HD/4K dan format PDF khusus Member PRO/Administrator. Akun gratis dialihkan ke format SD (800x600 PNG).', 'warn');
-        format = 'png';
-        resolution = 'sd';
+      if (!isPro) {
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh ArcGIS Web Map.', 'warn');
+        if (typeof openMemberModal === 'function') openMemberModal();
+        return;
       }
 
-      let width = 800;
-      let height = 600;
-      if (resolution === 'hd') { width = 1920; height = 1080; }
+      let width = 1920;
+      let height = 1080;
+      if (resolution === 'sd') { width = 800; height = 600; }
       else if (resolution === '4k') { width = 3840; height = 2160; }
 
       let bMin = { x: 0, y: 0 };
@@ -3739,7 +3726,7 @@ async function triggerD1Failover() {
         return res.blob();
       })
       .then(blob => {
-        const fn = `DutaGeoSpasi_ArcGIS_WebMap_${width}x${height}_${isPro ? 'PRO' : 'Free'}.${format}`;
+        const fn = `DutaGeoSpasi_ArcGIS_WebMap_${width}x${height}.${format}`;
         const mime = format === 'pdf' ? 'application/pdf' : (format === 'jpg' || format === 'jpeg' ? 'image/jpeg' : 'image/png');
         downloadFile(blob, fn, mime);
 
@@ -3748,7 +3735,7 @@ async function triggerD1Failover() {
           const pixelSizeY = (bMin.y - bMax.y) / height;
           const worldContent = `${pixelSizeX.toFixed(8)}\n0.00000000\n0.00000000\n${pixelSizeY.toFixed(8)}\n${bMin.x.toFixed(4)}\n${bMax.y.toFixed(4)}\n`;
           const wfExt = format === 'png' ? 'pgw' : 'jgw';
-          downloadFile(worldContent, `DutaGeoSpasi_ArcGIS_WebMap_${width}x${height}_${isPro ? 'PRO' : 'Free'}.${wfExt}`, 'text/plain;charset=utf-8');
+          downloadFile(worldContent, `DutaGeoSpasi_ArcGIS_WebMap_${width}x${height}.${wfExt}`, 'text/plain;charset=utf-8');
         }
 
         showToast(`Peta ArcGIS Web Map (${format.toUpperCase()}) dan Georeferensi World File berhasil diunduh.`, 'success');
@@ -3773,11 +3760,6 @@ async function triggerD1Failover() {
     function updateAdminPolygonCoordsUI(customCoords = null) {
       const box = document.getElementById('adminPolygonCoordsBox');
       if (!box) return;
-      const isAdmin = (typeof isMemberAdminActive === 'function') && isMemberAdminActive();
-      if (!isAdmin) {
-        box.style.display = 'none';
-        return;
-      }
       let coords = customCoords;
       if (!coords || !Array.isArray(coords) || coords.length === 0) {
         if (activePinData && Array.isArray(activePinData.polygon_coords) && activePinData.polygon_coords.length >= 3) {

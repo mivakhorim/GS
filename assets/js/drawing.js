@@ -353,11 +353,6 @@ function createPolygonFromBatchCoords(silent = false, doSwitchTab = true) {
         showToast('Pilih bidang tanah pada peta terlebih dahulu.', 'warn');
         return;
       }
-      if (!(typeof isMemberProActive === 'function' && isMemberProActive())) {
-        showToast('Rincian data kadaster resmi khusus Member PRO. Silakan upgrade akun.', 'warn');
-        if (typeof openMemberModal === 'function') openMemberModal();
-        return;
-      }
       const serverName = (typeof getCadastreServerMode === 'function' && getCadastreServerMode() === 'server2') ? 'Server 2' : 'Server 1';
       const luasStr = (activePinData.luas_m2 && activePinData.luas_m2 > 0)
         ? `${Math.round(activePinData.luas_m2).toLocaleString('id-ID')} m²`
@@ -1808,12 +1803,6 @@ Server Sumber Data: ${serverName}`;
     function toggleMergeMode() {
       if (isMergeMode) {
         cancelMergeMode();
-        return;
-      }
-      const isProOrAdmin = (typeof isMemberProActive === 'function' && isMemberProActive()) || (typeof isMemberAdminActive === 'function' && isMemberAdminActive());
-      if (!isProOrAdmin) {
-        showToast('Fitur seleksi & penggabungan multi-bidang memerlukan akses PRO atau ADMIN. Silakan masuk akun.', 'warn');
-        if (typeof openMemberModal === 'function') openMemberModal();
         return;
       }
       if (!activeVertices || activeVertices.length < 3) {

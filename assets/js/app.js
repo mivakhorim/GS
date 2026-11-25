@@ -102,6 +102,17 @@ function toggleMobileSidebar(forceClose = false) {
       if (tabId === "tab-bidang") {
         tabId = "tab-digitasi";
       }
+      if (tabId === 'tab-katalog') {
+        const isUserLoggedIn = (typeof window !== 'undefined' && typeof window.isMemberProActive === 'function') ? window.isMemberProActive() : false;
+        if (!isUserLoggedIn) {
+          if (typeof showToast === 'function') {
+            showToast('Silakan masuk akun terlebih dahulu untuk mengakses Database Koleksi Bidang.', 'warn');
+          }
+          if (typeof openMemberModal === 'function') openMemberModal();
+          return;
+        }
+      }
+
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-view').forEach(panel => panel.classList.remove('active'));
 

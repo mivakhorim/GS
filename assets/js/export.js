@@ -77,7 +77,7 @@ function getExportVerticesWithOssAdjustment(parts) {
 
 function exportCoordinatesXls() {
       if (!isMemberProActive()) {
-        showToast('Fitur Ekspor Koordinat Excel khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh berkas Excel koordinat.', 'warn');
         openMemberModal();
         return;
       }
@@ -173,7 +173,7 @@ function exportCoordinatesXls() {
 
     function openExportCoordsModal() {
       if (!isMemberProActive()) {
-        showToast('Fitur Ekspor Format CAD & Koordinat khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh format CAD & koordinat.', 'warn');
         openMemberModal();
         return;
       }
@@ -194,7 +194,7 @@ function exportCoordinatesXls() {
 
     function exportDXF() {
       if (!isMemberProActive()) {
-        showToast('Fitur Ekspor AutoCAD DXF (.dxf) khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh AutoCAD DXF (.dxf).', 'warn');
         openMemberModal();
         return;
       }
@@ -673,7 +673,7 @@ function exportCoordinatesXls() {
 
     function downloadCoordsCad(mode = 'scr_scale100') {
       if (!isMemberProActive()) {
-        showToast('Fitur Ekspor Format CAD & Koordinat khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh format CAD.', 'warn');
         openMemberModal();
         return;
       }
@@ -808,7 +808,7 @@ function exportCoordinatesXls() {
 
     function exportGeoJSON() {
       if (!isMemberProActive()) {
-        showToast('Fitur Ekspor GeoJSON khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh berkas GeoJSON.', 'warn');
         openMemberModal();
         return;
       }
@@ -914,7 +914,7 @@ function exportCoordinatesXls() {
 
     function switchAttrTab(tab) {
       if (tab === 'custom' && !(typeof isMemberProActive === 'function' && isMemberProActive())) {
-        showToast('Untuk mengedit atribut peta memerlukan akses PRO. Upgrade ke PRO untuk mengaktifkan.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengedit atribut kustom.', 'warn');
         openMemberModal();
         return;
       }
@@ -951,7 +951,7 @@ function exportCoordinatesXls() {
 
     function addCustomAttrRow(name, type, val) {
       if (!(typeof isMemberProActive === 'function' && isMemberProActive())) {
-        showToast('Fitur tambah atribut kustom khusus Member PRO.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk menambah atribut kustom.', 'warn');
         openMemberModal();
         return;
       }
@@ -1084,6 +1084,11 @@ function exportCoordinatesXls() {
       }
 
       const isPro = (typeof isMemberProActive === 'function') ? isMemberProActive() : false;
+      if (!isPro) {
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh dan mengekspor berkas Shapefile.', 'warn');
+        openMemberModal();
+        return;
+      }
 
       const rawParts = (activeMultiParts && activeMultiParts.length > 1) ? activeMultiParts : [activeVertices];
       const parts = getExportVerticesWithOssAdjustment(rawParts);
@@ -1092,30 +1097,15 @@ function exportCoordinatesXls() {
       const partsCoords = parts.map(part => part.map(v => [v.lng, v.lat]));
       const luasHa = Number((areaM2 / 10000.0).toFixed(6));
 
-      if (!isPro && areaM2 > 150) {
-        showToast(`Ekspor Shapefile akun Gratis dibatasi maksimal luas 150 m². Luas bidang saat ini: ${formatAreaM2(areaM2)}. Silakan upgrade ke Member PRO untuk luas tanpa batas.`, 'warn');
-        openMemberModal();
-        return;
-      }
-
       let attrs = {};
-      if (!isPro) {
-        attrs = {
-          _baseFileName: 'geospasi',
-          _zipDownloadName: 'geospasi.zip',
-          _customFields: [
-            { name: 'LAYER', type: 'C', len: 254, dec: 0, val: 'geospasi.dutamik.id' }
-          ]
-        };
+      if (currentAttrTab === 'custom') {
+        const customRows = getCustomFieldsFromTable();
+        if (customRows.length === 0) {
+          showToast('Tambahkan minimal 1 kolom atribut kustom.', 'warn');
+          return;
+        }
+        attrs._customFields = customRows;
       } else {
-        if (currentAttrTab === 'custom') {
-          const customRows = getCustomFieldsFromTable();
-          if (customRows.length === 0) {
-            showToast('Tambahkan minimal 1 kolom atribut kustom.', 'warn');
-            return;
-          }
-          attrs._customFields = customRows;
-        } else {
           const pemrakarsa = (document.getElementById('shpPemrakarsa')?.value.trim() || 'PEMOHON OSS RBA').toUpperCase();
           const kegiatan = (document.getElementById('shpKegiatan')?.value.trim() || 'KKPR / PERIZINAN BERUSAHA').toUpperCase();
           const tahun = (document.getElementById('shpTahun')?.value.trim() || '2026').toUpperCase();
@@ -1136,7 +1126,6 @@ function exportCoordinatesXls() {
         const safeLayer = (document.getElementById('shpLayer')?.value.trim() || 'bidang').toLowerCase().replace(/[^a-z0-9_]/g, '_');
         attrs._baseFileName = `DutaGeoSpasi_${safeLayer}`;
         attrs._zipDownloadName = `DutaGeoSpasi_shapefile_${safeLayer}.zip`;
-      }
 
       showToast('Menyusun berkas ESRI Shapefile ZIP...', 'info');
 
@@ -1314,8 +1303,8 @@ function exportCoordinatesXls() {
           const prj = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
 
           const zip = new JSZip();
-          const baseName = attrs._baseFileName || (isMemberProActive() ? "DutaGeoSpasi_bidang" : "geospasi");
-          const zipName = attrs._zipDownloadName || (isMemberProActive() ? "DutaGeoSpasi_shapefile_bidang.zip" : "geospasi.zip");
+          const baseName = attrs._baseFileName || "DutaGeoSpasi_bidang";
+          const zipName = attrs._zipDownloadName || "DutaGeoSpasi_shapefile_bidang.zip";
 
           zip.file(`${baseName}.shp`, shpBuffer);
           zip.file(`${baseName}.shx`, shxBuffer);
@@ -1350,7 +1339,7 @@ function exportCoordinatesXls() {
 
     function exportKML() {
       if (!isMemberProActive()) {
-        showToast('Fitur Ekspor KML khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh berkas KML.', 'warn');
         openMemberModal();
         return;
       }
@@ -1493,7 +1482,7 @@ function exportCoordinatesXls() {
 
     function exportPersilSVG() {
       if (!isMemberProActive()) {
-        showToast('Fitur Ekspor SVG Presisi Persil khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+        showToast('Silakan masuk akun terlebih dahulu untuk mengunduh berkas SVG.', 'warn');
         openMemberModal();
         return;
       }
@@ -1824,7 +1813,7 @@ function exportCoordinatesXls() {
 
 async function exportAllInOnePackage() {
   if (!isMemberProActive()) {
-    showToast('Paket Lengkap All-in-One khusus Member PRO. Silakan masuk atau upgrade akun.', 'warn');
+    showToast('Silakan masuk akun terlebih dahulu untuk mengunduh paket lengkap.', 'warn');
     openMemberModal();
     return;
   }

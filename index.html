@@ -169,10 +169,10 @@
       <button id="btnHeaderPrintMap" class="header-icon-btn" onclick="handlePrintMapTrigger()" title="Cetak Peta Format Resmi Standar (A4 / A3 Landscape)" aria-label="Cetak Peta">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       </button>
-      <button id="btnHeaderMember" class="header-auth-badge" onclick="openMemberModal()" title="Portal Akun &amp; Lisensi Member Duta GeoSpasi" aria-label="Portal Member">
+      <button id="btnHeaderMember" class="header-auth-badge" onclick="openMemberModal()" title="Portal Akun Duta GeoSpasi" aria-label="Portal Akun">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3-3m0 0l-3 3m3-3v8"/></svg>
         <span id="headerMemberText">AKUN</span>
-        <span id="headerMemberBadge" class="tier-tag free">FREE</span>
+        <span id="headerMemberBadge" class="tier-tag free">MASUK</span>
       </button>
     </div>
   </header>
@@ -1030,50 +1030,37 @@
       <div class="modal-header" style="padding: 14px 18px; border-bottom: 1px solid #e2e8f0; background: #ffffff; display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <img src="assets/img/logo.webp" onerror="this.onerror=null; this.src='assets/logo.webp';" alt="Duta GeoSpasi" style="height: 24px; width: auto; object-fit: contain;">
-          <h3 id="memberModalTitle" style="font-size: 14px; font-weight: 700; color: #0a2e5c; margin: 0;">Portal Member Duta GeoSpasi</h3>
+          <h3 id="memberModalTitle" style="font-size: 14px; font-weight: 700; color: #0a2e5c; margin: 0;">Portal Akun Duta GeoSpasi</h3>
         </div>
-        <button type="button" class="modal-close-btn" onclick="closeMemberModal()" aria-label="Tutup Modal Member" style="background: transparent; border: none; font-size: 20px; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="closeMemberModal()" aria-label="Tutup Modal Akun" style="background: transparent; border: none; font-size: 20px; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
       </div>
 
       <div class="modal-body" id="memberModalBodyGuest" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;">
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 14px 16px; border-radius: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span style="font-size: 11px; color: #0a2e5c; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Promo Lisensi Resmi</span>
-            <span style="font-size: 10px; background-color: #dcfce7; color: #15803d; font-weight: 800; border: 1px solid #86efac; padding: 2px 7px; border-radius: 4px;">HEMAT 80%</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 11px; color: #0a2e5c; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Akses Layanan Akun</span>
+            <span style="font-size: 10px; background-color: #eff6ff; color: #1d4ed8; font-weight: 800; border: 1px solid #bfdbfe; padding: 2px 7px; border-radius: 4px;">GOOGLE AUTH</span>
           </div>
-          <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px;">
-            <span style="font-size: 24px; font-weight: 800; color: #0a2e5c; font-family: monospace; line-height: 1;">Rp 75.000</span>
-            <del style="font-size: 13px; color: #94a3b8; font-weight: 600;">Rp 375.000</del>
-            <span style="font-size: 11px; color: #64748b; font-weight: 500;">/ Lifetime (Akses Penuh)</span>
+          <div style="font-size: 12.5px; color: #334155; line-height: 1.5; margin-bottom: 12px;">
+            Aplikasi digitasi dan peta kadaster terbuka untuk umum. Masuk dengan Akun Google untuk mengaktifkan fitur ekspor berkas spasial dan sinkronisasi database koleksi bidang tanah.
           </div>
           <div style="display: flex; flex-direction: column; gap: 7px; font-size: 12px; color: #334155; line-height: 1.4;">
             <div style="display: flex; align-items: center; gap: 7px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Akses Penuh Ekspor Shapefile ESRI (.SHP .SHX .DBF .PRJ)</span>
+              <span>Ekspor Berkas Spasial Lengkap (ESRI Shapefile .SHP, AutoCAD DXF, GeoJSON, KML, Excel)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 7px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Ekspor Script AutoCAD (.SCR) &amp; DXF Multi-Layer</span>
+              <span>Penyimpanan Database Koleksi Bidang Tanah di Cloud</span>
             </div>
             <div style="display: flex; align-items: center; gap: 7px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Ekspor Data Excel Koordinat Patok &amp; Tabel Legalitas</span>
+              <span>Bebas Batasan Luas Bidang Tanah (Akses Penuh Tanpa Limit)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 7px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Cetak Peta Bidang Tanah &amp; Peta Situasi Standar BPN</span>
+              <span>Validasi Geometri &amp; Topologi Spasial Otomatis</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 7px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Digitasi Poligon &amp; Luas Bidang Tanah Tanpa Batas (Bebas Limit 150 m²)</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 7px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Sinkronisasi Data Cloud &amp; Validasi Topologi Instan</span>
-            </div>
-          </div>
-          <div style="font-size: 10.5px; color: #64748b; margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0; line-height: 1.4;">
-            Pelajari hak akses dan kebijakan lisensi: <a href="penafian-layanan.html" target="_blank" style="color: #0a2e5c; text-decoration: underline; font-weight: 600;">Ketentuan Lisensi</a>
           </div>
         </div>
 
@@ -1086,7 +1073,7 @@
         </div>
 
         <div style="font-size: 11px; color: #64748b; text-align: center; line-height: 1.4;">
-          Masuk dengan Akun Google untuk sinkronisasi otomatis, validasi topologi resmi, dan verifikasi lisensi PRO dalam 1 langkah.
+          Fitur peta, digitasi poligon, ukur luas, dan analisis tata ruang dapat digunakan langsung tanpa perlu login.
         </div>
       </div>
 
@@ -1096,31 +1083,19 @@
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <span id="memberProfileName" style="font-weight: 800; font-size: 14.5px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Nama Pengguna</span>
-              <span id="memberProfileBadge" class="tier-tag free" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;">FREE MEMBER</span>
+              <span id="memberProfileBadge" class="tier-tag pro" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;">TERVERIFIKASI</span>
             </div>
             <div id="memberProfileEmail" style="font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">user@gmail.com</div>
           </div>
         </div>
 
         <div id="memberStatusAlert" style="background-color: #f8fafc; padding: 12px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 12px; color: #334155; line-height: 1.5;">
-          Untuk mengedit atribut peta memerlukan akses PRO. Mode Akun Gratis dibatasi maksimal luas 150 m² (berkas: geospasi.zip). Upgrade ke PRO untuk akses kustom &amp; luas tanpa batas.
+          Akun Google Anda terhubung dan terverifikasi. Seluruh hak akses ekspor berkas spasial (SHP, CAD, GeoJSON, Excel) dan penyimpanan database koleksi bidang tanah aktif penuh.
         </div>
 
-        <div id="proMemberThankYouCard" style="display: none; background-color: #0a2e5c; color: #ffffff; padding: 14px 16px; border-radius: 8px; font-size: 12.5px; line-height: 1.5; text-align: center;">
-          <div style="font-weight: 700; font-size: 13.5px; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-            <span>Lisensi PRO Lifetime Aktif</span>
-          </div>
-          <div style="font-size: 11.5px; opacity: 0.95;">
-            Akun Anda berstatus PRO Lifetime. Seluruh hak akses ekspor SHP, CAD, GeoJSON, Excel, dan analisis spasial aktif penuh.
-          </div>
-        </div>
+        <div id="proMemberThankYouCard" style="display: none;"></div>
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <button id="btnUpgradeQris" type="button" class="btn btn-primary btn-block" onclick="openQrisPaymentModal()" style="justify-content: center; gap: 6px; font-weight: 700; background-color: #16a34a; border-color: #16a34a; color: #ffffff; font-size: 13px; height: 42px; width: 100%;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
-            <span>Upgrade ke PRO (Rp 75.000 Sekali Bayar)</span>
-          </button>
           <button type="button" class="btn btn-outline btn-block" onclick="logoutMember()" style="justify-content: center; gap: 6px; font-size: 12.5px; height: 38px; width: 100%;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             <span>Keluar Akun (Logout)</span>
