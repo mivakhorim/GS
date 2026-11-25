@@ -534,12 +534,6 @@ async function handleImportZipFile(event) {
     const elLokasi = document.getElementById('pinLokasiUtamaText');
     if (elLokasi) elLokasi.innerText = lokasiUtama;
 
-    const elLuasBpnText = document.getElementById('pinLuasBpnText');
-    if (elLuasBpnText) {
-      elLuasBpnText.className = 'stat-value emerald';
-      elLuasBpnText.innerText = `${Math.round(totalArea).toLocaleString('id-ID')} m²`;
-    }
-
     const elTipeHakText = document.getElementById('pinTipeHakText');
     if (elTipeHakText) elTipeHakText.innerText = activePinData.tipe_hak;
 

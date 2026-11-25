@@ -2410,12 +2410,6 @@ async function triggerD1Failover() {
         }
       }
 
-      // 1. Luas Terdaftar vs Luas Ukur
-      const cardTerdaftar = document.getElementById('cardLuasTerdaftar');
-      const grid = document.getElementById('gridLuasCards');
-      const elLuasBpn = document.getElementById('pinLuasBpnText');
-      const boxDiff = document.getElementById('boxSelisihLuas');
-      const textDiff = document.getElementById('textSelisihLuas');
       const elCanvasM2 = document.getElementById('canvasLiveAreaM2');
       const elValHa = document.getElementById('valLuasHa');
 
@@ -2433,47 +2427,6 @@ async function triggerD1Failover() {
       }
       if (elValHa && luasGambar > 0) {
         elValHa.innerText = (typeof formatAreaHa === 'function') ? formatAreaHa(luasGambar) : ((luasGambar / 10000.0).toFixed(4) + ' Ha');
-      }
-
-      const rawDataArea = p.luas_terdaftar_m2 || p.luas_bpn || (p.is_auto_traced ? null : p.luas_m2);
-      const luasData = (rawDataArea && Number(rawDataArea) > 0) ? Number(rawDataArea) : 0;
-      const subtextEl = document.getElementById('pinLuasBpnSubtext');
-
-      if (cardTerdaftar && elLuasBpn) {
-        cardTerdaftar.style.display = 'block';
-        if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
-        if (luasData > 0) {
-          elLuasBpn.innerText = Math.round(luasData).toLocaleString('id-ID') + ' m²';
-          elLuasBpn.style.color = '#15803d';
-          cardTerdaftar.style.background = '#f0fdf4';
-          cardTerdaftar.style.borderColor = '#bbf7d0';
-          if (subtextEl) subtextEl.innerText = 'Data Resmi ATR/BPN';
-        } else {
-          elLuasBpn.innerText = '-';
-          elLuasBpn.style.color = '#64748b';
-          cardTerdaftar.style.background = '#f8fafc';
-          cardTerdaftar.style.borderColor = '#e2e8f0';
-          if (subtextEl) subtextEl.innerText = 'Belum Ada Data Resmi';
-        }
-      }
-
-      if (boxDiff && textDiff) {
-        if (luasGambar > 0 && luasData > 0) {
-          const diff = luasGambar - luasData;
-          const pct = (diff / luasData) * 100;
-          if (Math.abs(diff) >= 0.5) {
-            boxDiff.style.display = 'flex';
-            const sign = diff > 0 ? '+' : '';
-            textDiff.innerText = `${sign}${diff.toFixed(1)} m² (${sign}${pct.toFixed(1)}%)`;
-            textDiff.style.color = Math.abs(pct) <= 5.0 ? '#16a34a' : '#b45309';
-          } else {
-            boxDiff.style.display = 'flex';
-            textDiff.innerText = 'Presisi Sempurna (100% Identik)';
-            textDiff.style.color = '#16a34a';
-          }
-        } else {
-          boxDiff.style.display = 'none';
-        }
       }
 
       const badgeHak = document.getElementById('badgeTipeHak');
@@ -2679,28 +2632,6 @@ async function triggerD1Failover() {
           const elLokasi = document.getElementById('pinLokasiUtamaText');
           if (elLokasi) elLokasi.innerText = lokasiUtama;
 
-          const elLuasBpn = document.getElementById('pinLuasBpnText');
-          const subtextEl = document.getElementById('pinLuasBpnSubtext');
-          const cardTerdaftar = document.getElementById('cardLuasTerdaftar');
-          if (elLuasBpn) {
-            if (activePinData.luas_terdaftar_m2 > 0) {
-              elLuasBpn.innerText = `${Math.round(activePinData.luas_terdaftar_m2).toLocaleString('id-ID')} m²`;
-              elLuasBpn.style.color = '#15803d';
-              if (cardTerdaftar) {
-                cardTerdaftar.style.background = '#f0fdf4';
-                cardTerdaftar.style.borderColor = '#bbf7d0';
-              }
-              if (subtextEl) subtextEl.innerText = 'Data Resmi ATR/BPN';
-            } else {
-              elLuasBpn.innerText = '-';
-              elLuasBpn.style.color = '#64748b';
-              if (cardTerdaftar) {
-                cardTerdaftar.style.background = '#f8fafc';
-                cardTerdaftar.style.borderColor = '#e2e8f0';
-              }
-              if (subtextEl) subtextEl.innerText = 'Belum Ada Data Resmi';
-            }
-          }
           const elTipeHak = document.getElementById('pinTipeHakText');
           if (elTipeHak) elTipeHak.innerText = activePinData.tipe_hak;
           renderCadastralProFields();

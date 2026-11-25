@@ -1086,18 +1086,6 @@ Server Sumber Data: ${serverName}`;
         : (activePinData?.luas_m2 || 0);
 
       const isManual = (activePinData && (activePinData.tipe_hak === 'Delineasi Mandiri' || activePinData.source === 'MANUAL_DELINEATION'));
-      const cardTerdaftar = document.getElementById('cardLuasTerdaftar');
-      const grid = document.getElementById('gridLuasCards');
-      const elLuasBpn = document.getElementById('pinLuasBpnText');
-      if (cardTerdaftar && elLuasBpn) {
-        cardTerdaftar.style.display = 'block';
-        if (grid) grid.style.gridTemplateColumns = '1fr 1fr';
-        if (!isManual && registeredBpnArea > 0) {
-          elLuasBpn.innerText = formatAreaM2(registeredBpnArea);
-        } else {
-          elLuasBpn.innerText = '-';
-        }
-      }
       if (typeof window.renderBidangInfoPanel === 'function') {
         window.renderBidangInfoPanel(activePinData, activeVertices);
       }

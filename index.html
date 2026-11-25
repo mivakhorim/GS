@@ -211,8 +211,7 @@
       <div class="sidebar-scroll">
 
         <section id="tab-digitasi" class="tab-view active">
-          <!-- INSPEKTOR BIDANG TERINTEGRASI -->
-          <div class="content-box" style="margin-bottom: 0.65rem;">
+                    <div class="content-box" style="margin-bottom: 0.65rem;">
             <div class="box-header">
               <div class="box-title">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
@@ -223,35 +222,19 @@
               </button>
             </div>
 
-            <div id="gridLuasCards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.55rem;">
-              <div class="stat-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+            <div id="gridLuasCards" style="margin-bottom: 0.55rem;">
+              <div class="stat-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: #0284c7; letter-spacing: 0.5px;">Luas di Gambar</span>
+                  <span style="font-size: 0.68rem; text-transform: uppercase; font-weight: 800; color: #0284c7; letter-spacing: 0.5px;">Luas Bidang Tanah</span>
+                  <span style="font-size: 0.62rem; color: #16a34a; font-weight: 700; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 4px;">Ukur Geometri Nyata</span>
                 </div>
-                <div style="margin-top: 3px;">
-                  <span id="canvasLiveAreaM2" class="stat-value highlight" style="font-size: 1.15rem; font-weight: 800; color: #0a2e5c; font-family: monospace; line-height: 1.1;">0,00 m²</span>
+                <div style="margin-top: 4px;">
+                  <span id="canvasLiveAreaM2" class="stat-value highlight" style="font-size: 1.35rem; font-weight: 800; color: #0a2e5c; font-family: monospace; line-height: 1.1;">0,00 m²</span>
                 </div>
-                <div style="font-size: 0.62rem; color: #64748b; margin-top: 2px;">
-                  <span id="valLuasHa">0,0000 Ha</span> • Ukur Geometri
+                <div style="font-size: 0.66rem; color: #64748b; margin-top: 3px;">
+                  <span id="valLuasHa">0,0000 Ha</span> - Kalkulasi Poligon Presisi
                 </div>
               </div>
-
-              <div id="cardLuasTerdaftar" class="stat-card" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: #16a34a; letter-spacing: 0.5px;">Luas dari Data</span>
-                </div>
-                <div style="margin-top: 3px;">
-                  <span id="pinLuasBpnText" style="font-size: 1.15rem; font-weight: 800; color: #15803d; font-family: monospace; line-height: 1.1;">-</span>
-                </div>
-                <div id="pinLuasBpnSubtext" style="font-size: 0.62rem; color: #16a34a; margin-top: 2px;">
-                  Data Resmi ATR/BPN
-                </div>
-              </div>
-            </div>
-
-            <div id="boxSelisihLuas" style="display: none; margin-bottom: 0.55rem; padding: 6px 10px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; font-size: 0.7rem; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 600; color: #92400e;">Selisih Luas (Gambar vs Data):</span>
-              <span id="textSelisihLuas" class="font-mono" style="font-weight: 700; color: #b45309;">-</span>
             </div>
 
             <div style="display: none;">
@@ -304,8 +287,7 @@
               </div>
             </div>
 
-            <!-- 4 TOMBOL AKSI CEPAT FLAT -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
               <button type="button" class="btn btn-primary btn-grid-action" onclick="autoScaleToBpnArea()" style="font-weight: 700; justify-content: center; height: 34px; font-size: 0.72rem;" title="Menyesuaikan luas bidang di gambar ke luas resmi secara presisi">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                 <span>Atur Luas Presisi</span>
@@ -328,8 +310,7 @@
             </div>
           </div>
 
-          <!-- ALAT GAMBAR & DIGITASI POLIGON -->
-          <div class="content-box">
+                    <div class="content-box">
             <div class="box-header">
               <div class="box-title">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
@@ -337,14 +318,12 @@
               </div>
             </div>
 
-            <!-- TOMBOL UTAMA GAMBAR POLIGON (BERSIH 1 BARIS, TANPA SUBTEKS) -->
-            <button type="button" class="btn btn-primary btn-block" onclick="startDrawPolygon()" style="font-weight: 700; justify-content: center; height: 38px; width: 100%; margin-bottom: 0.55rem; gap: 6px;">
+                        <button type="button" class="btn btn-primary btn-block" onclick="startDrawPolygon()" style="font-weight: 700; justify-content: center; height: 38px; width: 100%; margin-bottom: 0.55rem; gap: 6px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>
               <span>Gambar Poligon Bidang</span>
             </button>
 
-            <!-- TOOLBAR PATOK 5 TOMBOL IKON FLAT BERSIH (TANPA TEKS) -->
-            <div style="background-color: var(--bg-subtle); padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); margin-bottom: 0.55rem;">
+                        <div style="background-color: var(--bg-subtle); padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); margin-bottom: 0.55rem;">
               <div style="font-size: 0.71rem; font-weight: 700; color: var(--text-sub); margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: space-between;">
                 <span>Toolbar Patok:</span>
                 <span id="canvasVerticesCount" class="badge-pill blue" style="font-size: 0.63rem;">0 Patok</span>
@@ -368,15 +347,13 @@
               </div>
             </div>
 
-            <!-- TOMBOL PLOT GPS SURVEYOR (BERSIH 1 BARIS, TANPA SUBTEKS) -->
-            <button type="button" class="btn btn-outline btn-block" onclick="captureGpsCoordinate()" style="border-color: #0284c7; color: #0284c7; font-weight: 700; font-size: 0.74rem; justify-content: center; gap: 0.35rem; width: 100%; height: 34px;" title="Ambil koordinat GPS akurasi tinggi surveyor lapangan">
+                        <button type="button" class="btn btn-outline btn-block" onclick="captureGpsCoordinate()" style="border-color: #0284c7; color: #0284c7; font-weight: 700; font-size: 0.74rem; justify-content: center; gap: 0.35rem; width: 100%; height: 34px;" title="Ambil koordinat GPS akurasi tinggi surveyor lapangan">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
               <span>Plot Titik GPS Surveyor</span>
             </button>
           </div>
 
-          <!-- INPUT KOORDINAT MASSAL -->
-          <div class="content-box">
+                    <div class="content-box">
             <div class="box-header">
               <div class="box-title">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -407,8 +384,7 @@
             </div>
           </div>
 
-          <!-- IMPOR BERKAS SPASIAL -->
-          <div class="content-box">
+                    <div class="content-box">
             <div class="box-header">
               <div class="box-title">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -422,8 +398,7 @@
           </div>
         </section>
 
-        <!-- PANEL KOLEKSI BIDANG SAYA (GOOGLE DRIVE SYNC) -->
-        <section id="tab-katalog" class="tab-view">
+                <section id="tab-katalog" class="tab-view">
           <div class="content-box" style="margin-bottom: 0.65rem;">
             <div class="box-header">
               <div class="box-title">
@@ -456,8 +431,7 @@
               <input type="text" id="katalogSearchInput" class="form-input" placeholder="Cari NIB, Pemilik, atau Desa/Kota..." style="font-size: 0.73rem; padding: 6px 10px; width: 100%;">
             </div>
 
-            <!-- DAFTAR KARTU BIDANG TERSIMPAN -->
-            <div id="katalogBidangList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                        <div id="katalogBidangList" style="display: flex; flex-direction: column; gap: 8px;"></div>
           </div>
         </section>
 
@@ -795,339 +769,6 @@
                   <span>Ekstrak Poligon Presisi WMS (is_bbox: false)</span>
                 </button>
                 <div id="streamQuickButtons" style="display: flex; gap: 0.3rem; flex-wrap: wrap;"></div>
-              </div>
-            </div>
-          </div>
-
-                    <div class="content-box">
-            <div class="box-header">
-              <div class="box-title">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Peta Tematik &amp; Meja Kerja BHUMI ATR/BPN
-              </div>
-              <span class="badge-pill green" style="font-size: 0.65rem;">16 Layer</span>
-            </div>
-            <div style="font-size: 0.72rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 0.5rem;">
-              Katalog resmi 16 layer Meja Kerja BHUMI ATR/BPN (Update Terkini 2026), streaming format WebP/SVG melalui Zero-Leak Air-Gap Proxy:
-            </div>
-            <div class="ceking-flat-list">
-              <div style="font-size: 0.7rem; font-weight: 700; color: #0a2e5c; padding: 6px 4px 3px; border-bottom: 1px solid var(--border-light); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Dataset Utama Pertanahan & Pangan</div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingLppb" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingLppb" onchange="toggleCekingLayer('lppb', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Lahan Pertanian Pangan Berkelanjutan (LPPB)</span>
-                      <span class="ceking-source">rtr-online:lp2b_lp2b_10112026 - Update: 12-11-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingLppb" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lppb', this.value)" class="range-input">
-                  <span id="opacityLabelLppb" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingLsd8Provinsi" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingLsd8Provinsi" onchange="toggleCekingLayer('lsd_8_provinsi', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Lahan Sawah Dilindungi 8 Provinsi</span>
-                      <span class="ceking-source">umum:lsd_merge_8_provinsi - Update: 30-09-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingLsd8Provinsi" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lsd_8_provinsi', this.value)" class="range-input">
-                  <span id="opacityLabelLsd8Provinsi" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingLsd12Provinsi" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingLsd12Provinsi" onchange="toggleCekingLayer('lsd_12_provinsi', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Lahan Sawah Dilindungi 12 Provinsi</span>
-                      <span class="ceking-source">umum:lsd_merge - Update: 25-09-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingLsd12Provinsi" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lsd_12_provinsi', this.value)" class="range-input">
-                  <span id="opacityLabelLsd12Provinsi" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingLahanBakuSawah2024" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingLahanBakuSawah2024" onchange="toggleCekingLayer('lahan_baku_sawah_2024', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Lahan Baku Sawah 2024</span>
-                      <span class="ceking-source">umum:lahanbakusawah_new - Update: 25-09-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingLahanBakuSawah2024" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('lahan_baku_sawah_2024', this.value)" class="range-input">
-                  <span id="opacityLabelLahanBakuSawah2024" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingTanahUlayat" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingTanahUlayat" onchange="toggleCekingLayer('tanah_ulayat', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Tanah Ulayat</span>
-                      <span class="ceking-source">umum:tanahulayatnew - Update: 24-09-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingTanahUlayat" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('tanah_ulayat', this.value)" class="range-input">
-                  <span id="opacityLabelTanahUlayat" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingAreaPenggunaanLain" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingAreaPenggunaanLain" onchange="toggleCekingLayer('area_penggunaan_lain', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Area Penggunaan Lain (APL)</span>
-                      <span class="ceking-source">umum:area_penggunaan_lain - Update: 14-07-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingAreaPenggunaanLain" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('area_penggunaan_lain', this.value)" class="range-input">
-                  <span id="opacityLabelAreaPenggunaanLain" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingKawasanHutan" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingKawasanHutan" onchange="toggleCekingLayer('kawasan_hutan', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L7 10h3v4H7l-4 7h18l-4-7h-3v-4h3z"/><line x1="12" y1="18" x2="12" y2="22"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Kawasan Hutan</span>
-                      <span class="ceking-source">umum:penunjukan_kawasan_hutan - Update: 06-07-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingKawasanHutan" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('kawasan_hutan', this.value)" class="range-input">
-                  <span id="opacityLabelKawasanHutan" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingPippib2025" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingPippib2025" onchange="toggleCekingLayer('pippib_2025', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Peta PIPPIB 2025 (Hutan Primer & Gambut)</span>
-                      <span class="ceking-source">umum:pippib_2025 - Update: 19-06-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingPippib2025" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('pippib_2025', this.value)" class="range-input">
-                  <span id="opacityLabelPippib2025" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingPenggunaanTanah" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingPenggunaanTanah" onchange="toggleCekingLayer('penggunaan_tanah', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Penggunaan Tanah</span>
-                      <span class="ceking-source">umum:PenggunaanTanah - Update: 19-06-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingPenggunaanTanah" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('penggunaan_tanah', this.value)" class="range-input">
-                  <span id="opacityLabelPenggunaanTanah" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingNilaiBidangTanah" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingNilaiBidangTanah" onchange="toggleCekingLayer('nilai_bidang_tanah', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8 11h8"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Peta Nilai Bidang Tanah</span>
-                      <span class="ceking-source">umum:nbt3 - Update: 19-06-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingNilaiBidangTanah" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('nilai_bidang_tanah', this.value)" class="range-input">
-                  <span id="opacityLabelNilaiBidangTanah" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingZonaNilaiTanah" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingZonaNilaiTanah" onchange="toggleCekingLayer('zona_nilai_tanah', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6v12M8 10h8M8 14h6"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Zona Nilai Tanah (ZNT)</span>
-                      <span class="ceking-source">umum:ZNTRANGE - Update: 19-06-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingZonaNilaiTanah" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('zona_nilai_tanah', this.value)" class="range-input">
-                  <span id="opacityLabelZonaNilaiTanah" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingToponim" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingToponim" onchange="toggleCekingLayer('toponim', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Toponim Geospasial</span>
-                      <span class="ceking-source">umum:toponimi - Update: 19-06-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingToponim" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('toponim', this.value)" class="range-input">
-                  <span id="opacityLabelToponim" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingIndexPetaDasar" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingIndexPetaDasar" onchange="toggleCekingLayer('index_peta_dasar', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 3l18 18M21 3L3 21"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Index Peta Dasar</span>
-                      <span class="ceking-source">Index (Tile XYZ) - Update: 19-06-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingIndexPetaDasar" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('index_peta_dasar', this.value)" class="range-input">
-                  <span id="opacityLabelIndexPetaDasar" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div style="font-size: 0.7rem; font-weight: 700; color: #0a2e5c; padding: 6px 4px 3px; border-bottom: 1px solid var(--border-light); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Rencana Tata Ruang (RTRW)</div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingRtrwKabkot" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingRtrwKabkot" onchange="toggleCekingLayer('rtrw_kabkot', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">RTRW Kab/Kota (Rencana Tata Ruang Wilayah)</span>
-                      <span class="ceking-source">rtr-online:rtrw_kabkot_1_indonesia - Update: 06-10-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingRtrwKabkot" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rtrw_kabkot', this.value)" class="range-input">
-                  <span id="opacityLabelRtrwKabkot" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingRtrwProvinsi" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingRtrwProvinsi" onchange="toggleCekingLayer('rtrw_provinsi', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 12h16"/><path d="M12 4v16"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">RTRW Provinsi (Rencana Tata Ruang Wilayah)</span>
-                      <span class="ceking-source">rtr-online:rtrw_provinsi_1_indonesia - Update: 06-10-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingRtrwProvinsi" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('rtrw_provinsi', this.value)" class="range-input">
-                  <span id="opacityLabelRtrwProvinsi" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-              <div style="font-size: 0.7rem; font-weight: 700; color: #0a2e5c; padding: 6px 4px 3px; border-bottom: 1px solid var(--border-light); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Dataset Turunan Geoportal</div>
-              <div class="ceking-row">
-                <div class="ceking-header">
-                  <label class="ceking-label-group" for="chkCekingPtpr" style="cursor: pointer;">
-                    <input type="checkbox" id="chkCekingPtpr" onchange="toggleCekingLayer('ptpr', this.checked)" class="flat-checkbox">
-                    <span class="ceking-flat-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
-                    <div class="ceking-text-col">
-                      <span class="ceking-title">Peta Tematik Pertanahan dan Ruang (PTPR)</span>
-                      <span class="ceking-source">geoportal:PTPRPublish - Update: 19-06-2026</span>
-                    </div>
-                  </label>
-                  <span id="badgeCekingPtpr" class="badge-pill" style="font-size: 0.64rem;">Off</span>
-                </div>
-                <div class="transparency-control-bar">
-                  <span class="transparency-label">Transparansi</span>
-                  <input type="range" min="10" max="100" value="75" oninput="changeCekingOpacity('ptpr', this.value)" class="range-input">
-                  <span id="opacityLabelPtpr" class="transparency-value-pill">75%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div id="adminMejaKerjaCard" class="content-box" style="margin-top: 0.75rem; display: none;">
-            <div class="box-header">
-              <div class="box-title">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span>Status Zero-Leak Proxy &amp; Sesi ATR/BPN</span>
-              </div>
-              <span class="badge-pill">Admin</span>
-            </div>
-            <div style="font-size: 0.72rem; color: var(--text-sub); margin-bottom: 0.6rem; line-height: 1.4;">
-              Pemantauan koneksi reverse proxy privat dan rotasi sesi token WAF pemerintah secara realtime.
-            </div>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 0.72rem; line-height: 1.5; color: #475569;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span>Protokol Proteksi:</span>
-                <span class="badge-pill green" style="font-size: 0.62rem;">Zero-Leak Air-Gap</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span>Isolasi Klien &amp; Domain:</span>
-                <strong style="color: #16a34a;">100% Terisolasi (Anonim)</strong>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span>Format Streaming Peta:</span>
-                <span style="font-weight: 700; color: #0284c7;">Vector SVG &amp; WebP Tiles</span>
               </div>
             </div>
           </div>
@@ -1864,13 +1505,11 @@
           </div>
         </div>
 
-            <!-- LEMBAR 2 : LAMPIRAN DAFTAR KOORDINAT LENGKAP -->
-            <div id="printAttachmentSheet" class="print-sheet-paper print-page-2" style="display: none; margin-top: 25px;">
+                        <div id="printAttachmentSheet" class="print-sheet-paper print-page-2" style="display: none; margin-top: 25px;">
               <div class="print-sheet-frame">
                 <div class="print-sheet-inner-frame print-attachment-inner">
                   
-                  <!-- Header Lampiran -->
-                  <div class="print-att-top-row">
+                                    <div class="print-att-top-row">
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <img src="assets/img/logo-duta-spatial.webp" alt="Duta Spatial" style="height: 26px; width: auto; object-fit: contain;">
                       <div>
@@ -1885,8 +1524,7 @@
                     </div>
                   </div>
 
-                  <!-- Metadata Identitas Bidang (6 Kolom Ringkas) -->
-                  <div class="print-att-meta-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 2px; margin: 8px 0; font-size: 7.5px;">
+                                    <div class="print-att-meta-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 2px; margin: 8px 0; font-size: 7.5px;">
                     <div style="display: flex; gap: 4px;"><strong style="color: #475569; min-width: 75px;">Kegiatan:</strong><span id="attKegiatan" style="font-weight: 700; color: #0f172a;">-</span></div>
                     <div style="display: flex; gap: 4px;"><strong style="color: #475569; min-width: 75px;">Pemrakarsa:</strong><span id="attPemrakarsa" style="font-weight: 700; color: #0f172a;">-</span></div>
                     <div style="display: flex; gap: 4px;"><strong style="color: #475569; min-width: 75px;">NIB / Hak:</strong><span id="attNib" style="font-weight: 700; color: #0f172a;">-</span></div>
@@ -1895,13 +1533,10 @@
                     <div style="display: flex; gap: 4px;"><strong style="color: #475569; min-width: 75px;">Sistem Grid:</strong><span style="font-weight: 700; color: #0f172a;">UTM WGS 84 &amp; Geografi</span></div>
                   </div>
 
-                  <!-- Kontainer Tabel Multi-Kolom Lampiran (Tinggi fleksibel memenuhi ruang) -->
-                  <div id="printAttachmentTablesContainer" style="flex: 1 1 0; min-height: 0; display: flex; gap: 8px; overflow: hidden; margin-bottom: 8px;">
-                    <!-- Tabel dinamis diisi oleh JS -->
-                  </div>
+                                    <div id="printAttachmentTablesContainer" style="flex: 1 1 0; min-height: 0; display: flex; gap: 8px; overflow: hidden; margin-bottom: 8px;">
+                                      </div>
 
-                  <!-- Kolom Pengesahan & Tanda Tangan Surveyor -->
-                  <div class="print-att-footer-row" style="display: flex; justify-content: space-between; gap: 14px; border-top: 1.5px solid #000000; padding-top: 6px;">
+                                    <div class="print-att-footer-row" style="display: flex; justify-content: space-between; gap: 14px; border-top: 1.5px solid #000000; padding-top: 6px;">
                     <div style="flex: 1; border: 1px solid #cbd5e1; padding: 5px 8px; font-size: 7px; background-color: #ffffff; text-align: center;">
                       <div style="font-weight: 700; color: #334155; margin-bottom: 1px;">Mengetahui / Menyetujui:</div>
                       <div style="font-size: 6.5px; color: #64748b;">Pemilik Tanah / Pemrakarsa</div>
@@ -2597,8 +2232,7 @@
   <script src="assets/sec/duta-shield.js?v=0.113"></script>
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- MODAL FORMULIR ATRIBUT LENGKAP BIDANG TANAH -->
-  <div id="modalAtributBidang" class="modal-backdrop" onclick="if(event.target===this) DutaDriveSync.closeParcelAttributesModal()" style="display: none; align-items: center; justify-content: center;">
+    <div id="modalAtributBidang" class="modal-backdrop" onclick="if(event.target===this) DutaDriveSync.closeParcelAttributesModal()" style="display: none; align-items: center; justify-content: center;">
     <div class="modal-dialog" style="max-width: 640px; width: min(640px, calc(100vw - 24px)); border-radius: 12px; overflow: hidden; background: #ffffff; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05); margin: auto; max-height: calc(100vh - 40px); display: flex; flex-direction: column;">
       
       <div class="modal-header" style="padding: 14px 18px; border-bottom: 1px solid #e2e8f0; background: #ffffff; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
@@ -2612,8 +2246,7 @@
       <div class="modal-body" style="padding: 16px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; flex: 1;">
         <input type="hidden" id="formAttrId">
 
-        <!-- KELOMPOK 1: LEGALITAS & KEPEMILIKAN -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
           <div style="font-weight: 700; font-size: 12px; color: #0a2e5c; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">1. Legalitas &amp; Pemilik Tanah</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
@@ -2644,8 +2277,7 @@
           </div>
         </div>
 
-        <!-- KELOMPOK 2: LOKASI ADMINISTRASI -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
           <div style="font-weight: 700; font-size: 12px; color: #0a2e5c; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">2. Lokasi Administrasi Wilayah</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
@@ -2673,8 +2305,7 @@
           </div>
         </div>
 
-        <!-- KELOMPOK 3: DIMENSI FISIK & TATA RUANG -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
           <div style="font-weight: 700; font-size: 12px; color: #0a2e5c; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">3. Dimensi Fisik &amp; Tata Ruang</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
             <div>
@@ -2710,8 +2341,7 @@
           </div>
         </div>
 
-        <!-- KELOMPOK 4: BATAS SEMPADAN (TETANGGA BATAS) -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
           <div style="font-weight: 700; font-size: 12px; color: #0a2e5c; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">4. Batas Sempadan (Tetangga Batas)</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
@@ -2735,8 +2365,7 @@
           </div>
         </div>
 
-        <!-- KELOMPOK 5: KETERANGAN & PETUGAS -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
           <div style="font-weight: 700; font-size: 12px; color: #0a2e5c; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">5. Keterangan &amp; Surveyor Lapangan</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
